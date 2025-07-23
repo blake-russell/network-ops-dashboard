@@ -1,0 +1,21 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+<h3>Find and/or Disconnect User Log</h3>
+<a href="{% url 'asavpn' %}"><< Back</a> &nbsp; <a href="{% url 'asavpn_findanddiscouser_log_all' %}">View Entire Log</a><br>
+<table class="table table-hover">
+ <tr>
+  <th>Initiating User</th>
+  <th>Log</th>
+ </tr>
+
+{% for log in detaillist %}
+  <tr class="table-light">
+    <td>{{ log.username }}</td>
+    <td>{{ log.logoutput }}</td>
+  </tr>
+{% endfor %}
+</table>
+
+{% endblock %}

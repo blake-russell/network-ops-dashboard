@@ -1,0 +1,12 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+
+<h3>APIC Scripts</h3>
+<ul>
+    <li>
+        <a href="{% url 'apic_createinterface' %}">Create Interface(s)</a><br>
+    </li>
+</ul>
+{% endblock %}

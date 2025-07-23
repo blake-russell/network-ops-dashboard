@@ -1,0 +1,11 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+<h3>F5 LB Scripts</h3>
+<ul>
+    <li>
+        <a href="{% url 'f5lb_vipcertrenew' %}">VIP Certificate Renewal MOP</a><br>
+    </li>
+</ul>
+{% endblock %}

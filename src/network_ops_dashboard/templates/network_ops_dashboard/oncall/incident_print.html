@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>IT Core Network On-Call Report</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/lumen/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: Calibri, sans-serif;
+      font-size: 11pt;
+      padding: 20px;
+    }
+    .incident {
+      margin-bottom: 30px;
+    }
+    hr {
+      border: 1px solid #ccc;
+    }
+    .title {
+      font-weight: bold;
+      color: red;
+    }
+    pre {
+      background: none;
+      border: none;
+      padding: 10px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: Calibri, sans-serif;
+      font-size: 11pt;
+    }
+    @media print {
+      .no-print {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="margin-bottom: 20px;">
+    <a href="{% url 'oncall' %}" class="btn btn-outline-secondary btn-sm hide-on-print"><< Back</a> &nbsp;
+    <button onclick="window.print()">🖨 Print</button>
+    <button onclick="copyIncidentContent()" class="btn btn-outline-primary btn-sm">📋 Copy for Email</button>
+  </div>
+
+  <div id="incident-print-section">
+    <h3 id="currentDate"></h3>
+        {% for incident in incidents %}
+        <div class="incident">
+            <div><span class="title">Issue Date:</span> {{ incident.date_created }}</div>
+            <div><span class="title">Issue Title:</span> {{ incident.headline }}</div>
+            <div><span class="title">Status:</span> {{ incident.status }}</div>
+            <pre>{{ incident.log }}</pre>
+            <hr>
+        </div>
+        {% endfor %}
+    <br><h3><u>Scheduled Maintenance</u></h3>
+    <h4>Windstream</h4>
+      <table class="table table-hover" id="my-table">
+        <tr>
+          <th>Circuit</th>
+          <th>Circuit ID(s)</th>
+          <th>WMT#</th>
+          <th>Status</th>
+          <th>Impact</th>
+          <th>Start Time</th>
+          <th>End Time</th>
+        </tr>
+        {% for mop in wsmtc %}
+        <tr class="table-light">
+          <td>{% for cktname in mop.cktid.all %} {{ cktname.name }}<br>{% endfor %}</td>
+          <td>{% for cktid in mop.cktid.all %} {{ cktid.cktid }}<br>{% endfor %}</td>
+          <td>{{ mop.wmt }}</td>
+          <td>{{ mop.status }}</td>
+          <td>{{ mop.impact }}</td>
+          <td>{{ mop.startdatetime }}</td>
+          <td>{{ mop.enddatetime }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    <br><h4>Cogent</h4>
+    <br><h3><u>Field Notices</u></h3>
+    <br><h3><u>Expiry Notifications</u></h3>
+  </div>
+
+<script>
+  const dateElement = document.getElementById("currentDate");
+  const currentDate = new Date().toLocaleDateString(); 
+  dateElement.textContent = "IT Core Network Update - " + currentDate;
+</script>
+
+<script>
+function copyIncidentContent() {
+  const content = document.getElementById("incident-print-section").cloneNode(true);
+
+  // Remove buttons or inputs if needed
+  content.querySelectorAll('button, input, select, textarea').forEach(el => el.remove());
+
+  const tempDiv = document.createElement('div');
+  tempDiv.appendChild(content);
+  document.body.appendChild(tempDiv);
+
+  const range = document.createRange();
+  range.selectNode(tempDiv);
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+  document.execCommand('copy');
+  document.body.removeChild(tempDiv);
+
+  alert("Incident details copied!");
+}
+</script>
+
+</body>
+</html>

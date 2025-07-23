@@ -1,0 +1,11 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+<h3>ASA VPN Scripts</h3>
+<ul>
+    <li>
+        <a href="{% url 'asavpn_findanddiscouser' %}">Find and/or Disconnect a User</a> - <a href="{% url 'asavpn_findanddiscouser_log' %}">(Log)</a><br>
+    </li>
+</ul>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'network_ops_dashboard/base.html' %}
+
+{% block content %}
+
+<div id="page-header">
+ <h1>Login</h1>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Login</button>
+</form>
+
+<br>
+<a href="{% url 'signup' %}"><b>Registration</b></a>
+{% endblock %}
