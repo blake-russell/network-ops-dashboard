@@ -1,0 +1,35 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+<h3>Sites</h3>
+<a href="{% url 'site_add' %}">Add Site</a><br>
+<table class="table table-hover">
+ <tr>
+  <th>Name</th>
+  <th>Address</th>
+  <th>City</th>
+  <th>State</th>
+  <th>ZIP</th>
+  <th>POC</th>
+  <th>POC Number</th>
+  <th>Actions</th>
+ </tr>
+
+{% for site in detaillist %}
+  <tr class="table-light">
+    <td>{{ site.name }}</td>
+    <td>{{ site.address }}</td>
+    <td>{{ site.city }}</td>
+    <td>{{ site.state }}</td>
+    <td>{{ site.zip }}</td>
+    <td>{{ site.poc_name }}</td>
+    <td>{{ site.poc_number }}</td>
+    <td>
+      <a href="{% url 'site_edit' site.pk %}">Edit</a>
+    </td>
+  </tr>
+{% endfor %}
+</table>
+
+{% endblock %}

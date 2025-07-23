@@ -1,0 +1,21 @@
+{% extends 'itnetwork/base.html' %}
+
+{% block content %}
+
+<div id="page-header">
+ <h1>Sign up</h1>
+</div>
+
+
+    Sign-ups are closed.<br>
+    <a href="{% url 'home' %}">return home.</a>
+
+<!--
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Sign up</button>
+</form>
+-->
+
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+{% load static %}
+
+{% if site_secrets.apic_primary_user and site_secrets.apic_secondary_user and site_secrets.backLink_apic_createinterface and site_secrets.apic_lab_device_1 and site_secrets.apic_lab_device_2 %}
+  <h3>APIC Create Interface MOPs</h3>
+{% else %}
+  <div class="alert alert-dismissible alert-warning">
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <h4 class="alert-heading">Warning!</h4>
+    <p class="mb-0">No SiteSecrets.objects() entry found for: {% for key in missing_keys %}{{ key }}, {% endfor %} Go to the <a href="/admin" class="alert-link">admin</a> panel and configure.</p>
+  </div>
+  <h3>APIC Create Interface MOPs</h3>
+{% endif %}
+
+<a href="{% url 'apic_createinterface_add' %}">Create MOP</a>  &nbsp;  <a href="{% url 'apic_createinterface_intf' %}">Interface List</a><br>
+<!--<ol class="breadcrumb">
+  <li class="breadcrumb-item"><a href="{% url 'apic_createinterface_add' %}">Create MOP</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'apic_createinterface_intf' %}">Interface List</a></li>
+</ol>
+-->
+<table class="table table-hover">
+ <tr>
+  <th>Name</th>
+  <th>Status</th>
+  <th>Device</th>
+  <th>Interfaces</th>
+  <th colspan=3>Actions</th>
+ </tr>
+
+{% for mop in detaillist %}
+ {% if mop.status != 'Closed' %}
+  <tr class="table-light">
+    <td>{{ mop.name }}</td>
+    <td>{{ mop.status }}</td>
+    <td><a href="https://{{ mop.device.ipaddress_mgmt }}" target="_blank" rel="noopener noreferrer">{{ mop.device }}</a></td>
+    <td>{% for intf in mop.interfaces.all %} {{ intf.intfdesc }}<br>{% endfor %}</td>
+    <td>
+      {% if mop.status == 'Planned' %}
+        <a href="{% url 'apic_createinterface_addintf' mop.pk %}">Add Interface</a>
+      {% endif %}
+    </td>
+    <td>
+      {% if mop.status == 'Planned' %}
+        <a href="{% url 'apic_createinterface_run' mop.pk %}" onclick="return confirm('Are you sure you are ready to run this mop now?')">Run MOP</a>
+      {% elif mop.status == 'Running' %}
+        <b>MOP Running</b>
+      {% else %}
+        <a href="{% url 'apic_createinterface_archive' mop.pk %}" onclick="return confirm('Are you sure you want to archive this?')">Close MOP</a>
+      {% endif %}
+    </td>
+    <td>
+      <a href="{% url 'apic_createinterface_edit' mop.pk %}">Edit</a>
+    </td>
+  </tr>
+  {% endif %}
+{% endfor %}
+</table>
+
+{% endblock %}

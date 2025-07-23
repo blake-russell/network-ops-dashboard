@@ -1,0 +1,70 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+{% if site_secrets %}
+  <h3>Windstream Maintenance Report</h3>
+{% else %}
+  <div class="alert alert-dismissible alert-warning">
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <h4 class="alert-heading">Warning!</h4>
+    <p class="mb-0">No SiteSecrets.objects() entry found for wstmtcemails_folder. Go to the <a href="/admin" class="alert-link">admin</a> panel and configure.</p>
+  </div>
+  <h3>Windstream Maintenance Report</h3>
+{% endif %}
+
+<a href="{% url 'windstream_update' %}">Process New Emails</a> &nbsp; <button id="toggle-column-link">Hide Action Column</button><br>
+<table class="table table-hover" id="my-table">
+ <tr>
+  <th>Circuit</th>
+  <th>Circuit ID(s)</th>
+  <th>WMT#</th>
+  <th>Status</th>
+  <th>Impact</th>
+  <th>Start Time</th>
+  <th>End Time</th>
+  <th>Actions</th>
+ </tr>
+
+{% for mop in wsmtc %}
+ {% if mop.status != 'Archived' and mop.status != 'Auto-Archived' and mop.status != 'Auto-Archived-Cktid' %}
+  <tr class="table-light">
+    <td>{% for cktname in mop.cktid.all %} {{ cktname.name }}<br>{% endfor %}</td>
+    <td>{% for cktid in mop.cktid.all %} {{ cktid.cktid }}<br>{% endfor %}</td>
+    <td>{{ mop.wmt }}</td>
+    <td>{{ mop.status }}</td>
+    <td>{{ mop.impact }}</td>
+    <td>{{ mop.startdatetime }}</td>
+    <td>{{ mop.enddatetime }}</td>
+    <td>
+      <a href="{% url 'windstream_archive' mop.pk %}" onclick="return confirm('Are you sure you want to archive this?')">Archive</a>
+    </td>
+  </tr>
+ {% endif %}
+{% endfor %}
+</table>
+
+<style>
+  .hidden-column {
+    display: none;
+  }
+</style>
+
+<script>
+  const toggleColumnLink = document.getElementById('toggle-column-link');
+  const targetColumn = document.querySelectorAll('#my-table th:nth-child(8), #my-table td:nth-child(8)'); // Target Column 8
+
+  toggleColumnLink.addEventListener('click', function() {
+    targetColumn.forEach(function(cell) {
+      cell.classList.toggle('hidden-column');
+    });
+
+    if (toggleColumnLink.textContent === 'Hide Action Column') {
+      toggleColumnLink.textContent = 'Show Action Column';
+    } else {
+      toggleColumnLink.textContent = 'Hide Action Column';
+    }
+  });
+</script>
+
+{% endblock %}

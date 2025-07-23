@@ -1,0 +1,29 @@
+# Ignore venv folder files
+bin/
+include/
+network_ops_dashboard.pid
+lib/
+lib64
+logs/
+media/f5lb/
+media/images/logo.png
+protected_media/f5lb/
+pyvenv.cfg
+test/
+uwsgi.ini
+
+# Ignore database & manage.py
+src/db.sqlite3
+src/manage.py
+
+# Ignore secrets.py
+src/network_ops_dashboard/secrets.py
+
+# Ignore migrations
+src/network_ops_dashboard/migrations
+
+# Ignore temporary files created by editors
+__pycache__/
+
+
+

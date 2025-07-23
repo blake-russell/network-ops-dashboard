@@ -1,0 +1,121 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>IT Core Network On-Call Incident Backlog</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    .edit-mode textarea { width: 100%; }
+    .hide-on-print { display: inline; }
+    .print-mode .hide-on-print { display: none; }
+    textarea.edit-log { 
+      width: 50%;
+      height: 200px;
+      resize: veritical;
+      font-family: Calibri, sans-serif;
+      font-size: 11pt;
+    }
+    body {
+      font-family: Calibri, sans-serif;
+      font-size: 11pt;
+    }
+    .incident {
+      margin-bottom: 30px;
+    }
+    hr {
+      border: 1px solid #ccc;
+    }
+    .title {
+      font-weight: bold;
+      color: red;
+    }
+    pre {
+      background: none;
+      border: none;
+      padding: 10px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: Calibri, sans-serif;
+      font-size: 11pt;
+    }
+    strong {
+      font-family: Calibri, sans-serif;
+      font-size: 11pt;
+    }
+  </style>
+</head>
+<body>
+
+<h1>IT Core Network On-Call Incident Backlog</h1>
+<button onclick="togglePrintMode()" class="hide-on-print">🖨️ Print/Copy Mode</button> &nbsp;
+<a href="{% url 'oncall' %}" class="btn btn-outline-secondary btn-sm hide-on-print">Back</a> &nbsp;
+<hr>
+
+<div id="incident-container">
+  {% for incident in incidents %}
+    <div class="incident" data-id="{{ incident.id }}">
+      <strong class="hide-on-print">Created By: {{ incident.user_created }} &nbsp; Modified By: {{ incident.user_modified }}</strong> <br>
+      <strong class="hide-on-print">Closed Date: {{ incident.date_closed}}</strong> <br>
+      <strong><font color='red'>Issue Date:</font></strong> {{ incident.date_created }} <br>
+      <strong><font color='red'>Issue Title:</font></strong> {{ incident.headline }} <br>
+      <strong><font color='red'>Status:</font></strong> {{ incident.status }} <br>
+      <div class="log-content">
+        <pre>{{ incident.log }}</pre>
+        <textarea class="edit-log hide-on-print" style="display:none;">{{ incident.log }}</textarea>
+        <button class="edit-button hide-on-print">✏️ Edit</button>
+        <button class="save-button hide-on-print" style="display:none;">💾 Save</button>
+        <form method="POST" action="{% url 'oncall_open_incident' incident.id %}" onsubmit="return confirm('Are you sure you want to open this incident?');">
+            {% csrf_token %}
+            <button type="submit" class="open-button btn btn-success btn-sm hide-on-print">♻️ Re-Open</button>
+        </form>
+      </div>
+      <hr>
+    </div>
+  {% endfor %}
+</div>
+
+<script>
+function togglePrintMode() {
+    document.body.classList.toggle('print-mode');
+}
+
+$(document).ready(function() {
+  $('.edit-button').click(function() {
+    let container = $(this).closest('.incident');
+    container.find('pre').hide();
+    container.find('.edit-log').show();
+    $(this).hide();
+    container.find('.save-button').show();
+    container.find('.open-button').hide();
+  });
+
+  $('.save-button').click(function() {
+    let container = $(this).closest('.incident');
+    let id = container.data('id');
+    let log = container.find('.edit-log').val();
+    $.post(`/oncall/update/${id}/`, {log: log, csrfmiddlewaretoken: '{{ csrf_token }}'}, function(response) {
+      if (response.success) {
+        container.find('pre').text(log).show();
+        container.find('.edit-log').hide();
+        container.find('.save-button').hide();
+        container.find('.edit-button').show();
+        container.find('.open-button').show();
+      }
+    });
+  });
+});
+</script>
+
+  <script>
+        const dateElement = document.getElementById("currentDate");
+        const currentDate = new Date().toLocaleDateString(); 
+        dateElement.textContent = "IT Core Network Update - " + currentDate;
+    </script>
+
+</body>
+</html>
+
+{% endblock %}

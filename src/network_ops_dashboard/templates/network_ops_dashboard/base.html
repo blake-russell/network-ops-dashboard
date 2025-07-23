@@ -1,0 +1,179 @@
+<html>
+        <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+                {% block title %}
+                        <title>
+                        {% if site_settings %}
+                                {{ site_settings.company }} - {{ site_settings.teamname }}
+                        {% else %}
+                                Company Name - Team Name
+                        {% endif %}
+                        </title>
+                {% endblock %}
+                {% load app_tags %}
+                {% load static %}
+                {% if user.is_authenticated %}
+                 {% for group in request.user.groups.all %}
+                  {% if group.name == 'themedark' %}
+		   <link rel="stylesheet" href="{% static 'css/darktheme/bootstrap.css' %}">
+                  {% endif %}
+                  {% if group.name == 'themelight' %}
+		   <link rel="stylesheet" href="{% static 'css/lighttheme/bootstrap.css' %}">
+                  {% endif %}
+                  {% if not user|has_group:"themedark" and not user|has_group:"themelight" %}
+                   <link rel="stylesheet" href="{% static 'css/lighttheme/bootstrap.css' %}">
+                  {% endif %}
+                 {% endfor %}
+                {% else %}
+		   <link rel="stylesheet" href="{% static 'css/lighttheme/bootstrap.css' %}">
+                {% endif %}
+                <link rel="stylesheet" href="{% static 'css/base.css' %}">
+                <link rel="stylesheet" href="{% static 'css/style.css' %}">
+                <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+                <script src="https://bootswatch.com/_vendor/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+                <script type="text/javascript">
+                        function getDocHeight(doc) {
+                                doc = doc || document;
+                                // stackoverflow.com/questions/1145850/
+                                var body = doc.body, html = doc.documentElement;
+                                var height = Math.max( body.scrollHeight, body.offsetHeight, 
+                                        html.clientHeight, html.scrollHeight, html.offsetHeight );
+                                return height;
+                        }
+                        function getDocWidth(doc) {
+                                doc = doc || document;
+                                // stackoverflow.com/questions/1145850/
+                                var body = doc.body, html = doc.documentElement;
+                                var width = Math.max( body.scrollWidth, body.offsetWidth,
+                                        html.clientWidth, html.scrollWidth, html.offsetWidth );
+                                return width;
+                        }
+                        function setIframeSize(id) {
+                                var ifrm = document.getElementById(id);
+                                var doc = ifrm.contentDocument? ifrm.contentDocument: 
+                                        ifrm.contentWindow.document;
+                                ifrm.style.visibility = 'hidden';
+                                ifrm.style.height = "10px"; // reset to minimal height ...
+                                ifrm.style.width = "10px"; // reset to minimal width ...
+                                // IE opt. for bing/msn needs a bit added or scrollbar appears
+                                ifrm.style.height = getDocHeight( doc ) + 4 + "px";
+                                ifrm.style.width = getDocWidth( doc ) + 4 + "px";
+                                ifrm.style.visibility = 'visible';
+                        }
+                </script>
+        </head>
+        <body>
+                <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+                <div class="container-fluid">
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                        </button>
+                <div class="collapse navbar-collapse" id="navbarColor01">
+                        <ul class="navbar-nav me-auto">
+                        {% for group in request.user.groups.all %}
+		                {% if group.name == 'net-admin' %}
+                                <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Inventory</a>
+                                <div class="dropdown-menu">
+                                <a class="dropdown-item" href="{% url 'inventory_home' %}">Device List</a>
+                                <a class="dropdown-item" href="{% url 'platform_home' %}">Platform List</a>
+                                <a class="dropdown-item" href="{% url 'site_home' %}">Site List</a>
+                                <a class="dropdown-item" href="{% url 'devicetag_home' %}">Device Tags</a>
+                                </div>
+                                </li>
+                                {% endif %}
+	                {% endfor %}
+                        {% for group in request.user.groups.all %}
+			        {% if group.name == 'net-admin' %}
+                                <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Reports</a>
+                                <div class="dropdown-menu">
+                                <a class="dropdown-item" href="{% url 'windstream' %}">Windstream</a>
+                                </div>
+                                </li>
+                                {% endif %}
+		        {% endfor %}
+                        {% for group in request.user.groups.all %}
+			        {% if group.name == 'net-admin' %}
+                                <li class="nav-item">
+                                <a class="nav-link active" href="{% url 'asavpn' %}">ASA VPN
+                                </a>
+                                </li>
+                                {% endif %}
+		        {% endfor %}
+                        {% for group in request.user.groups.all %}
+			        {% if group.name == 'net-admin' %}
+                                <li class="nav-item">
+                                <a class="nav-link active" href="{% url 'f5lb' %}">F5 LB
+                                </a>
+                                </li>
+                                {% endif %}
+		        {% endfor %}
+                        {% for group in request.user.groups.all %}
+			        {% if group.name == 'net-admin' %}
+                                <!-- <span class="visually-hidden"> -->
+                                <li class="nav-item">
+                                <a class="nav-link active" href="{% url 'apic' %}">APIC
+                                </a>
+                                </li>
+                                <!-- </span> -->
+                                {% endif %}
+		        {% endfor %}
+                        {% for group in request.user.groups.all %}
+			        {% if group.name == 'net-admin' %}
+                                <li class="nav-item">
+                                <a class="nav-link active" href="{% url 'oncall' %}">On-Call
+                                </a>
+                                </li>
+                                {% endif %}
+		        {% endfor %}
+                        </ul>
+                        <table class="tbnob">
+                        <tr class="trnob">
+                        <td class="tgrightbwnob25w">
+                                <p class="text-muted">{% for message in statusmessages %} {{ message |safe }}<br>{% endfor %}</p>
+                        </td>
+                        <td class="tgrightbvtopwnob7w">
+                                <ol class="breadcrumb">
+                                {% if user.is_authenticated %}
+                                <li class="breadcrumb-item active">Logged in as {{ user.username }}</li>
+                                <li class="breadcrumb-item"><a href="{% url 'logout' %}?next=/">Logout</a></li>
+                                <li class="breadcrumb-item "><a href="{% url 'home' %}" title="Home">Home</a></li> 
+                                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}" title="Dashboard">Dashboard</a></li>
+                                {% for group in request.user.groups.all %}
+                                        {% if group.name == 'change-pass' %}
+                                        <li class="breadcrumb-item "><a href="{% url 'change_password' %}" title="Change Password">Password</a></li>
+                                        {% endif %}
+                                        {% if group.name == 'site-admin' %}
+                                        <li class="breadcrumb-item "><a href="{% url 'admin:index' %}" title="Admin">Admin</a></li>
+                                        {% endif %}
+                                        {% if group.name == 'themedark' %}
+                                        <li class="breadcrumb-item "><a href="{% url 'themelight' %}" title="Theme Light">Light</a></li>
+                                        {% endif %}
+                                        {% if group.name == 'themelight' %}
+                                        <li class="breadcrumb-item "><a href="{% url 'themedark' %}" title="Theme Dark">Dark</a></li>
+                                        {% endif %}
+                                {% endfor %}
+                                {% if not user|has_group:"themedark" and not user|has_group:"themelight" %}
+                                        <li class="breadcrumb-item "><a href="{% url 'themedark' %}" title="Theme Dark">Dark</a></li>
+                                {% endif %}
+                                </ol>
+                                {% else %}
+                                <ol class="breadcrumb">
+                                        Please Login -
+                                        <li class="breadcrumb-item "><a href="{% url 'login' %}?next=/">Login</a></li>
+                                {% endif %}
+                                </ol>
+                        </td>
+                        </tr>
+                        </table>
+                </div>
+                </div>
+                </nav>
+
+                {% block content %}
+                {% endblock %}
+        </body>
+</html>
+

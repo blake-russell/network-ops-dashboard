@@ -1,0 +1,115 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% load widget_tweaks %}
+{% block content %}
+
+{% if site_secrets.f5lb_primary_user and site_secrets.f5lb_secondary_user and site_secrets.backLink_f5lb_vipcertrenew and site_secrets.f5lb_temp_devicecheck %}
+  <h3>F5 LB VIP Certificate Renew MOP Edit</h3>
+{% else %}
+  <div class="alert alert-dismissible alert-warning">
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <h4 class="alert-heading">Warning!</h4>
+    <p class="mb-0">No SiteSecrets.objects() entry found for: {% for key in missing_keys %}{{ key }}, {% endfor %} Go to the <a href="/admin" class="alert-link">admin</a> panel and configure.</p>
+  </div>
+  <h3>F5 LB VIP Certificate Renew MOP Edit</h3>
+{% endif %}
+
+<div style="display: flex; align-items: flex-start; gap: 20px;">
+<font align="left">
+<form method="POST" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6">
+        {% for field in form.visible_fields %}
+          <div class="form-group">
+            {{ field.label_tag }}
+              {% if form.is_bound %}
+                {% if field.errors %}
+                  {% render_field field class="form-control is-invalid" %}
+                  {% for error in field.errors %}
+                    <div class="invalid-feedback">
+                      {{ error }}
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  {% render_field field class="form-control is-valid" %}
+                {% endif %}
+              {% else %}
+                {% render_field field class="form-control" %}
+              {% endif %}
+          {% if field.help_text %}
+            <small class="form-text text-muted">{{ field.help_text }}</small>
+          {% endif %}
+          </div>
+          {% if field.name == "device" %}
+            </div><div class="col-md-12">
+              <label>&nbsp;</label><br>
+              <a href="#" id="load-config-options-link" class="btn btn-sm btn-outline-primary">🔄 Load Device Config</a>
+              <span id="load-config-status" style="margin-left: 10px;"></span>
+            </div><div class="col-md-6">
+          {% endif %}
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</form>
+</font>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $('#id_device').change(function() {
+    const deviceId = $(this).val();
+    if (!deviceId) return;
+
+    $.getJSON(`/f5lb/get_config_options/${deviceId}/`, function(data) {
+      const vsField = $('#id_virtual_server');
+      const sslField = $('#id_ssl_policy');
+
+      vsField.empty();
+      sslField.empty();
+
+      data.virtual_servers.forEach(function(item) {
+        vsField.append($('<option>', { value: item, text: item }));
+      });
+      data.ssl_policies.forEach(function(item) {
+        sslField.append($('<option>', { value: item, text: item }));
+      });
+    });
+  });
+</script>
+
+<script>
+$(document).ready(function () {
+    $('#load-config-options-link').click(function (e) {
+        e.preventDefault();
+        const deviceId = $('#id_device').val();  // Grab selected device ID
+
+        if (!deviceId) {
+            $('#load-config-status').text("❌ Please select a device first.").css('color', 'red');
+            return;
+        }
+
+        $('#load-config-status').text("🔄 Loading...").css('color', 'gray');
+
+        $.ajax({
+            url: `/f5lb/loadconfigoptions/${deviceId}/`,
+            method: 'GET',
+            success: function (response) {
+                $('#load-config-status').text("✅ Loaded successfully").css('color', 'green');
+
+                // Optional: Refresh the options after successful load
+                $('#id_device').trigger('change');  // Re-trigger change to reload dropdowns
+            },
+            error: function (xhr, status, error) {
+                $('#load-config-status').text("❌ Failed to load").css('color', 'red');
+                console.error(error);
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}
