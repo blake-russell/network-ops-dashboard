@@ -22,7 +22,6 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    url(r'^$', views.asavpn, name='asavpn'),
     url(r'^findanddiscouser$', views.asavpn_findanddiscouser, name='asavpn_findanddiscouser'),
     url(r'^findanddiscouser_log$', views.asavpn_findanddiscouser_log, name='asavpn_findanddiscouser_log'),
     url(r'^findanddiscouser_log_all$', views.asavpn_findanddiscouser_log_all, name='asavpn_findanddiscouser_log_all'),

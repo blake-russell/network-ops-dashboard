@@ -89,35 +89,53 @@
                                 <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Reports</a>
                                 <div class="dropdown-menu">
-                                <a class="dropdown-item" href="{% url 'windstream' %}">Windstream</a>
+                                <a class="dropdown-item" href="{% url 'circuitsmtc' %}">Circuit Report</a>
+                                <a class="dropdown-item" href="{% url 'changes' %}">Change Report</a>
                                 </div>
                                 </li>
                                 {% endif %}
 		        {% endfor %}
                         {% for group in request.user.groups.all %}
 			        {% if group.name == 'net-admin' %}
-                                <li class="nav-item">
-                                <a class="nav-link active" href="{% url 'asavpn' %}">ASA VPN
-                                </a>
+                                <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Notices</a>
+                                <div class="dropdown-menu">
+                                <a class="dropdown-item" href="{% url 'certexpiry' %}">Certificate Expiry</a>
+                                <a class="dropdown-item" href="{% url 'ciscoadvisory' %}">Cisco Advisory</a>
+                                <a class="dropdown-item" href="{% url 'svcactexpiry' %}">Service Account Expiry</a>
+                                
+                                </div>
                                 </li>
                                 {% endif %}
 		        {% endfor %}
                         {% for group in request.user.groups.all %}
 			        {% if group.name == 'net-admin' %}
-                                <li class="nav-item">
-                                <a class="nav-link active" href="{% url 'f5lb' %}">F5 LB
-                                </a>
+                                <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">ASA</a>
+                                <div class="dropdown-menu">
+                                <a class="dropdown-item" href="{% url 'asavpn_findanddiscouser' %}">Find VPN User</a>                     
+                                </div>
                                 </li>
                                 {% endif %}
 		        {% endfor %}
                         {% for group in request.user.groups.all %}
 			        {% if group.name == 'net-admin' %}
-                                <!-- <span class="visually-hidden"> -->
-                                <li class="nav-item">
-                                <a class="nav-link active" href="{% url 'apic' %}">APIC
-                                </a>
+                                <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">F5</a>
+                                <div class="dropdown-menu">
+                                <a class="dropdown-item" href="{% url 'f5lb_vipcertrenew' %}">VIP Cert Renew</a>                     
+                                </div>
                                 </li>
-                                <!-- </span> -->
+                                {% endif %}
+		        {% endfor %}
+                        {% for group in request.user.groups.all %}
+			        {% if group.name == 'net-admin' %}
+                                <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">APIC</a>
+                                <div class="dropdown-menu">
+                                <a class="dropdown-item" href="{% url 'apic_createinterface' %}">Create Interface</a>                     
+                                </div>
+                                </li>
                                 {% endif %}
 		        {% endfor %}
                         {% for group in request.user.groups.all %}

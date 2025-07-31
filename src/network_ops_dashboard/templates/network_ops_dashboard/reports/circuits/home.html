@@ -1,0 +1,82 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+<h3>Circuit Maintenance Report</h3>
+
+{% if circuits_exist %}
+    <a href="{% url 'circuitsmtc_update' %}">Process New Emails</a> &nbsp;&nbsp;
+    <a href="{% url 'circuit' %}">Circuits</a> &nbsp;&nbsp;
+    <a href="{% url 'circuitprovider' %}">Circuit Providers</a> &nbsp;&nbsp;
+    <a href="{% url 'circuittag' %}">Circuit Tags</a> &nbsp;&nbsp;
+    <!--<a href="#" id="toggle-column-link" class="btn btn-sm btn-outline-secondary mb-2">Hide Action Column</a>-->
+    <br>
+{% else %}
+  <div class="alert alert-dismissible alert-warning">
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <h4 class="alert-heading">Warning!</h4>
+    <p class="mb-0">No Circuit.objects() entries found to process emails. Please Configure a Provider and Circuit.</p>
+  </div>
+    <a href="{% url 'circuit' %}">Circuits</a> &nbsp;&nbsp;
+    <a href="{% url 'circuitprovider' %}">Circuit Providers</a> &nbsp;&nbsp;
+    <a href="{% url 'circuittag' %}">Circuit Tags</a> &nbsp;&nbsp;
+{% endif %}
+
+{% for circuit_provider in circuit_providers %}
+  <table class="table table-hover" id="my-table">
+    <tr>
+      <th colspan="8"><strong>{{ circuit_provider.name }}</strong></th> 
+    </tr>
+    <tr>
+      <th>Name</th>
+      <th>Circuit ID(s)</th>
+      <th>Mtc#</th>
+      <th>Status</th>
+      <th>Impact</th>
+      <th>Start Time</th>
+      <th>End Time</th> 
+    </tr>
+    {% for circuit in circuitmtcemails %}
+      {% if circuit.circuits.all.0.provider.name == circuit_provider.name %}
+      <tr class="table-light">
+        <td>{% for cktname in circuit.circuits.all %} {{ cktname.name }}<br>{% endfor %}</td>
+        <td>{% for cktid in circuit.circuits.all %} {{ cktid.cktid }}<br>{% endfor %}</td>
+        <td>{{ circuit.mtc_id }}</td>
+        <td>{{ circuit.status }}</td>
+        <td>{{ circuit.impact }}</td>
+        <td>{{ circuit.startdatetime }}</td>
+        <td>{{ circuit.enddatetime}}</td>
+        <td>
+          <a href="{% url 'circuitsmtc_archive' circuit.pk %}" onclick="return confirm('Are you sure you want to archive this?')">Archive</a>
+        </td>
+      </tr>
+      {% endif %}
+    {% endfor %}
+  </table><br>
+{% endfor %}
+
+
+<style>
+  .hidden-column {
+    display: none;
+  }
+</style>
+
+<script>
+  const toggleColumnLink = document.getElementById('toggle-column-link');
+  const targetColumn = document.querySelectorAll('#my-table th:nth-child(8), #my-table td:nth-child(8)'); // Target Column 8
+
+  toggleColumnLink.addEventListener('click', function() {
+    targetColumn.forEach(function(cell) {
+      cell.classList.toggle('hidden-column');
+    });
+
+    if (toggleColumnLink.textContent === 'Hide Action Column') {
+      toggleColumnLink.textContent = 'Show Action Column';
+    } else {
+      toggleColumnLink.textContent = 'Hide Action Column';
+    }
+  });
+</script>
+
+{% endblock %}

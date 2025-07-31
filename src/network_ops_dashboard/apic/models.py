@@ -3,7 +3,6 @@ from django.utils.translation import gettext, gettext_lazy as _
 from django.db import models
 from django.conf import settings
 from network_ops_dashboard.inventory.models import *
-from network_ops_dashboard.apic.scripts.choices import *
 
 # Create your models here.
 
@@ -24,6 +23,13 @@ class APICMopInterface(models.Model):
 class APICMopCreateInterface(models.Model):
     class Meta:
         ordering = ['name']
+    APIC_MOP_CHOICES = (
+    ("Planned", "Planned"),
+    ("Completed", "Completed"),
+    ("Cancelled", "Cancelled"),
+    ("Running", "Running"),
+    ("Closed", "Closed"),
+    )
     name = models.CharField(max_length=100, unique=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
     status = models.CharField(choices=APIC_MOP_CHOICES, default="Planned", max_length=100)

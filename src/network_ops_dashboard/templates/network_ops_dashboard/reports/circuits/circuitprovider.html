@@ -1,0 +1,28 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+<h3>Circuit Providers</h3>
+<a href="{% url 'circuitsmtc' %}"><< Back</a>&nbsp;&nbsp;
+<a href="{% url 'circuitprovider_add' %}">Add Provider</a><br>
+<table class="table table-hover">
+ <tr>
+  <th>Name</th>
+  <th>Email Folder</th>
+  <th>Function Name</th>
+  <th>Actions</th>
+ </tr>
+
+{% for provider in detaillist %}
+  <tr class="table-light">
+    <td>{{ provider.name }}</td>
+    <td>{{ provider.email_folder }}</td>
+    <td>{{ provider.function_name }}</td>
+    <td>
+      <a href="{%url 'circuitprovider_edit' provider.pk %}">Edit</a>
+    </td>
+  </tr>
+{% endfor %}
+</table>
+
+{% endblock %}

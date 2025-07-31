@@ -20,10 +20,6 @@ logger = logging.getLogger('network_ops_dashboard.f5lb')
 # Create your views here.
 
 @login_required(login_url='/accounts/login/')
-def f5lb(request):
-	return render(request, 'network_ops_dashboard/f5lb/home.html')
-
-@login_required(login_url='/accounts/login/')
 def f5lb_vipcertrenew(request):
     # SiteSecrets.objects() check
     secret_search = ['f5lb_primary_user', 'f5lb_secondary_user', 'backLink_f5lb_vipcertrenew', 'f5lb_temp_devicecheck', 'f5lb_temp_devicecheck']

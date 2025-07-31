@@ -10,6 +10,13 @@ class APICMopCreateInterfaceAddForm(forms.ModelForm):
 	class Meta:
 		model = APICMopCreateInterface
 		fields = ('name', 'status', 'device')
+	APIC_MOP_CHOICES = (
+    ("Planned", "Planned"),
+    ("Completed", "Completed"),
+    ("Cancelled", "Cancelled"),
+    ("Running", "Running"),
+    ("Closed", "Closed"),
+    )
 	name = forms.CharField(label="Name:", help_text="CRQ# (If Applicable) + a given name for MOP/VIP/Change. (No Spaces!).", required=True)
 	status = forms.ChoiceField(label="Status:", choices=APIC_MOP_CHOICES, required=True)
 	device = forms.ModelChoiceField(label="Device:", queryset=Inventory.objects.filter(device_tag__name__exact='APIC'), required=True)
@@ -20,6 +27,13 @@ class APICMopCreateInterfaceEditForm(forms.ModelForm):
 	class Meta:
 		model = APICMopCreateInterface
 		fields = ('name', 'status', 'device', 'interfaces')
+	APIC_MOP_CHOICES = (
+    ("Planned", "Planned"),
+    ("Completed", "Completed"),
+    ("Cancelled", "Cancelled"),
+    ("Running", "Running"),
+    ("Closed", "Closed"),
+    )
 	name = forms.CharField(label="Name:", help_text="CRQ# (If Applicable) + a given name for MOP/VIP/Change. (No Spaces!).", required=True)
 	status = forms.ChoiceField(label="Status:", choices=APIC_MOP_CHOICES, required=True)
 	device = forms.ModelChoiceField(label="Device:", queryset=Inventory.objects.filter(device_tag__name__exact='APIC'), required=True)

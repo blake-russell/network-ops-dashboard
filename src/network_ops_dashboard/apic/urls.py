@@ -22,7 +22,6 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    url(r'^$', views.apic, name='apic'),
     url(r'^createinterface/$', views.apic_createinterface, name='apic_createinterface'),
     url(r'^createinterface/add/$', views.apic_createinterface_add, name='apic_createinterface_add'),
     url(r'^createinterface/edit/(?P<pk>[0-9]{1,10})/$', views.apic_createinterface_edit, name='apic_createinterface_edit'),

@@ -9,6 +9,7 @@ media/f5lb/
 media/images/logo.png
 protected_media/f5lb/
 pyvenv.cfg
+static/admin/
 test/
 uwsgi.ini
 

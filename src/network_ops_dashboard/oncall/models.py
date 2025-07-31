@@ -18,6 +18,7 @@ class OnCallIncident(models.Model):
     date_closed = models.DateField(null=True, blank=True)
     user_created = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='created_incidents', null=True)
     user_modified = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='modified_incidents', null=True, blank=True)
+    user_closed = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='closed_incidents', null=True, blank=True)
     headline = models.TextField()
     log = models.TextField()
 

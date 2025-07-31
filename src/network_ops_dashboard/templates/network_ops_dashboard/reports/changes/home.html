@@ -1,0 +1,67 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+<h3>Schedule Changes Report</h3>
+
+{% if site_secrets.changes_folder and site_secrets.changes_extract_folder and site_secrets.changes_column_map and site_secrets.changes_valid_locations %}
+    <a href="{% url 'changes_update' %}">Process New Emails</a>&nbsp; <a href="#" id="toggle-column-link" class="btn btn-sm btn-outline-secondary mb-2">Show Metadata</a><br>
+{% else %}
+    <div class="alert alert-dismissible alert-warning">
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <h4 class="alert-heading">Warning!</h4>
+    <p class="mb-0">No SiteSecrets.objects() entry found for {% for key in missing_keys %}{{ key }}, {% endfor %}. Go to the <a href="/admin" class="alert-link">admin</a> panel and configure.</p>
+  </div>
+{% endif %}
+<table class="table table-hover" id="my-table">
+ <tr>
+  <th>Change ID</th>
+  <th>Location</th>
+  <th>Team</th>
+  <th>Group</th>
+  <th>Class</th>
+  <th>Start Time</th>
+  <th>End Time</th>
+  <th>Summary</th>
+  <th class="hidden-column">Metadata</th>
+ </tr>
+
+{% for change in changes %}
+  <tr class="table-light">
+    <td>{{ change.change_id }}</td>
+    <td style="word-wrap; break-word; white-space: normal;">{{ change.location }}</td>
+    <td style="word-wrap; break-word; white-space: normal;">{{ change.team_name }}</td>
+    <td>{{ change.group }}</td>
+    <td>{{ change.class_type }}</td>
+    <td>{{ change.scheduled_start }}</td>
+    <td>{{ change.scheduled_end }}</td>
+    <td>{{ change.summary }}</td>
+    <td class="hidden-column">{% for key, value in change.metadata.items %} {{ key }}:{{ value }}, {% endfor %}</td>
+  </tr>
+{% endfor %}
+</table>
+
+<style>
+  .hidden-column {
+    display: none;
+  }
+</style>
+
+<script>
+  const toggleColumnLink = document.getElementById('toggle-column-link');
+  const table = document.getElementById('my-table');
+  const headerCells = table.querySelectorAll('th:nth-child(9)');
+  const dataCells = table.querySelectorAll('td:nth-child(9)');
+
+  toggleColumnLink.addEventListener('click', function () {
+    const isHidden = headerCells[0].classList.contains('hidden-column');
+
+    headerCells.forEach(cell => cell.classList.toggle('hidden-column'));
+    dataCells.forEach(cell => cell.classList.toggle('hidden-column'));
+
+    toggleColumnLink.textContent = isHidden ? 'Hide Metadata' : 'Show Metadata';
+  });
+</script>
+
+{% endblock %}
+

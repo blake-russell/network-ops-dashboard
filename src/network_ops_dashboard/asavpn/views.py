@@ -16,10 +16,6 @@ logger = logging.getLogger('network_ops_dashboard.asavpn')
 # Create your views here.
 
 @login_required(login_url='/accounts/login/')
-def asavpn(request):
-	return render(request, 'network_ops_dashboard/asavpn/home.html')
-
-@login_required(login_url='/accounts/login/')
 def asavpn_findanddiscouser(request):
     site_secrets = SiteSecrets.objects.filter(varname='asavpn_primary_user')
     if request.method == 'POST':

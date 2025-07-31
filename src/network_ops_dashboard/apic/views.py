@@ -21,10 +21,6 @@ logger = logging.getLogger('network_ops_dashboard.apic')
 # Create your views here.
 
 @login_required(login_url='/accounts/login/')
-def apic(request):
-	return render(request, 'network_ops_dashboard/apic/home.html')
-
-@login_required(login_url='/accounts/login/')
 def apic_createinterface(request):
     # SiteSecrets.objects() check
     secret_search = ['apic_primary_user', 'apic_secondary_user', 'backLink_apic_createinterface', 'apic_lab_device_1', 'apic_lab_device_2']

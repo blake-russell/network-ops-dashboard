@@ -10,4 +10,5 @@ from network_ops_dashboard.asavpn.scripts.showvpnconnected import *
 
 logger = logging.getLogger('network_ops_dashboard.asavpn')
 
+# Grab VPN connected stats (In seperate cron folder to trigger at different time.)
 showVPNconnected()

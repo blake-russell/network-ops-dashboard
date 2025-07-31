@@ -12,16 +12,112 @@
   </div>
 {% endif %}
 
+<div class="container-fluid mt-4">
+  <div class="row">
+    <!-- Card 1 -->
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
 
-<div class="card border-primary mb-3" style="max-width: 25rem;">
-  <div class="card-header">Current VPN Stats (5m interval)</div>
-  <div class="card-body">
-    <!-- <h4 class="card-title">Current VPN Stats (5m)</h4> -->
-    {% for asa in detaillist1 %}
-      <p class="card-text"><b>{{ asa.name }}</b> - Users: {{ asa.connected }} - Load: {{ asa.load }}</p>
-    {% endfor %}
+        <div class="card-header text-center">
+          <strong>Notifications</strong>
+        </div>
+
+        <div class="card-body">
+          <table class="table table-borderless mb-0">
+              <strong>Service Account Password Expiry</strong>
+            <tbody>
+              {% for svc_act in new_svcacts %}
+              <tr>
+                <td><b>{{ svc_act.svc_act }}</b></td>
+                <td class="text-right"><small class="text-muted">{{ svc_act.expire_date }}</small></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table><br>
+
+          <table class="table table-borderless mb-0">
+              <strong>Certificate Expiry</strong>
+            <tbody>
+              {% for certs in new_certalerts %}
+              <tr>
+                <td><b>{{ certs.common_name }}</b></td>
+                <td class="text-right"><small class="text-muted">{{ certs.expire_date }}</small></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table><br>
+
+          <table class="table table-borderless mb-0">
+              <strong>Cisco Field Advisory</strong>
+            <tbody>
+              {% for advisory in new_ciscoadvisory %}
+              <tr>
+                <td><a href="{{ advisory.url }}" target="_new"><b>{{ advisory.title_short }}</a></b></td>
+                <td class="text-right"><small class="text-muted">{{ advisory.impact_rating }}</small></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table><br>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2 -->
+        <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        
+        <div class="card-header text-center">
+          <strong>VPN Stats (5m interval)</strong>
+        </div>
+
+        <div class="card-body">
+          <table class="table table-borderless mb-0">
+            <tbody>
+              <tr>
+                <td>Device</b></td>
+                <td class="text-right"><small class="text-muted">Users</small></td>
+                <td class="text-right"><small class="text-muted">Load</small></td>
+              </tr>
+              {% for asa in asastats %}
+              <tr>
+                <td>{{ asa.name }}</b></td>
+                <td class="text-right"><small class="text-muted">{{ asa.connected }}</small></td>
+                <td class="text-right"><small class="text-muted">{{ asa.load }}</small></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table><br>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        <div class="card-header">
+          <strong>Recent Site Changes</strong>
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled mb-0">
+            {% for change in site_changes %}
+            <div data-toggle="tooltip" data-placement="top" title="{{ change.comment }}">
+               <li>{{ change.icon}}{{ change.comment_title }}</li>
+            </div>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
+  
 </div>
 
+<script>
+  $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+  });
+</script>
 
 {% endblock %}

@@ -10,7 +10,10 @@ from network_ops_dashboard import settings
 from network_ops_dashboard.decorators import *
 from network_ops_dashboard.models import *
 from network_ops_dashboard.inventory.models import *
-from network_ops_dashboard.reports.windstream.models import *
+from network_ops_dashboard.reports.circuits.models import *
+from network_ops_dashboard.notices.certexpiry.models import *
+from network_ops_dashboard.notices.ciscoadvisory.models import *
+from network_ops_dashboard.notices.svcactexpiry.models import *
 from network_ops_dashboard.oncall.models import *
 from network_ops_dashboard.oncall.forms import *
 
@@ -21,23 +24,31 @@ logger = logging.getLogger('network_ops_dashboard.oncall')
 @login_required(login_url='/accounts/login/')
 def oncall(request):
     open_incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
-    wsmtc = WindstreamMtcEmail.objects.filter(Q(status='Planned') | Q(status='Updated') | Q(status='Emergency') | \
-                                              Q(status='Demand') | Q(status='Postponed') | Q(status='Cancelled') | \
-                                                Q(status='Completed')).order_by('startdatetime')
-    return render(request, 'network_ops_dashboard/oncall/home.html', {'incidents': open_incidents, 'wsmtc': wsmtc})
+    circuitmtcemails = CircuitMtcEmail.objects.filter(Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') | \
+                                                    Q(status='Updated') | Q(status='Demand') | Q(status='Emergency')).order_by('startdatetime')
+    circuit_providers = CircuitProvider.objects.all()
+    certs = CertExpiry.objects.filter(Q(status='Open')).order_by('expire_date')
+    advisories = CiscoAdvisory.objects.filter(Q(status='Open')).order_by('date')
+    svc_acts = SvcActExpiry.objects.filter(Q(status='Open')).order_by('expire_date')
+    return render(request, 'network_ops_dashboard/oncall/home.html', {'incidents': open_incidents, 'circuitmtcemails': circuitmtcemails, 'certs': certs, 'advisories': advisories, \
+                                                                      'circuit_providers': circuit_providers, 'svc_acts': svc_acts })
 
 @login_required(login_url='/accounts/login/')
 def oncall_incident_log(request):
     closed_incidents = OnCallIncident.objects.filter(status="Closed").order_by('-date_created')
-    return render(request, 'network_ops_dashboard/oncall/incident_log.html', {'incidents': closed_incidents})
+    return render(request, 'network_ops_dashboard/oncall/incident_log.html', {'incidents': closed_incidents })
 
 @login_required(login_url='/accounts/login/')
 def oncall_incident_print(request):
     open_incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
-    wsmtc = WindstreamMtcEmail.objects.filter(Q(status='Planned') | Q(status='Updated') | Q(status='Emergency') | \
-                                              Q(status='Demand') | Q(status='Postponed') | Q(status='Cancelled') | \
-                                                Q(status='Completed')).order_by('startdatetime')
-    return render(request, 'network_ops_dashboard/oncall/incident_print.html', {'incidents': open_incidents, 'wsmtc': wsmtc})
+    circuitmtcemails = CircuitMtcEmail.objects.filter(Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') | \
+                                                    Q(status='Updated') | Q(status='Demand') | Q(status='Emergency')).order_by('startdatetime')
+    circuit_providers = CircuitProvider.objects.all()
+    certs = CertExpiry.objects.filter(Q(status='Open')).order_by('expire_date')
+    advisories = CiscoAdvisory.objects.filter(Q(status='Open')).order_by('date')
+    svc_acts = SvcActExpiry.objects.filter(Q(status='Open')).order_by('expire_date')
+    return render(request, 'network_ops_dashboard/oncall/incident_print.html', {'incidents': open_incidents, 'circuitmtcemails': circuitmtcemails, 'certs': certs, 'advisories': advisories, \
+                                                                      'circuit_providers': circuit_providers, 'svc_acts': svc_acts })
 
 @require_POST
 @login_required(login_url='/accounts/login/')
@@ -55,6 +66,7 @@ def oncall_close_incident(request, incident_id):
         incident.status = 'Closed'
         incident.date_closed = timezone.now()
         incident.user_modified = request.user
+        incident.user_closed = request.user
         incident.save()
     return redirect('oncall')
 

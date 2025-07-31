@@ -22,7 +22,6 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    url(r'^$', views.f5lb, name='f5lb'),
     url(r'^vipcertrenew/$', views.f5lb_vipcertrenew, name='f5lb_vipcertrenew'),
     url(r'^vipcertrenew/add/$', views.f5lb_vipcertrenew_add, name='f5lb_vipcertrenew_add'),
     url(r'^vipcertrenew/edit/(?P<pk>[0-9]{1,10})/$', views.f5lb_vipcertrenew_edit, name='f5lb_vipcertrenew_edit'),

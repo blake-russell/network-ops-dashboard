@@ -5,15 +5,18 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login, authenticate, get_user_model, update_session_auth_hash
 from django.http import HttpResponseRedirect, HttpResponse
 from django.db.models import Q
+from django.utils import timezone
+from datetime import timedelta
 #from django_xhtml2pdf.utils import generate_pdf, pdf_decorator
 import logging
 from network_ops_dashboard import settings
 from network_ops_dashboard.decorators import *
 from network_ops_dashboard.models import *
 from network_ops_dashboard.asavpn.models import AsaVpnConnectedUsers
+from network_ops_dashboard.notices.svcactexpiry.models import SvcActExpiry
+from network_ops_dashboard.notices.ciscoadvisory.models import CiscoAdvisory
+from network_ops_dashboard.notices.certexpiry.models import CertExpiry
 from network_ops_dashboard.forms import *
-from network_ops_dashboard.scripts import *
-
 
 logger = logging.getLogger('network_ops_dashboard')
 
@@ -68,17 +71,24 @@ def dashboard(request):
     statusmessages = []
     if not User.objects.all():
         statusmessages.append('- No users exist. Create superuser in shell: "python manage.py createsuperuser"')
-    asa_stats = AsaVpnConnectedUsers.objects.all().order_by('name')
     site_settings = SiteSettings.objects.first()
-    detaillist1 = []
+    asa_stats = AsaVpnConnectedUsers.objects.all().order_by('name')
+    timecutoff = timezone.now() - timedelta(days=7)
+    new_svcacts = SvcActExpiry.objects.filter(created_at__gte=timecutoff)
+    new_certalerts = CertExpiry.objects.filter(created_at__gte=timecutoff)
+    new_ciscoadvisory = CiscoAdvisory.objects.filter(created_at__gte=timecutoff)
+    site_changes = SiteChanges.objects.order_by('-created_at')[:10]
+    asastats = []
     for asa in asa_stats:
         detaildict = {
             'name' : asa.name,
             'connected' : asa.connected,
             'load' : asa.load,
             }
-        detaillist1.append(detaildict)
-    return render(request, 'network_ops_dashboard/dashboard.html', {'statusmessages': statusmessages, 'detaillist1': detaillist1, 'site_settings': site_settings})
+        asastats.append(detaildict)
+    return render(request, 'network_ops_dashboard/dashboard.html', {'statusmessages': statusmessages, 'asastats': asastats, 'site_settings': site_settings, \
+                                                                    'new_svcacts': new_svcacts, 'new_certalerts': new_certalerts, 'new_ciscoadvisory': new_ciscoadvisory, \
+                                                                    'site_changes': site_changes })
 
 def public_scripts(request):
     site_settings = SiteSettings.objects.first()

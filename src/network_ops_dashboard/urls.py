@@ -41,5 +41,9 @@ urlpatterns += [
     url(r'^asavpn/', include('network_ops_dashboard.asavpn.urls')),
     url(r'^apic/', include('network_ops_dashboard.apic.urls')),
     url(r'^oncall/', include('network_ops_dashboard.oncall.urls')),
-    url(r'^reports/windstream/', include('network_ops_dashboard.reports.windstream.urls')),
+    url(r'^reports/changes/', include('network_ops_dashboard.reports.changes.urls')),
+    url(r'^reports/circuits/', include('network_ops_dashboard.reports.circuits.urls')),
+    url(r'^notices/certexpiry/', include('network_ops_dashboard.notices.certexpiry.urls')),
+    url(r'^notices/ciscoadvisory/', include('network_ops_dashboard.notices.ciscoadvisory.urls')),
+    url(r'^notices/svcactexpiry/', include('network_ops_dashboard.notices.svcactexpiry.urls')),
 ]

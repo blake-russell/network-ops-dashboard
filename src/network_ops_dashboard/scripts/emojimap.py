@@ -1,0 +1,18 @@
+EMOJI_MAP = {
+    "config": "⚙️",
+    "backend": "🖥️",
+    "cert": "🔐",
+    "vpn": "🌐",
+    "maintenance": "🛠️",
+    "deployment": "🚀",
+    "outage": "🔴",
+    "resolved": "✅",
+    "firewall": "🔥",
+    "network": "📡",
+    "backup": "💾",
+    "monitoring": "📈",
+    "storage": "🗄️",
+    "useraccess": "👤",
+    "database": "🗃️",
+    "automation": "🤖",
+}

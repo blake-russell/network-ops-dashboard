@@ -5,7 +5,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>IT Core Network On-Call Incident Backlog</title>
+  {% block title %}
+    {% if site_settings %}
+      <title>{{ site_settings.teamname }} On-Call Incident Backlog</title>
+    {% else %}
+      <title>Company Name - On-Call Incident Backlog</title>
+    {% endif %}
+  {% endblock %}
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <style>
     .edit-mode textarea { width: 100%; }
@@ -15,10 +21,6 @@
       width: 50%;
       height: 200px;
       resize: veritical;
-      font-family: Calibri, sans-serif;
-      font-size: 11pt;
-    }
-    body {
       font-family: Calibri, sans-serif;
       font-size: 11pt;
     }
@@ -49,7 +51,11 @@
 </head>
 <body>
 
-<h1>IT Core Network On-Call Incident Backlog</h1>
+{% if site_settings %}
+      <h3>{{ site_settings.teamname }} On-Call Incident Backlog</h3>
+{% else %}
+      <h3>Team Name On-Call Incident Backlog</h3>
+{% endif %}
 <button onclick="togglePrintMode()" class="hide-on-print">🖨️ Print/Copy Mode</button> &nbsp;
 <a href="{% url 'oncall' %}" class="btn btn-outline-secondary btn-sm hide-on-print">Back</a> &nbsp;
 <hr>
@@ -57,11 +63,11 @@
 <div id="incident-container">
   {% for incident in incidents %}
     <div class="incident" data-id="{{ incident.id }}">
-      <strong class="hide-on-print">Created By: {{ incident.user_created }} &nbsp; Modified By: {{ incident.user_modified }}</strong> <br>
-      <strong class="hide-on-print">Closed Date: {{ incident.date_closed}}</strong> <br>
-      <strong><font color='red'>Issue Date:</font></strong> {{ incident.date_created }} <br>
-      <strong><font color='red'>Issue Title:</font></strong> {{ incident.headline }} <br>
-      <strong><font color='red'>Status:</font></strong> {{ incident.status }} <br>
+      <strong class="hide-on-print">Created By: {{ incident.user_created.first_name }} {{ incident.user_created.last_name }} </strong> <br>
+      <strong class="hide-on-print">Closed Date: {{ incident.date_closed}}&nbsp; Closed By: {{ incident.user_closed.first_name }} {{ incident.user_closed.last_name }}</strong> <br>
+      <strong><font color='red'>Issue Date:</font></strong> <strong> {{ incident.date_created }} </strong><br>
+      <strong><font color='red'>Issue Title:</font></strong> <strong> {{ incident.headline }} </strong><br>
+      <strong><font color='red'>Status:</font></strong> <strong> {{ incident.status }} </strong><br>
       <div class="log-content">
         <pre>{{ incident.log }}</pre>
         <textarea class="edit-log hide-on-print" style="display:none;">{{ incident.log }}</textarea>

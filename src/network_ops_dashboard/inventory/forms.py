@@ -39,7 +39,7 @@ class SiteForm(forms.ModelForm):
 	class Meta:
 		model = Site
 		fields = ('name', 'address', 'city', 'zip', 'state', 'poc_name', 'poc_number')
-	name = forms.CharField(label="Site Name:", help_text="ie: Schaumburg NDC", required=True)
+	name = forms.CharField(label="Site Name:", help_text="ie: Dallas DC", required=True)
 	address = forms.CharField(label="Steet Address:", required=False)
 	city = forms.CharField(label="City:", required=False)
 	state = forms.CharField(label="State:", required=False)

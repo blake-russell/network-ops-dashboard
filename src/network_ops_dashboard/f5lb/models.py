@@ -7,7 +7,6 @@ from django.db import models
 from django.conf import settings
 from network_ops_dashboard.settings import PROTECTED_MEDIA_ROOT
 from network_ops_dashboard.inventory.models import *
-from network_ops_dashboard.f5lb.scripts.choices import *
 
 # Create your models here.
 
@@ -20,6 +19,13 @@ class F5LBMopVipCertRenew(models.Model):
     def cert_key_file_path(instance, filename):
         # file will be uploaded to PROTECTED_MEDIA_ROOT/f5lb/f5lb_mop_vipcertrenew/<name>/<filename>
         return f'f5lb/mop_vipcertrenew/{instance.name}/{filename}'
+    F5LB_MOP_CHOICES = (
+    ("Planned", "Planned"),
+    ("Completed", "Completed"),
+    ("Cancelled", "Cancelled"),
+    ("Running", "Running"),
+    ("Closed", "Closed"),
+    )
     name = models.CharField(max_length=100, unique=True)
     status = models.CharField(choices=F5LB_MOP_CHOICES, default="Planned", max_length=100)
     device = models.ForeignKey(Inventory, null=True, on_delete=models.SET_NULL, blank=True)

@@ -1,0 +1,41 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+<h3>Certificate Expiry Notices</h3>
+
+{% if cert_providers %}
+  <a href="{% url 'certexpiry_update' %}">Process New Emails</a>&nbsp;&nbsp;&nbsp;<a href="{% url 'certexpiry_provider' %}">Certificate Providers</a><br>
+{% else %}
+  <div class="alert alert-dismissible alert-warning">
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <h4 class="alert-heading">Warning!</h4>
+    <p class="mb-0">No certificate providers or folders are configured in <strong>CertProvider</strong>. 
+    Please add at least one entry to begin processing. Go to the <a href="/admin" class="alert-link">admin</a> panel and configure.</p>
+  </div>
+  <a href="{% url 'certexpiry_provider' %}">Certificate Providers</a><br>
+{% endif %}
+<table class="table table-hover" id="my-table">
+ <tr>
+  <th>Provider</th>
+  <th>Certificate Name</th>
+  <th>Common Name</th>
+  <th>Expiration Date</th>
+  <th>Action</th>
+ </tr>
+
+{% for cert in certs %}
+  <tr class="table-light">
+    <td>{{ cert.provider }}</td>
+    <td>{{ cert.cert_name }}</td>
+    <td>{{ cert.common_name }}</td>
+    <td>{{ cert.expire_date }}</td>
+    <td>
+      <a href="{% url 'certexpiry_archive' cert.pk %}" onclick="return confirm('Are you sure you want to archive this?')">Archive</a>
+    </td>
+  </tr>
+{% endfor %}
+</table>
+
+{% endblock %}
+

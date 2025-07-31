@@ -1,0 +1,36 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+<h3>Service Account Expiration Notices</h3>
+
+{% if site_secrets %}
+    <a href="{% url 'svcactexpiry_update' %}">Process New Emails</a><br>
+{% else %}
+  <div class="alert alert-dismissible alert-warning">
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <h4 class="alert-heading">Warning!</h4>
+    <p class="mb-0">No service account expiry folders are configured in <strong>SiteSecrets</strong>. 
+    Please add at least one entry like <code>svcactexpiry_folder</code> to begin processing.
+    Go to the <a href="/admin" class="alert-link">admin</a> panel and configure.</p>
+  </div>
+{% endif %}
+<table class="table table-hover" id="my-table">
+ <tr>
+  <th>Service Account</th>
+  <th>Date</th>
+  <th>Action</th>
+ </tr>
+
+{% for svc_act in svc_acts %}
+  <tr class="table-light">
+    <td>{{ svc_act.svc_act }}</td>
+    <td>{{ svc_act.expire_date }}</td>
+    <td>
+      <a href="{% url 'svcactexpiry_archive' svc_act.pk %}" onclick="return confirm('Are you sure you want to archive this?')">Archive</a>
+    </td>
+  </tr>
+{% endfor %}
+</table>
+
+{% endblock %}

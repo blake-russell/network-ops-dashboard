@@ -1,4 +1,4 @@
-"""windstream URL Configuration
+"""certexpiry URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/3.2/topics/http/urls/
@@ -22,7 +22,10 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    url(r'^$', views.windstream, name='windstream'),
-    url(r'^update/$', views.windstream_update, name='windstream_update'),
-    url(r'^archive/(?P<pk>[0-9]{1,10})/$', views.windstream_archive, name='windstream_archive'),
+    url(r'^$', views.certexpiry, name='certexpiry'),
+    url(r'^update/$', views.certexpiry_update, name='certexpiry_update'),
+    url(r'^archive/(?P<pk>[0-9]{1,10})/$', views.certexpiry_archive, name='certexpiry_archive'),
+    url(r'^provider/$', views.certexpiry_provider, name='certexpiry_provider'),
+    url(r'^provider/add/$', views.certexpiry_provider_add, name='certexpiry_provider_add'),
+    url(r'^provider/edit/(?P<pk>[0-9]{1,10})/$', views.certexpiry_provider_edit, name='certexpiry_provider_edit'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -5,7 +5,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>IT Core Network On-Call Report</title>
+  {% block title %}
+    {% if site_settings %}
+      <title>{{ site_settings.teamname }} On-Call Report</title>
+    {% else %}
+      <title>Company Name - On-Call Report</title>
+    {% endif %}
+  {% endblock %}
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <style>
     .edit-mode textarea { width: 100%; }
@@ -56,8 +62,8 @@
 <div id="incident-print-section">
   {% for incident in incidents %}
     <div class="incident" data-id="{{ incident.id }}">
-      <strong class="hide-on-print">Created By: {{ incident.user_created }}</strong><br>
-      <strong class="hide-on-print"><b>Modified By:</b> {{ incident.user_modified }}</strong> <br>
+      <strong class="hide-on-print">Created By: {{ incident.user_created.first_name }} {{ incident.user_created.last_name }}</strong><br>
+      <strong class="hide-on-print"><b>Modified By:</b> {{ incident.user_modified.first_name }} {{ incident.user_modified.last_name }}</strong> <br>
       <strong style="color:red;">Issue Date:</strong> <strong> {{ incident.date_created }} </strong><br>
       <strong style="color:red;">Issue Title:</strong> <strong> {{ incident.headline }} </strong><br>
       <strong style="color:red;">Status:</strong> <strong> {{ incident.status }} </strong><br>
@@ -74,33 +80,85 @@
       <hr>
     </div>
   {% endfor %}
-    <h5><u>Scheduled Maintenance</u></h6>
-    <h6>Windstream</h6>
+    <h5><u>Scheduled Maintenance</u></h5>
+    {% for circuit_provider in circuit_providers %}
+    <h6>{{ circuit_provider.name }}</h6>
       <table class="table table-hover" id="my-table">
         <tr>
-          <th>Circuit</th>
+          <th>Name</th>
           <th>Circuit ID(s)</th>
-          <th>WMT#</th>
+          <th>Mtc#</th>
           <th>Status</th>
           <th>Impact</th>
           <th>Start Time</th>
-          <th>End Time</th>
+          <th>End Time</th> 
         </tr>
-        {% for mop in wsmtc %}
+        {% for circuit in circuitmtcemails %}
+          {% if circuit.circuits.all.0.provider.name == circuit_provider.name %}
+          <tr class="table-light">
+            <td>{% for cktname in circuit.circuits.all %} {{ cktname.name }}<br>{% endfor %}</td>
+            <td>{% for cktid in circuit.circuits.all %} {{ cktid.cktid }}<br>{% endfor %}</td>
+            <td>{{ circuit.mtc_id }}</td>
+            <td>{{ circuit.status }}</td>
+            <td>{{ circuit.impact }}</td>
+            <td>{{ circuit.startdatetime }}</td>
+            <td>{{ circuit.enddatetime}}</td>
+          </tr>
+          {% endif %}
+        {% endfor %}
+      </table><br>
+    {% endfor %}
+
+    <h5><u>Field Notices</u></h5>
+      <table class="table table-hover" id="my-table">
+        <tr>
+          <th>Title</th>
+          <th>Impact Rating Name</th>
+          <th>Description</th>
+          <th>Date</th>
+        </tr>
+        {% for advisory in advisories %}
         <tr class="table-light">
-          <td>{% for cktname in mop.cktid.all %} {{ cktname.name }}<br>{% endfor %}</td>
-          <td>{% for cktid in mop.cktid.all %} {{ cktid.cktid }}<br>{% endfor %}</td>
-          <td>{{ mop.wmt }}</td>
-          <td>{{ mop.status }}</td>
-          <td>{{ mop.impact }}</td>
-          <td>{{ mop.startdatetime }}</td>
-          <td>{{ mop.enddatetime }}</td>
+          <td><a href="{{ advisory.url }}" target="_new">{{ advisory.title_short }}</a></td>
+          <td>{{ advisory.impact_rating }}</td> 
+          <td style="word-wrap; break-word; white-space: normal;">{{ advisory.description }}</td>
+          <td>{{ advisory.date }}</td>
+        </tr> 
+        {% endfor %}
+      </table>
+
+    <br><h6><u>Certificate Expirations</u></h6>
+      <table class="table table-hover" id="my-table">
+        <tr>
+          <th>Provider</th>
+          <th>Certificate Name</th>
+          <th>Common Name</th>
+          <th>Expiration Date</th>
+        </tr>
+        {% for cert in certs %}
+        <tr class="table-light">
+          <td>{{ cert.provider }}</td>
+          <td>{{ cert.cert_name }}</td>
+          <td>{{ cert.common_name }}</td>
+          <td>{{ cert.expire_date }}</td>
         </tr>
         {% endfor %}
       </table>
-    <br><h6>Cogent</h6>
-    <br><h5><u>Field Notices</u></h5>
-    <br><h5><u>Expiry Notifications</u></h5>
+
+    <br><h6><u>Service Account Expirations</u></h6>
+      <table class="table table-hover" id="my-table">
+        <tr>
+          <th>Service Account</th>
+          <th>Date</th>
+        </tr>
+        {% for svc_act in svc_acts %}
+        <tr class="table-light">
+          <td>{{ svc_act.svc_act }}</td>
+          <td>{{ svc_act.expire_date }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+
 </div>
 
 <script>
@@ -131,11 +189,20 @@ $(document).ready(function() {
 });
 </script>
 
-<script>
-  const dateElement = document.getElementById("currentDate");
-  const currentDate = new Date().toLocaleDateString(); 
-  dateElement.textContent = "IT Core Network Update - " + currentDate;
-</script>
+{% if site_settings %}
+  <script>
+    const dateElement = document.getElementById("currentDate");
+    const currentDate = new Date().toLocaleDateString(); 
+    dateElement.textContent = "{{ site_settings.teamname }} Update - " + currentDate;
+  </script>
+{% else %}
+  <script>
+    const dateElement = document.getElementById("currentDate");
+    const currentDate = new Date().toLocaleDateString(); 
+    dateElement.textContent = "Team Name Update - " + currentDate;
+  </script>
+{% endif %}
+
 
 
 <script>
@@ -143,7 +210,6 @@ $(document).ready(function() {
     window.location.href = "{% url 'oncall_incident_print' %}";
   }
 </script>
-
 
 </body>
 </html>

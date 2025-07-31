@@ -78,6 +78,7 @@ nano src/network_ops_dashboard/secrets.py
 pip install -r requirements.txt
 
 # Database migrations
+python src/manage.py collectstatic
 python src/manage.py migrate
 
 # Create admin user

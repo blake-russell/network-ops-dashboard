@@ -1,0 +1,40 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+<h3>Cisco Advisory Notifications</h3>
+
+{% if site_secrets %}
+    <a href="{% url 'ciscoadvisory_update' %}">Process New Emails</a><br>
+{% else %}
+  <div class="alert alert-dismissible alert-warning">
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <h4 class="alert-heading">Warning!</h4>
+    <p class="mb-0">No cisco advisory folders are configured in <strong>SiteSecrets</strong>. 
+    Please add at least one entry like <code>ciscoadvisory_folder</code> to begin processing.
+    Go to the <a href="/admin" class="alert-link">admin</a> panel and configure.</p>
+  </div>
+{% endif %}
+<table class="table table-hover" id="my-table">
+ <tr>
+  <th>Title</th>
+  <th>Impact Rating Name</th>
+  <th>Description</th>
+  <th>Date</th>
+  <th>Action</th>
+ </tr>
+
+{% for advisory in advisories %}
+  <tr class="table-light">
+    <td><a href="{{ advisory.url }}" target="_new">{{ advisory.title_short }}</a></td>
+    <td>{{ advisory.impact_rating }}</td> 
+    <td style="word-wrap; break-word; white-space: normal;">{{ advisory.description }}</td>
+    <td>{{ advisory.date }}</td>
+    <td>
+      <a href="{% url 'ciscoadvisory_archive' advisory.pk %}" onclick="return confirm('Are you sure you want to archive this?')">Archive</a>
+    </td>
+  </tr>
+{% endfor %}
+</table>
+
+{% endblock %}

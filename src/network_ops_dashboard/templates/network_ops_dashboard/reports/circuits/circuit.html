@@ -1,0 +1,30 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+<h3>Circuits</h3>
+<a href="{% url 'circuitsmtc' %}"><< Back</a>&nbsp;&nbsp;
+<a href="{% url 'circuit_add' %}">Add Circuit</a><br>
+<table class="table table-hover">
+ <tr>
+  <th>Name</th>
+  <th>Circuit ID/#</th>
+  <th>Provider</th>
+  <th>Tag(s)</th>
+  <th>Actions</th>
+ </tr>
+
+{% for circuit in detaillist %}
+  <tr class="table-light">
+    <td>{{ circuit.name }}</td>
+    <td>{{ circuit.cktid }}</td>
+    <td>{{ circuit.provider }}</td>
+    <td>{% for tag in circuit.tag.all %} {{ tag.name }}<br>{% endfor %}</td>
+    <td>
+      <a href="{%url 'circuit_edit' circuit.pk %}">Edit</a>
+    </td>
+  </tr>
+{% endfor %}
+</table>
+
+{% endblock %}
