@@ -1,0 +1,27 @@
+# Dockerfile.ci
+FROM centos:7
+
+# Install Python 3.8
+RUN yum install -y epel-release && \
+    yum install -y python38 python38-pip && \
+    yum clean all
+
+# Set Python 3.8 as default
+RUN ln -s /usr/bin/python3.8 /usr/bin/python && \
+    ln -s /usr/bin/pip3.8 /usr/bin/pip
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+#Copy app
+COPY . .
+
+# Set environment variable for Django
+ENV DJANGO_SETTINGS_MODULE=network_ops_dashboard.settings
+ENV PYTHONUNBUFFERED=1
+
+# Run tests (can override in Github Actions if needed)
+CMD ["pytest src"]

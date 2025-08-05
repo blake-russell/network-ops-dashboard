@@ -1,0 +1,33 @@
+name: CI Workflow CentOS 7 Docker
+
+on:
+  push:
+    branches: "**"
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Set up Python for formatting/linting
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+
+    - name: Lint with flake8 (outside of container)
+      run: |
+        pip install flake8
+        flake8 src/
+
+    - name: Build Docker image (CentOS 7)
+      run: |
+        docker build -t centos7-django -f Dockerfile.ci .
+
+    - name: Run container and execute tests
+      run: |
+        docker run --rm centos7-django pytest src
