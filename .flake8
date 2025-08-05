@@ -1,0 +1,15 @@
+# .flake8
+[flake8]
+max-line-length = 128
+exclude =
+    migrations,
+    __pycache__,
+    env,
+    venv,
+    *.pyc,
+    manage.py
+ignore = 
+    E203,   # Whitespace before ':'
+    E266,   # Too many leading "#" for block comment
+    E501,   # Line too long
+    E503,   # Line break before binary operator
