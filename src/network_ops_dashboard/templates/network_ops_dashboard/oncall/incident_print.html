@@ -61,9 +61,10 @@
         </div>
         {% endfor %}
 
-    <h5><u>Scheduled Maintenance</u></h5>
+    {% if circuitmtcemails %}
+    <h3><u>Scheduled Maintenance</u></h3>
     {% for circuit_provider in circuit_providers %}
-    <h6>{{ circuit_provider.name }}</h6>
+    <h4>{{ circuit_provider.name }}</h4>
       <table class="table table-hover" id="my-table">
         <tr>
           <th>Name</th>
@@ -89,7 +90,9 @@
         {% endfor %}
       </table><br>
     {% endfor %}
+    {% endif %}
 
+    {% if advisories %}
     <br><h3><u>Field Advisories</u></h3>
       <table class="table table-hover" id="my-table">
         <tr>
@@ -107,7 +110,9 @@
         </tr> 
         {% endfor %}
       </table>
+    {% endif %}
 
+    {% if certs %}
     <br><h4><u>Certificate Expirations</u></h4>
       <table class="table table-hover" id="my-table">
         <tr>
@@ -125,7 +130,9 @@
         </tr>
         {% endfor %}
       </table>
+    {% endif %}
 
+    {% if svc_acts %}
     <br><h4><u>Service Account Expirations</u></h4>
       <table class="table table-hover" id="my-table">
         <tr>
@@ -139,6 +146,7 @@
         </tr>
         {% endfor %}
       </table>
+    {% endif %}
       
   </div>
 

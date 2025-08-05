@@ -74,9 +74,9 @@ def dashboard(request):
     site_settings = SiteSettings.objects.first()
     asa_stats = AsaVpnConnectedUsers.objects.all().order_by('name')
     timecutoff = timezone.now() - timedelta(days=7)
-    new_svcacts = SvcActExpiry.objects.filter(created_at__gte=timecutoff)
-    new_certalerts = CertExpiry.objects.filter(created_at__gte=timecutoff)
-    new_ciscoadvisory = CiscoAdvisory.objects.filter(created_at__gte=timecutoff)
+    new_svcacts = SvcActExpiry.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
+    new_certalerts = CertExpiry.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
+    new_ciscoadvisory = CiscoAdvisory.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
     site_changes = SiteChanges.objects.order_by('-created_at')[:10]
     asastats = []
     for asa in asa_stats:

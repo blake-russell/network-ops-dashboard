@@ -127,3 +127,10 @@ def process_windstream(wstmtcemails_folder, circuit_id_list):
                 logger.exception(f"ProcessCircuitMtcEmails: Error reading {filename}: {e}")
                 continue
     return None
+
+def process_cogent(provider, folder_path):
+    # Parse Cogent email
+    logger.info(f"No function logic exists for Cogent (process_cogent) - Skipping.")
+    return None
+
+# Expand process handlers if needed

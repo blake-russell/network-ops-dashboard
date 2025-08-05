@@ -80,6 +80,8 @@
       <hr>
     </div>
   {% endfor %}
+    
+    {% if circuitmtcemails %}
     <h5><u>Scheduled Maintenance</u></h5>
     {% for circuit_provider in circuit_providers %}
     <h6>{{ circuit_provider.name }}</h6>
@@ -108,7 +110,9 @@
         {% endfor %}
       </table><br>
     {% endfor %}
+    {% endif %}
 
+    {% if advisories %}
     <h5><u>Field Notices</u></h5>
       <table class="table table-hover" id="my-table">
         <tr>
@@ -126,7 +130,9 @@
         </tr> 
         {% endfor %}
       </table>
+    {% endif %}
 
+    {% if certs %}
     <br><h6><u>Certificate Expirations</u></h6>
       <table class="table table-hover" id="my-table">
         <tr>
@@ -144,7 +150,9 @@
         </tr>
         {% endfor %}
       </table>
+    {% endif %}
 
+    {% if svc_acts %}
     <br><h6><u>Service Account Expirations</u></h6>
       <table class="table table-hover" id="my-table">
         <tr>
@@ -158,6 +166,7 @@
         </tr>
         {% endfor %}
       </table>
+    {% endif %}
 
 </div>
 
