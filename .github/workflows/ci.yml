@@ -38,6 +38,6 @@ jobs:
           -e DJANGO_SETTINGS_MODULE=network_ops_dashboard.settings \
           -e PYTHONPATH=/app/src \
           -v ${{ github.workspace }}:/app \
-          -w /app \
+          -w /app/src \
           python38-django \
           pytest
