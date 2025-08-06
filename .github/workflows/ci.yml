@@ -39,4 +39,4 @@ jobs:
           -v ${{ github.workspace }}:/app \
           -w /app \
           python38-django \
-          pytest src
+          pytest src/
