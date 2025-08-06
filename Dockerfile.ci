@@ -13,16 +13,18 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
+# Set environment variable for Django
+ENV DJANGO_SETTINGS_MODULE=network_ops_dashboard.settings
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/app
+
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy App
 COPY . .
-
-# Set environment variable for Django
-ENV DJANGO_SETTINGS_MODULE=network_ops_dashboard.settings
-ENV PYTHONUNBUFFERED=1
 
 # Run tests (can override in Github Actions if needed)
 CMD ["pytest", "src"]
