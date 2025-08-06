@@ -42,10 +42,10 @@ jobs:
           -v $PWD/src:/django/venv/src \
           -w /django/venv/src/network_ops_dashboard \
           python38-django \
-          /bin/sh -c "eco 'SECRET_KEY=\"testkey"' > secrets.py \
-          /bin/sh -c "eco 'DEBUG=\"FALSE"' > secrets.py \
-          /bin/sh -c "eco 'ALLOWED_HOSTS=\"['localhost']"' > secrets.py \
-          /bin/sh -c "eco 'LOGGING=\"{}"' > secrets.py \
+          /bin/sh -c "echo 'SECRET_KEY=\"testkey"' > secrets.py \
+          /bin/sh -c "echo 'DEBUG=\"FALSE"' > secrets.py \
+          /bin/sh -c "echo 'ALLOWED_HOSTS=\"[]"' > secrets.py \
+          /bin/sh -c "echo 'LOGGING=\"{}"' > secrets.py \
 
     - name: Run container and execute Pytest
       run: |
