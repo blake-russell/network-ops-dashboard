@@ -28,6 +28,12 @@ jobs:
       run: |
         docker build -t python38-django -f Dockerfile.ci .
 
-    - name: Run Container and Pytest
+    - name: Run container and execute Pytest
       run: |
-        docker run --rm -w /app/src python38-django pytest
+        docker run --rm \
+          -e DJANGO_SETTINGS_MODULE=network_ops_dashboard.settings \
+          -e PYTHONPATH=/app/src \
+          -v ${{ github.workspace }}:/app \
+          -w /app/src \
+          python38-django \
+          sh -c 'echo "ENV VARS:"; env; echo "-----"; pytest'

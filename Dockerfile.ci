@@ -25,6 +25,3 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy App
 COPY . .
-
-# Run tests (can override in Github Actions if needed)
-CMD ["pytest", "src"]
