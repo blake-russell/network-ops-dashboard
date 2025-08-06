@@ -28,6 +28,14 @@ jobs:
       run: |
         docker build -t python38-django -f Dockerfile.ci .
 
+    - name: Create empty secrets.py in container
+      run: |
+        docker run --rm \
+          -v $PWD/src:/django/venv/src \
+          -w /django/venv/src/network_ops_dashboard \
+          python38-django \
+          /bin/sh -c "touch secrets.py"
+
     - name: Run container and execute Pytest
       run: |
         docker run --rm \
