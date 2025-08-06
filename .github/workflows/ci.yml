@@ -28,12 +28,16 @@ jobs:
       run: |
         docker build -t python38-django -f Dockerfile.ci .
 
+    - name: Filesystem Check
+      run: |
+        docker run -rm -it -w /django/venv python38-django ls -lA /django/venv
+
     - name: Run container and execute Pytest
       run: |
         docker run --rm \
           -e DJANGO_SETTINGS_MODULE=network_ops_dashboard.settings \
-          -e PYTHONPATH=/app/src \
-          -v ${{ github.workspace }}:/app \
-          -w /app/src \
+          -e PYTHONPATH=/django/venv/src \
+          -v $PWD/src:/django/venv/src \
+          -w /django//venv/src \
           python38-django \
-          sh -c 'echo "ENV VARS:"; env; echo "-----"; pytest'
+          pytest
