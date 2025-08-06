@@ -30,7 +30,7 @@ jobs:
 
     - name: Filesystem Check
       run: |
-        docker run --rm -it -w /django/venv python38-django ls -lR /django/venv
+        docker run --rm python38-django ls -lR /django/venv
 
     - name: Run container and execute Pytest
       run: |
