@@ -3,7 +3,7 @@ FROM python:3.8-slim
 
 # Install build tools and system dependencies
 RUN apt-get update && apt-get install -y \
-    built-essential \
+    build-essential \
     gcc \
     python3-dev \
     libpcre3-dev \
