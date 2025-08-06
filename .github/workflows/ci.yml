@@ -28,6 +28,11 @@ jobs:
       run: |
         docker build -t python38-django -f Dockerfile.ci .
 
-    - name: Run container and execute tests
+    - name: Run container and execute Pytest
       run: |
-        docker run --rm python38-django pytest src
+        docker run --rm \
+          -e DJANGO_SETTINGS_MODULE=network_ops_dashboard.settings \
+          -v ${{ github.workspace }}:/app \
+          -w /app \
+          python38-django \
+          pytest src
