@@ -2,9 +2,10 @@
 FROM centos:7
 
 # Install Python 3.8
-RUN yum install -y epel-release 
-RUN yum install -y python38 python38-pip
-RUN yum clean all
+RUN yum clean all && \
+    yum -y update && \
+    yum install -y epel-release  && \
+    yum install -y python38 python38-pip && \
 
 # Set Python 3.8 as default
 RUN ln -s /usr/bin/python3.8 /usr/bin/python && \
