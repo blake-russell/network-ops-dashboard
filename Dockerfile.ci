@@ -17,11 +17,13 @@ WORKDIR /django/venv
 ENV DJANGO_SETTINGS_MODULE=network_ops_dashboard.settings
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONPATH=/app
 
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy App
-COPY src /django/venv/src
+COPY . .
+
+# Set workdir back to src for testing
+WORKDIR /django/venv/src

@@ -15,7 +15,6 @@ uwsgi.ini
 
 # Ignore database & manage.py
 src/db.sqlite3
-src/manage.py
 
 # Ignore secrets.py
 src/network_ops_dashboard/secrets.py
