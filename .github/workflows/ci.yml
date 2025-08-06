@@ -28,6 +28,10 @@ jobs:
       run: |
         docker build -t python38-django -f Dockerfile.ci .
 
+    - name: Validate Filesystem
+      run: |
+        docker run --rm python38-django ls -lR /app
+
     - name: Run container and execute Pytest
       run: |
         docker run --rm \
