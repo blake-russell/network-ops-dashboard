@@ -26,6 +26,8 @@ jobs:
 
     - name: Build Docker image (CentOS 7)
       run: |
+        echo '{ "dns": ["8.8.8.8"] }' | sudo tee /etc/docker/daemon.json
+        sudo systemctl restart docker
         docker build -t centos7-django -f Dockerfile.ci .
 
     - name: Run container and execute tests
