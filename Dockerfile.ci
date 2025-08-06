@@ -1,15 +1,5 @@
 # Dockerfile.ci
-FROM centos:7
-
-# Install Python 3.8
-RUN curl -o /etc/yum.repos.d/CentOS-Base.repo https://el7.repo.almalinux.org/centos/CentOS-Base.repo
-RUN yum upgrade -y
-RUN yum install -y epel-release
-RUN yum install -y python38 python38-pip
-
-# Set Python 3.8 as default
-RUN ln -s /usr/bin/python3.8 /usr/bin/python && \
-    ln -s /usr/bin/pip3.8 /usr/bin/pip
+FROM python:3.8-slim
 
 WORKDIR /app
 
@@ -25,4 +15,4 @@ ENV DJANGO_SETTINGS_MODULE=network_ops_dashboard.settings
 ENV PYTHONUNBUFFERED=1
 
 # Run tests (can override in Github Actions if needed)
-CMD ["pytest src"]
+CMD ["pytest", "src"]
