@@ -2,8 +2,8 @@
 FROM centos:7
 
 # Install Python 3.8
-RUN yum clean all && \
-    yum -y update && \
+RUN sudo curl -o /etc/yum.repos.d/CentOS-Base.repo https://el7.repo.almalinux.org/centos/CentOS-Base.repo && \\
+    yum upgrade -y && \
     yum install -y epel-release  && \
     yum install -y python38 python38-pip && \
 
