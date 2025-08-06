@@ -46,4 +46,4 @@ urlpatterns += [
     url(r'^notices/certexpiry/', include('network_ops_dashboard.notices.certexpiry.urls')),
     url(r'^notices/ciscoadvisory/', include('network_ops_dashboard.notices.ciscoadvisory.urls')),
     url(r'^notices/svcactexpiry/', include('network_ops_dashboard.notices.svcactexpiry.urls')),
-] 
+]
