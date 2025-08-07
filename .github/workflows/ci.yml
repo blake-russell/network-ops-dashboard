@@ -1,0 +1,55 @@
+name: CI Workflow
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: "**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Set up Python for formatting/linting
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+
+    - name: Lint with flake8 (with soft fail)
+      run: |
+        pip install flake8
+        flake8 src/ || echo "Linting completed with warnings."
+
+    - name: Build Docker image (Python 3.8 Slim)
+      run: |
+        docker build -t python38-django -f Dockerfile.ci .
+
+    - name: Create empty secrets.py in container
+      run: |
+        docker run --rm \
+          -v $PWD/src:/django/venv/src \
+          -w /django/venv/src/network_ops_dashboard \
+          python38-django \
+          /bin/sh -c "touch secrets.py"
+
+    - name: Populate secrets.py
+      run: |
+        docker run --rm \
+          -v $PWD/src:/django/venv/src \
+          -w /django/venv/src/network_ops_dashboard \
+          python38-django \
+          /bin/sh -c "echo \"SECRET_KEY='testkey'\nDEBUG=False\nALLOWED_HOSTS=['localhost']\nLOGGING={}\" > secrets.py"
+
+    - name: Run container and execute Pytest
+      run: |
+        docker run --rm \
+          -e DJANGO_SETTINGS_MODULE=network_ops_dashboard.settings \
+          -e PYTHONPATH=/django/venv/src \
+          -v $PWD/src:/django/venv/src \
+          -w /django/venv/src \
+          python38-django \
+          pytest

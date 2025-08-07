@@ -22,7 +22,7 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    url(r'^findanddiscouser$', views.asavpn_findanddiscouser, name='asavpn_findanddiscouser'),
-    url(r'^findanddiscouser_log$', views.asavpn_findanddiscouser_log, name='asavpn_findanddiscouser_log'),
-    url(r'^findanddiscouser_log_all$', views.asavpn_findanddiscouser_log_all, name='asavpn_findanddiscouser_log_all'),
+    re_path(r'^findanddiscouser$', views.asavpn_findanddiscouser, name='asavpn_findanddiscouser'),
+    re_path(r'^findanddiscouser_log$', views.asavpn_findanddiscouser_log, name='asavpn_findanddiscouser_log'),
+    re_path(r'^findanddiscouser_log_all$', views.asavpn_findanddiscouser_log_all, name='asavpn_findanddiscouser_log_all'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
