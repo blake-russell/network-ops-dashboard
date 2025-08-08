@@ -3,7 +3,7 @@ from importlib import import_module
 from network_ops_dashboard.reports.circuits.models import *
 from network_ops_dashboard.reports.circuits.scripts.processhandlers import *
 
-logger = logging.getLogger('network_ops_dashboard.certexpiry')
+logger = logging.getLogger('network_ops_dashboard.circuits')
 
 def import_by_path(dotted_path):
     module_path, func_name = dotted_path.rsplit('.', 1)
@@ -15,7 +15,7 @@ def normalize_circuit_id(s):
     return re.sub(r'[\s/]+', '', s).upper()
 
 def ProcessCircuitMtcEmails(circuit_id_list):
-    logger.info(f"ProcessCircuitMtcEmails Running.")
+    logger.info("ProcessCircuitMtcEmails Running.")
 
     FULL_HANDLER_PATH = "network_ops_dashboard.reports.circuits.scripts.processhandlers"
 
@@ -25,9 +25,9 @@ def ProcessCircuitMtcEmails(circuit_id_list):
         folder_path = provider.email_folder
 
         provider_circuit_id_list = {
-        normalize_circuit_id(c.cktid): c
-        for c in Circuit.objects.filter(provider__name=provider_name)
-	    }
+            normalize_circuit_id(c.cktid): c
+            for c in Circuit.objects.filter(provider__name=provider_name)
+        }
 
         if not func_name or not folder_path:
             logger.warning(f"No function_name or email_folder configured for '{provider_name}', skipping.")
@@ -42,5 +42,4 @@ def ProcessCircuitMtcEmails(circuit_id_list):
             # Throws exception if there is not a process handler in processhandlers.py.
             logger.exception(f"No process handler for '{provider_name}': {e}")
             continue
-        
     return None

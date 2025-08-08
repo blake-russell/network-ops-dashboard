@@ -23,15 +23,26 @@ logger = logging.getLogger('network_ops_dashboard.oncall')
 
 @login_required(login_url='/accounts/login/')
 def oncall(request):
+    circuitmtcemails = (
+        CircuitMtcEmail.objects
+        .filter(
+            Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') |
+            Q(status='Updated') | Q(status='Demand') | Q(status='Emergency')
+        )
+        .order_by('startdatetime')
+        .prefetch_related('circuits__provider')
+    )
+    providers_with_emails = []
+    for provider in CircuitProvider.objects.all():
+        emails_qs = circuitmtcemails.filter(circuits__provider=provider).distinct()
+        if emails_qs.exists():
+            providers_with_emails.append((provider, emails_qs))
     open_incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
-    circuitmtcemails = CircuitMtcEmail.objects.filter(Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') | \
-                                                    Q(status='Updated') | Q(status='Demand') | Q(status='Emergency')).order_by('startdatetime')
-    circuit_providers = CircuitProvider.objects.all()
     certs = CertExpiry.objects.filter(Q(status='Open')).order_by('expire_date')
     advisories = CiscoAdvisory.objects.filter(Q(status='Open')).order_by('date')
     svc_acts = SvcActExpiry.objects.filter(Q(status='Open')).order_by('expire_date')
-    return render(request, 'network_ops_dashboard/oncall/home.html', {'incidents': open_incidents, 'circuitmtcemails': circuitmtcemails, 'certs': certs, 'advisories': advisories, \
-                                                                      'circuit_providers': circuit_providers, 'svc_acts': svc_acts })
+    return render(request, 'network_ops_dashboard/oncall/home.html', {'incidents': open_incidents, 'providers_with_emails': providers_with_emails, 'certs': certs, 
+                                                                      'advisories': advisories, 'svc_acts': svc_acts})
 
 @login_required(login_url='/accounts/login/')
 def oncall_incident_log(request):
@@ -40,15 +51,26 @@ def oncall_incident_log(request):
 
 @login_required(login_url='/accounts/login/')
 def oncall_incident_print(request):
+    circuitmtcemails = (
+        CircuitMtcEmail.objects
+        .filter(
+            Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') |
+            Q(status='Updated') | Q(status='Demand') | Q(status='Emergency')
+        )
+        .order_by('startdatetime')
+        .prefetch_related('circuits__provider')
+    )
+    providers_with_emails = []
+    for provider in CircuitProvider.objects.all():
+        emails_qs = circuitmtcemails.filter(circuits__provider=provider).distinct()
+        if emails_qs.exists():
+            providers_with_emails.append((provider, emails_qs))
     open_incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
-    circuitmtcemails = CircuitMtcEmail.objects.filter(Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') | \
-                                                    Q(status='Updated') | Q(status='Demand') | Q(status='Emergency')).order_by('startdatetime')
-    circuit_providers = CircuitProvider.objects.all()
     certs = CertExpiry.objects.filter(Q(status='Open')).order_by('expire_date')
     advisories = CiscoAdvisory.objects.filter(Q(status='Open')).order_by('date')
     svc_acts = SvcActExpiry.objects.filter(Q(status='Open')).order_by('expire_date')
-    return render(request, 'network_ops_dashboard/oncall/incident_print.html', {'incidents': open_incidents, 'circuitmtcemails': circuitmtcemails, 'certs': certs, 'advisories': advisories, \
-                                                                      'circuit_providers': circuit_providers, 'svc_acts': svc_acts })
+    return render(request, 'network_ops_dashboard/oncall/incident_print.html', {'incidents': open_incidents, 'providers_with_emails': providers_with_emails, 'certs': certs, 
+                                                                                'advisories': advisories, 'svc_acts': svc_acts })
 
 @require_POST
 @login_required(login_url='/accounts/login/')

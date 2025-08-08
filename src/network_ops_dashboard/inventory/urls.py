@@ -22,15 +22,15 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    url(r'^$', views.inventory_home, name='inventory_home'),
-    url(r'^add/$', views.inventory_add, name='inventory_add'),
-    url(r'^edit/(?P<pk>[0-9]{1,10})/$', views.inventory_edit, name='inventory_edit'),
-    url(r'^platform/$', views.platform_home, name='platform_home'),
-    url(r'^platform/add/$', views.platform_add, name='platform_add'),
-    url(r'^platform/edit/(?P<pk>[0-9]{1,10})/$', views.platform_edit, name='platform_edit'),
-    url(r'^site/$', views.site_home, name='site_home'),
-    url(r'^site/add/$', views.site_add, name='site_add'),
-    url(r'^site/edit/(?P<pk>[0-9]{1,10})/$', views.site_edit, name='site_edit'),
-    url(r'^devicetag/$', views.devicetag_home, name='devicetag_home'),
-    url(r'^devicetag/add/$', views.devicetag_add, name='devicetag_add'),
+    re_path(r'^$', views.inventory_home, name='inventory_home'),
+    re_path(r'^add/$', views.inventory_add, name='inventory_add'),
+    re_path(r'^edit/(?P<pk>[0-9]{1,10})/$', views.inventory_edit, name='inventory_edit'),
+    re_path(r'^platform/$', views.platform_home, name='platform_home'),
+    re_path(r'^platform/add/$', views.platform_add, name='platform_add'),
+    re_path(r'^platform/edit/(?P<pk>[0-9]{1,10})/$', views.platform_edit, name='platform_edit'),
+    re_path(r'^site/$', views.site_home, name='site_home'),
+    re_path(r'^site/add/$', views.site_add, name='site_add'),
+    re_path(r'^site/edit/(?P<pk>[0-9]{1,10})/$', views.site_edit, name='site_edit'),
+    re_path(r'^devicetag/$', views.devicetag_home, name='devicetag_home'),
+    re_path(r'^devicetag/add/$', views.devicetag_add, name='devicetag_add'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

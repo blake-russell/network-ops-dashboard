@@ -22,6 +22,6 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    url(r'^$', views.changes, name='changes'),
-    url(r'^update/$', views.changes_update, name='changes_update'),
+    re_path(r'^$', views.changes, name='changes'),
+    re_path(r'^update/$', views.changes_update, name='changes_update'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

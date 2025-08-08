@@ -22,7 +22,7 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    url(r'^$', views.svcactexpiry, name='svcactexpiry'),
-    url(r'^update/$', views.svcactexpiry_update, name='svcactexpiry_update'),
-    url(r'^archive/(?P<pk>[0-9]{1,10})/$', views.svcactexpiry_archive, name='svcactexpiry_archive'),
+    re_path(r'^$', views.svcactexpiry, name='svcactexpiry'),
+    re_path(r'^update/$', views.svcactexpiry_update, name='svcactexpiry_update'),
+    re_path(r'^archive/(?P<pk>[0-9]{1,10})/$', views.svcactexpiry_archive, name='svcactexpiry_archive'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
