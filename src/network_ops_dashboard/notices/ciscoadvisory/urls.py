@@ -22,7 +22,7 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    url(r'^$', views.ciscoadvisory, name='ciscoadvisory'),
-    url(r'^update/$', views.ciscoadvisory_update, name='ciscoadvisory_update'),
-    url(r'^archive/(?P<pk>[0-9]{1,10})/$', views.ciscoadvisory_archive, name='ciscoadvisory_archive'),
+    re_path(r'^$', views.ciscoadvisory, name='ciscoadvisory'),
+    re_path(r'^update/$', views.ciscoadvisory_update, name='ciscoadvisory_update'),
+    re_path(r'^archive/(?P<pk>[0-9]{1,10})/$', views.ciscoadvisory_archive, name='ciscoadvisory_archive'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

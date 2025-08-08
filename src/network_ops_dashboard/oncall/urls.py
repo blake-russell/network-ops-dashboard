@@ -22,7 +22,7 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    url(r'^$', views.oncall, name='oncall'),
+    re_path(r'^$', views.oncall, name='oncall'),
     path('update/<int:pk>/', views.oncall_update_incident_log, name='oncall_update_incident_log'),
     path('incident/close/<int:incident_id>/', views.oncall_close_incident, name='oncall_close_incident'),
     path('incident/open/<int:incident_id>/', views.oncall_open_incident, name='oncall_open_incident'),

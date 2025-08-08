@@ -22,10 +22,10 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    url(r'^$', views.certexpiry, name='certexpiry'),
-    url(r'^update/$', views.certexpiry_update, name='certexpiry_update'),
-    url(r'^archive/(?P<pk>[0-9]{1,10})/$', views.certexpiry_archive, name='certexpiry_archive'),
-    url(r'^provider/$', views.certexpiry_provider, name='certexpiry_provider'),
-    url(r'^provider/add/$', views.certexpiry_provider_add, name='certexpiry_provider_add'),
-    url(r'^provider/edit/(?P<pk>[0-9]{1,10})/$', views.certexpiry_provider_edit, name='certexpiry_provider_edit'),
+    re_path(r'^$', views.certexpiry, name='certexpiry'),
+    re_path(r'^update/$', views.certexpiry_update, name='certexpiry_update'),
+    re_path(r'^archive/(?P<pk>[0-9]{1,10})/$', views.certexpiry_archive, name='certexpiry_archive'),
+    re_path(r'^provider/$', views.certexpiry_provider, name='certexpiry_provider'),
+    re_path(r'^provider/add/$', views.certexpiry_provider_add, name='certexpiry_provider_add'),
+    re_path(r'^provider/edit/(?P<pk>[0-9]{1,10})/$', views.certexpiry_provider_edit, name='certexpiry_provider_edit'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

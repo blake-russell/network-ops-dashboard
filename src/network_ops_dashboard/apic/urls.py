@@ -22,15 +22,15 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    url(r'^createinterface/$', views.apic_createinterface, name='apic_createinterface'),
-    url(r'^createinterface/add/$', views.apic_createinterface_add, name='apic_createinterface_add'),
-    url(r'^createinterface/edit/(?P<pk>[0-9]{1,10})/$', views.apic_createinterface_edit, name='apic_createinterface_edit'),
-    url(r'^createinterface/archive/(?P<pk>[0-9]{1,10})/$', views.apic_createinterface_archive, name='apic_createinterface_archive'),
-    url(r'^createinterface/run/(?P<pk>[0-9]{1,10})/$', views.apic_createinterface_run, name='apic_createinterface_run'),
-    url(r'^createinterface/intf/$', views.apic_createinterface_intf, name='apic_createinterface_intf'),
-    url(r'^createinterface/addintf/(?P<pk>[0-9]{1,10})/$', views.apic_createinterface_addintf, name='apic_createinterface_addintf'),
-    url(r'^createinterface/editintf/(?P<pk>[0-9]{1,10})/$', views.apic_createinterface_editintf, name='apic_createinterface_editintf'),
-    url(r'^createinterface/delintf/(?P<pk>[0-9]{1,10})/$', views.apic_createinterface_delintf, name='apic_createinterface_delintf'),
-    url(r'^loadconfigoptions/(?P<device_id>[0-9]{1,10})/$', views.apic_loadconfigoptions, name='apic_loadconfigoptions'),
+    re_path(r'^createinterface/$', views.apic_createinterface, name='apic_createinterface'),
+    re_path(r'^createinterface/add/$', views.apic_createinterface_add, name='apic_createinterface_add'),
+    re_path(r'^createinterface/edit/(?P<pk>[0-9]{1,10})/$', views.apic_createinterface_edit, name='apic_createinterface_edit'),
+    re_path(r'^createinterface/archive/(?P<pk>[0-9]{1,10})/$', views.apic_createinterface_archive, name='apic_createinterface_archive'),
+    re_path(r'^createinterface/run/(?P<pk>[0-9]{1,10})/$', views.apic_createinterface_run, name='apic_createinterface_run'),
+    re_path(r'^createinterface/intf/$', views.apic_createinterface_intf, name='apic_createinterface_intf'),
+    re_path(r'^createinterface/addintf/(?P<pk>[0-9]{1,10})/$', views.apic_createinterface_addintf, name='apic_createinterface_addintf'),
+    re_path(r'^createinterface/editintf/(?P<pk>[0-9]{1,10})/$', views.apic_createinterface_editintf, name='apic_createinterface_editintf'),
+    re_path(r'^createinterface/delintf/(?P<pk>[0-9]{1,10})/$', views.apic_createinterface_delintf, name='apic_createinterface_delintf'),
+    re_path(r'^loadconfigoptions/(?P<device_id>[0-9]{1,10})/$', views.apic_loadconfigoptions, name='apic_loadconfigoptions'),
     path('get_config_options/<int:device_id>/', views.apic_get_config_options, name='apic_get_config_options'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
