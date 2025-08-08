@@ -1,19 +1,17 @@
 from __future__ import unicode_literals
-from django.utils.translation import gettext, gettext_lazy as _
-from django_cryptography.fields import encrypt
 from django.db import models
-from django.conf import settings
+from network_ops_dashboard.inventory.models import Site
 
 # Create your models here.
 
 class CircuitProvider(models.Model):
     class Meta:
         ordering = ['name']
-    
-    PROVIDER_CHOICES = [('ATT', 'ATT'), ('Cogent', 'Cogent'), ('GTT', 'GTT'), \
-                        ('Lumen', 'Lumen'), ('Verizon', 'Verizon'), ('Windstream', 'Windstream'), \
-                            ('Zayo', 'Zayo')]
-    
+
+    PROVIDER_CHOICES = [('ATT', 'ATT'), ('Cogent', 'Cogent'), ('GTT', 'GTT'),
+                        ('Lumen', 'Lumen'), ('Verizon', 'Verizon'), ('Windstream', 'Windstream'),
+                        ('Zayo', 'Zayo')]
+
     name = models.CharField(max_length=30, choices=PROVIDER_CHOICES, default='ATT', unique=True)
     email_folder = models.TextField()
     function_name = models.CharField(max_length=200, blank=True)
@@ -30,6 +28,7 @@ class CircuitTag(models.Model):
     class Meta:
         ordering = ['name']
     name = models.CharField(max_length=100)
+
     def __str__(self):
         return str(self.name)
 
@@ -40,6 +39,9 @@ class Circuit(models.Model):
     cktid = models.CharField(max_length=100)
     provider = models.ForeignKey(CircuitProvider, on_delete=models.CASCADE, related_name='circuit_provider_name')
     tag = models.ManyToManyField(CircuitTag)
+    site = models.ForeignKey(Site, on_delete=models.SET_NULL, null=True, blank=True, related_name='circuit_site')
+    notes = models.TextField(null=True, blank=True)
+
     def __str__(self):
         return str(self.name)
 

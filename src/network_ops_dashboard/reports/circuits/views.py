@@ -1,11 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import login, authenticate, get_user_model, update_session_auth_hash
 from django.http import HttpResponseRedirect
 from django.db.models import Q
-#from django_xhtml2pdf.utils import generate_pdf, pdf_decorator
 import logging
-from network_ops_dashboard import settings
 from network_ops_dashboard.decorators import *
 from network_ops_dashboard.reports.circuits.models import *
 from network_ops_dashboard.reports.circuits.forms import *
@@ -18,23 +15,32 @@ logger = logging.getLogger('network_ops_dashboard.circuits')
 @login_required(login_url='/accounts/login/')
 def circuitsmtc(request):
     circuits_exist = Circuit.objects.first()
-    # Send entire objects.all to the template then filter out 'Archived' in the jinja template
-    circuitmtcemails = CircuitMtcEmail.objects.filter(Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') | \
-                                                    Q(status='Updated') | Q(status='Demand') | Q(status='Emergency')).order_by('startdatetime')
-    circuit_providers = CircuitProvider.objects.all()
-    return render(request, 'network_ops_dashboard/reports/circuits/home.html', {'circuitmtcemails': circuitmtcemails, 'circuits_exist': circuits_exist, \
-                                                                                'circuit_providers': circuit_providers })
+    circuitmtcemails = (
+        CircuitMtcEmail.objects.filter(Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') | Q(status='Updated') | Q(status='Demand') | Q(status='Emergency'))
+        .order_by('startdatetime')
+        .prefetch_related('circuits__provider')
+    )
+    providers_with_emails = []
+    for provider in CircuitProvider.objects.all():
+        emails_qs = circuitmtcemails.filter(circuits__provider=provider).distinct()
+        if emails_qs.exists():
+            providers_with_emails.append((provider, emails_qs))
+    context = {
+        'circuits_exist': circuits_exist,
+        'providers_with_emails': providers_with_emails,
+    }
+    return render(request, 'network_ops_dashboard/reports/circuits/home.html', context)
 
 @login_required(login_url='/accounts/login/')
 def circuitsmtc_update(request):
-	circuit_id_list = Circuit.objects.all()
-	ProcessCircuitMtcEmails(circuit_id_list)
-	return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+    circuit_id_list = Circuit.objects.all()
+    ProcessCircuitMtcEmails(circuit_id_list)
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 @login_required(login_url='/accounts/login/')
 def circuitsmtc_archive(request, pk):
-	CircuitMtcEmail.objects.filter(pk=pk).update(status='Archived')
-	return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+    CircuitMtcEmail.objects.filter(pk=pk).update(status='Archived')
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 @login_required(login_url='/accounts/login/')
 def circuittag(request):
@@ -44,7 +50,7 @@ def circuittag(request):
         detaildict = {
             'pk' : circuittag.pk,
             'name' : circuittag.name,
-            }
+        }
         detaillist.append(detaildict)
     return render(request, 'network_ops_dashboard/reports/circuits/circuittag.html', {'detaillist': detaillist})
 
@@ -70,7 +76,7 @@ def circuitprovider(request):
             'name' : circuitprovider.name,
             'email_folder' : circuitprovider.email_folder,
             'function_name' : circuitprovider.function_name,
-            }
+        }
         detaillist.append(detaildict)
     return render(request, 'network_ops_dashboard/reports/circuits/circuitprovider.html', {'detaillist': detaillist})
 
@@ -109,8 +115,10 @@ def circuit(request):
             'name' : circuit.name,
             'cktid' : circuit.cktid,
             'provider' : circuit.provider,
+            'site' : circuit.site,
             'tag' : circuit.tag,
-            }
+            'notes': circuit.notes,
+        }
         detaillist.append(detaildict)
     return render(request, 'network_ops_dashboard/reports/circuits/circuit.html', {'detaillist': detaillist})
 

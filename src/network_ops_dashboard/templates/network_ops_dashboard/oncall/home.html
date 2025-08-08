@@ -80,93 +80,93 @@
       <hr>
     </div>
   {% endfor %}
-    
-    {% if circuitmtcemails %}
-    <h5><u>Scheduled Maintenance</u></h5>
-    {% for circuit_provider in circuit_providers %}
-    <h6>{{ circuit_provider.name }}</h6>
-      <table class="table table-hover" id="my-table">
-        <tr>
-          <th>Name</th>
-          <th>Circuit ID(s)</th>
-          <th>Mtc#</th>
-          <th>Status</th>
-          <th>Impact</th>
-          <th>Start Time</th>
-          <th>End Time</th> 
-        </tr>
-        {% for circuit in circuitmtcemails %}
-          {% if circuit.circuits.all.0.provider.name == circuit_provider.name %}
-          <tr class="table-light">
-            <td>{% for cktname in circuit.circuits.all %} {{ cktname.name }}<br>{% endfor %}</td>
-            <td>{% for cktid in circuit.circuits.all %} {{ cktid.cktid }}<br>{% endfor %}</td>
-            <td>{{ circuit.mtc_id }}</td>
-            <td>{{ circuit.status }}</td>
-            <td>{{ circuit.impact }}</td>
-            <td>{{ circuit.startdatetime }}</td>
-            <td>{{ circuit.enddatetime}}</td>
-          </tr>
-          {% endif %}
-        {% endfor %}
-      </table><br>
-    {% endfor %}
-    {% endif %}
+  
+  {% if providers_with_emails %}
+    <h4><u>Scheduled Maintenance</u></h4>
+		{% for provider, emails in providers_with_emails %}
+			<table class="table table-hover" id="my-table">
+				<tr>
+					<th colspan="8"><strong>{{ provider.name }}</strong></th> 
+				</tr>
+				<tr>
+					<th>Name</th>
+					<th>Circuit ID(s)</th>
+					<th>Mtc#</th>
+					<th>Status</th>
+					<th>Impact</th>
+					<th>Start Time</th>
+					<th>End Time</th>
+				</tr>
+				{% for circuit in emails %}
+					<tr class="table-light">
+						<td>{% for cktname in circuit.circuits.all %} {{ cktname.name }}<br>{% endfor %}</td>
+						<td>{% for cktid in circuit.circuits.all %} {{ cktid.cktid }}<br>{% endfor %}</td>
+						<td>{{ circuit.mtc_id }}</td>
+						<td>{{ circuit.status }}</td>
+						<td>{{ circuit.impact }}</td>
+						<td>{{ circuit.startdatetime }}</td>
+						<td>{{ circuit.enddatetime }}</td>
+					</tr>
+				{% endfor %}
+			</table><br>
+		{% endfor %}
+  {% endif %}
 
-    {% if advisories %}
-    <h5><u>Field Notices</u></h5>
-      <table class="table table-hover" id="my-table">
-        <tr>
-          <th>Title</th>
-          <th>Impact Rating Name</th>
-          <th>Description</th>
-          <th>Date</th>
-        </tr>
-        {% for advisory in advisories %}
-        <tr class="table-light">
-          <td><a href="{{ advisory.url }}" target="_new">{{ advisory.title_short }}</a></td>
-          <td>{{ advisory.impact_rating }}</td> 
-          <td style="word-wrap; break-word; white-space: normal;">{{ advisory.description }}</td>
-          <td>{{ advisory.date }}</td>
-        </tr> 
-        {% endfor %}
-      </table>
-    {% endif %}
-
-    {% if certs %}
-    <br><h6><u>Certificate Expirations</u></h6>
-      <table class="table table-hover" id="my-table">
-        <tr>
-          <th>Provider</th>
-          <th>Certificate Name</th>
-          <th>Common Name</th>
-          <th>Expiration Date</th>
-        </tr>
-        {% for cert in certs %}
-        <tr class="table-light">
-          <td>{{ cert.provider }}</td>
-          <td>{{ cert.cert_name }}</td>
-          <td>{{ cert.common_name }}</td>
-          <td>{{ cert.expire_date }}</td>
-        </tr>
-        {% endfor %}
-      </table>
-    {% endif %}
-
-    {% if svc_acts %}
-    <br><h6><u>Service Account Expirations</u></h6>
-      <table class="table table-hover" id="my-table">
-        <tr>
-          <th>Service Account</th>
-          <th>Date</th>
-        </tr>
-        {% for svc_act in svc_acts %}
-        <tr class="table-light">
-          <td>{{ svc_act.svc_act }}</td>
-          <td>{{ svc_act.expire_date }}</td>
-        </tr>
-        {% endfor %}
-      </table>
-    {% endif %}
+	{% if advisories %}
+	<h5><u>Field Notices</u></h5>
+	<table class="table table-hover" id="my-table">
+		<tr>
+		<th>Title</th>
+		<th>Impact Rating Name</th>
+		<th>Description</th>
+		<th>Date</th>
+		</tr>
+		{% for advisory in advisories %}
+		<tr class="table-light">
+		<td><a href="{{ advisory.url }}" target="_new">{{ advisory.title_short }}</a></td>
+		<td>{{ advisory.impact_rating }}</td> 
+		<td style="word-wrap; break-word; white-space: normal;">{{ advisory.description }}</td>
+		<td>{{ advisory.date }}</td>
+		</tr> 
+		{% endfor %}
+	</table>
+	{% endif %}
+	
+	{% if certs %}
+	<br><h6><u>Certificate Expirations</u></h6>
+	<table class="table table-hover" id="my-table">
+		<tr>
+		<th>Provider</th>
+		<th>Certificate Name</th>
+		<th>Common Name</th>
+		<th>Expiration Date</th>
+		</tr>
+		{% for cert in certs %}
+		<tr class="table-light">
+		<td>{{ cert.provider }}</td>
+		<td>{{ cert.cert_name }}</td>
+		<td>{{ cert.common_name }}</td>
+		<td>{{ cert.expire_date }}</td>
+		</tr>
+		{% endfor %}
+	</table>
+	{% endif %}
+	
+	{% if svc_acts %}
+	<br><h6><u>Service Account Expirations</u></h6>
+	<table class="table table-hover" id="my-table">
+		<tr>
+		<th>Service Account</th>
+		<th>Date</th>
+		</tr>
+		{% for svc_act in svc_acts %}
+		<tr class="table-light">
+		<td>{{ svc_act.svc_act }}</td>
+		<td>{{ svc_act.expire_date }}</td>
+		</tr>
+		{% endfor %}
+	</table>
+	{% endif %}
 
 </div>
 
