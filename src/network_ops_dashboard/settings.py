@@ -16,7 +16,6 @@ import logging.config # noqa: F401
 from django.utils.log import DEFAULT_LOGGING # noqa: F401
 from network_ops_dashboard.secrets import SECRET_KEY, DEBUG, ALLOWED_HOSTS, LOGGING # noqa: F401
 
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # '..venv/'
 VENV_DIR = Path(__file__).resolve().parent.parent.parent
@@ -144,3 +143,8 @@ ADMIN_MEDIA_PREFIX = '/static/admin'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Used for release drafter
+GITHUB_REPO = "blake-russell/network-ops-dashboard"  # owner/repo
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # store as env var in your server
+CACHE_RELEASES_SECONDS = 300  # 5 minutes
