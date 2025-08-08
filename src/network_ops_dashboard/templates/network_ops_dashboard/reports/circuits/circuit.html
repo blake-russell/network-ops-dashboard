@@ -10,6 +10,7 @@
   <th>Name</th>
   <th>Circuit ID/#</th>
   <th>Provider</th>
+  <th>Site</th>
   <th>Tag(s)</th>
   <th>Actions</th>
  </tr>
@@ -19,6 +20,7 @@
     <td>{{ circuit.name }}</td>
     <td>{{ circuit.cktid }}</td>
     <td>{{ circuit.provider }}</td>
+    <td>{% if circuit.site %} {{ circuit.site.address }}, {{ circuit.site.city }}, {{ circuit.site.state }} {{ circuit.site.zip }} {% endif %}</td>
     <td>{% for tag in circuit.tag.all %} {{ tag.name }}<br>{% endfor %}</td>
     <td>
       <a href="{%url 'circuit_edit' circuit.pk %}">Edit</a>

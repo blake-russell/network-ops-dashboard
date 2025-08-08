@@ -22,11 +22,11 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    url(r'^vipcertrenew/$', views.f5lb_vipcertrenew, name='f5lb_vipcertrenew'),
-    url(r'^vipcertrenew/add/$', views.f5lb_vipcertrenew_add, name='f5lb_vipcertrenew_add'),
-    url(r'^vipcertrenew/edit/(?P<pk>[0-9]{1,10})/$', views.f5lb_vipcertrenew_edit, name='f5lb_vipcertrenew_edit'),
-    url(r'^vipcertrenew/archive/(?P<pk>[0-9]{1,10})/$', views.f5lb_vipcertrenew_archive, name='f5lb_vipcertrenew_archive'),
-    url(r'^vipcertrenew/run/(?P<pk>[0-9]{1,10})/$', views.f5lb_vipcertrenew_run, name='f5lb_vipcertrenew_run'),
-    url(r'^loadconfigoptions/(?P<device_id>[0-9]{1,10})/$', views.f5lb_loadconfigoptions, name='f5lb_loadconfigoptions'),
+    re_path(r'^vipcertrenew/$', views.f5lb_vipcertrenew, name='f5lb_vipcertrenew'),
+    re_path(r'^vipcertrenew/add/$', views.f5lb_vipcertrenew_add, name='f5lb_vipcertrenew_add'),
+    re_path(r'^vipcertrenew/edit/(?P<pk>[0-9]{1,10})/$', views.f5lb_vipcertrenew_edit, name='f5lb_vipcertrenew_edit'),
+    re_path(r'^vipcertrenew/archive/(?P<pk>[0-9]{1,10})/$', views.f5lb_vipcertrenew_archive, name='f5lb_vipcertrenew_archive'),
+    re_path(r'^vipcertrenew/run/(?P<pk>[0-9]{1,10})/$', views.f5lb_vipcertrenew_run, name='f5lb_vipcertrenew_run'),
+    re_path(r'^loadconfigoptions/(?P<device_id>[0-9]{1,10})/$', views.f5lb_loadconfigoptions, name='f5lb_loadconfigoptions'),
     path('get_config_options/<int:device_id>/', views.f5lb_get_config_options, name='f5lb_get_config_options'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
