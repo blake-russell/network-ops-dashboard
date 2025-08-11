@@ -16,7 +16,7 @@ from network_ops_dashboard.notices.svcactexpiry.models import SvcActExpiry
 from network_ops_dashboard.notices.ciscoadvisory.models import CiscoAdvisory
 from network_ops_dashboard.notices.certexpiry.models import CertExpiry
 from network_ops_dashboard.forms import * # noqa: F403
-from scripts.github_releases import get_recent_releases
+from .scripts.changelog_parser import parse_changelog
 
 logger = logging.getLogger('network_ops_dashboard')
 
@@ -77,8 +77,7 @@ def dashboard(request):
     new_svcacts = SvcActExpiry.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
     new_certalerts = CertExpiry.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
     new_ciscoadvisory = CiscoAdvisory.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
-    site_changes = SiteChanges.objects.order_by('-created_at')[:10] # noqa: F405
-    recent_changes = get_recent_releases(limit=3)
+    changelog = parse_changelog()
     asastats = []
     for asa in asa_stats:
         detaildict = {
@@ -89,7 +88,7 @@ def dashboard(request):
         asastats.append(detaildict)
     return render(request, 'network_ops_dashboard/dashboard.html', {'statusmessages': statusmessages, 'asastats': asastats, 'site_settings': site_settings,
                                                                     'new_svcacts': new_svcacts, 'new_certalerts': new_certalerts, 'new_ciscoadvisory': new_ciscoadvisory,
-                                                                    'site_changes': site_changes, 'recent_changes': recent_changes})
+                                                                    'changelog_entries': changelog})
 
 def public_scripts(request):
     site_settings = SiteSettings.objects.first() # noqa: F405

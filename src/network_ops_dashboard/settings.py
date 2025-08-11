@@ -143,8 +143,3 @@ ADMIN_MEDIA_PREFIX = '/static/admin'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# Used for release drafter
-GITHUB_REPO = "blake-russell/network-ops-dashboard"  # owner/repo
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # store as env var in your server
-CACHE_RELEASES_SECONDS = 300  # 5 minutes

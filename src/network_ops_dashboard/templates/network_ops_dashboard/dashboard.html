@@ -23,6 +23,7 @@
         </div>
 
         <div class="card-body">
+          {% if new_svcacts %}
           <table class="table table-borderless mb-0">
               <strong>Service Account Password Expiry</strong>
             <tbody>
@@ -34,7 +35,9 @@
               {% endfor %}
             </tbody>
           </table><br>
+          {% endif %}
 
+          {% if new_certalerts %}
           <table class="table table-borderless mb-0">
               <strong>Certificate Expiry</strong>
             <tbody>
@@ -46,7 +49,9 @@
               {% endfor %}
             </tbody>
           </table><br>
+          {% endif %}
 
+          {% if new_ciscoadvisory %}
           <table class="table table-borderless mb-0">
               <strong>Cisco Field Advisory</strong>
             <tbody>
@@ -58,6 +63,7 @@
               {% endfor %}
             </tbody>
           </table><br>
+          {% endif %}
 
         </div>
       </div>
@@ -92,83 +98,58 @@
         </div>
       </div>
     </div>
-
+  
     <!-- Card 3 -->
     <div class="col-md-4 mb-4">
       <div class="card h-100">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
           <strong>Recent Site Changes</strong>
-        </div>
-        <div class="card-body">
-          <ul class="list-unstyled mb-0">
-            {% for change in site_changes %}
-            <div data-toggle="tooltip" data-placement="top" title="{{ change.comment }}">
-               <li>{{ change.icon}}{{ change.comment_title }}</li>
-            </div>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 4 -->
-    <div class="card mb-3" id="recent-changes">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <strong>Recent Changes</strong>
-      <div>
-      <button class="btn btn-sm btn-outline-secondary" id="rc-prev" disabled>&larr;</button>
-      <button class="btn btn-sm btn-outline-secondary" id="rc-next">&rarr;</button>
-      </div>
-    </div>
-    <div class="card-body">
-      {% if recent_changes %}
-        {% for r in recent_changes %}
-        <div class="rc-item" {% if not forloop.first %}style="display:none"{% endif %}>
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="mb-0">{{ r.name|default:r.tag }}</h5>
-            <small class="text-muted">{{ r.published_at|date:"Y-m-d H:i" }}</small>
-          </div>
-        <div class="markdown-body">{{ r.html_body|safe }}</div>
-          <div class="mt-2">
-            <a href="{{ r.html_url }}" target="_blank" rel="noopener">View on GitHub</a>
+          <div>
+            <button class="btn btn-sm btn-outline-secondary" id="chg-prev" disabled>&larr;</button>
+            <button class="btn btn-sm btn-outline-secondary" id="chg-next">&rarr;</button>
           </div>
         </div>
-        {% endfor %}
-      {% else %}
-        <em>No recent releases yet.</em>
-      {% endif %}
+      <div class="card-body">
+        <div id="changelog-container">{{ changelog_entries|json_script:"changelog-data" }}</div>
       </div>
     </div>
-
   </div>
-</div>
+
+<script>
+  (function(){
+    // Parse data safely from the script tag
+    const changelogEntries = JSON.parse(document.getElementById('changelog-data').textContent) || [];
+    const container = document.getElementById('changelog-container');
+    const prevBtn = document.getElementById('chg-prev');
+    const nextBtn = document.getElementById('chg-next');
+    if (!container || !changelogEntries.length) return;
+  
+    let i = 0;
+  
+    function render() {
+      const entry = changelogEntries[i];
+      let html = `<h6 class="mb-2"><strong>${entry.version}</strong></h6><ul class="mb-0">`;
+      for (const line of entry.changes) {
+        html += `<li>${line}</li>`;
+      }
+      html += `</ul>`;
+      container.innerHTML = html;
+  
+      prevBtn.disabled = (i === 0);
+      nextBtn.disabled = (i === changelogEntries.length - 1);
+    }
+  
+    prevBtn.addEventListener('click', () => { if (i > 0) { i--; render(); } });
+    nextBtn.addEventListener('click', () => { if (i < changelogEntries.length - 1) { i++; render(); } });
+  
+    render();
+  })();
+</script>
 
 <script>
   $(function () {
     $('[data-toggle="tooltip"]').tooltip()
   });
-</script>
-
-<script>
-(function(){
-  const items = Array.from(document.querySelectorAll('#recent-changes .rc-item'));
-  if (!items.length) return;
-  let i = 0;
-  const prev = document.getElementById('rc-prev');
-  const next = document.getElementById('rc-next');
-
-  function updateButtons(){
-    prev.disabled = (i === 0);
-    next.disabled = (i === items.length - 1);
-  }
-  function show(idx){
-    items.forEach((el, k) => el.style.display = (k === idx ? '' : 'none'));
-    i = idx; updateButtons();
-  }
-  prev.addEventListener('click', () => show(i - 1));
-  next.addEventListener('click', () => show(i + 1));
-  updateButtons();
-})();
 </script>
 
 {% endblock %}
