@@ -23,6 +23,7 @@
         </div>
 
         <div class="card-body">
+          {% if new_svcacts %}
           <table class="table table-borderless mb-0">
               <strong>Service Account Password Expiry</strong>
             <tbody>
@@ -34,7 +35,9 @@
               {% endfor %}
             </tbody>
           </table><br>
+          {% endif %}
 
+          {% if new_certalerts %}
           <table class="table table-borderless mb-0">
               <strong>Certificate Expiry</strong>
             <tbody>
@@ -46,7 +49,9 @@
               {% endfor %}
             </tbody>
           </table><br>
+          {% endif %}
 
+          {% if new_ciscoadvisory %}
           <table class="table table-borderless mb-0">
               <strong>Cisco Field Advisory</strong>
             <tbody>
@@ -58,13 +63,14 @@
               {% endfor %}
             </tbody>
           </table><br>
+          {% endif %}
 
         </div>
       </div>
     </div>
 
     <!-- Card 2 -->
-        <div class="col-md-4 mb-4">
+    <div class="col-md-4 mb-4">
       <div class="card h-100">
         
         <div class="card-header text-center">
@@ -92,27 +98,53 @@
         </div>
       </div>
     </div>
-
+  
     <!-- Card 3 -->
     <div class="col-md-4 mb-4">
       <div class="card h-100">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
           <strong>Recent Site Changes</strong>
+          <div>
+            <button class="btn btn-sm btn-outline-secondary" id="chg-prev" disabled>&larr;</button>
+            <button class="btn btn-sm btn-outline-secondary" id="chg-next">&rarr;</button>
+          </div>
         </div>
-        <div class="card-body">
-          <ul class="list-unstyled mb-0">
-            {% for change in site_changes %}
-            <div data-toggle="tooltip" data-placement="top" title="{{ change.comment }}">
-               <li>{{ change.icon}}{{ change.comment_title }}</li>
-            </div>
-            {% endfor %}
-          </ul>
-        </div>
+      <div class="card-body">
+        <div id="changelog-container">{{ changelog_entries|json_script:"changelog-data" }}</div>
       </div>
     </div>
   </div>
+
+<script>
+  (function(){
+    // Parse data safely from the script tag
+    const changelogEntries = JSON.parse(document.getElementById('changelog-data').textContent) || [];
+    const container = document.getElementById('changelog-container');
+    const prevBtn = document.getElementById('chg-prev');
+    const nextBtn = document.getElementById('chg-next');
+    if (!container || !changelogEntries.length) return;
   
-</div>
+    let i = 0;
+  
+    function render() {
+      const entry = changelogEntries[i];
+      let html = `<h6 class="mb-2"><strong>${entry.version}</strong></h6><ul class="mb-0">`;
+      for (const line of entry.changes) {
+        html += `<li>${line}</li>`;
+      }
+      html += `</ul>`;
+      container.innerHTML = html;
+  
+      prevBtn.disabled = (i === 0);
+      nextBtn.disabled = (i === changelogEntries.length - 1);
+    }
+  
+    prevBtn.addEventListener('click', () => { if (i > 0) { i--; render(); } });
+    nextBtn.addEventListener('click', () => { if (i < changelogEntries.length - 1) { i++; render(); } });
+  
+    render();
+  })();
+</script>
 
 <script>
   $(function () {

@@ -4,7 +4,6 @@ from django_cryptography.fields import encrypt
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
-from network_ops_dashboard.scripts.emojimap import *
 
 # Create your models here.
     
@@ -49,21 +48,3 @@ class SiteSecrets(models.Model):
     varvalue = models.TextField()
     def __str__(self):
         return str(self.varname)
-    
-class SiteChanges(models.Model):
-    CHANGE_TYPES = [('config', 'config'), ('backend', 'backend'), ('cert', 'cert'), \
-                        ('vpn', 'vpn'), ('maintenance', 'maintenance'), ('deployment', 'deployment'), \
-                        ('outage', 'outage'), ('resolved', 'resolved'), ('firewall', 'firewall'), \
-                        ('network', 'network'), ('backup', 'backup'), ('monitoring', 'monitoring'), \
-                        ('storage', 'storage'), ('useraccess', 'useraccess'), ('database', 'database'), \
-                        ('automation', 'automation'), ('general', 'general')]
-    class Meta:
-        ordering = ['comment_title']
-    change_type = models.CharField(max_length=20, choices=CHANGE_TYPES, default='general')
-    comment_title = models.CharField(max_length=50)
-    comment = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    def icon(self):
-        return EMOJI_MAP.get(self.change_type, "📄")
-    def __str__(self):
-        return str(self.comment_title)
