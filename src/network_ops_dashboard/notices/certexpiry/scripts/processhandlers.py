@@ -18,7 +18,9 @@ def process_entrust(provider, folder_path):
                     content0 = email.read()
                     content1 = content0.replace('=\n', '').replace('=3D', '=')
                     content2 = content1.split('The following certificates are set to expire in ')[-1]
+                    #content2 = content1.split('\nSubject: Certificate Hub: ')[1] # Certificate Hub
                     content = content2.split('It is important to renew your certificates before they expire')[0].strip()
+                    #content = content2.split('\nYou received this mandatory email announcement to update you about important changes to your certificate.')[0].strip() # Certificate Hub
                     # Parse relevant information
                     days = int(re.match(r'\d+', content).group()) if re.match(r'\d+', content) else 0
                     expire_date = datetime.today() + timedelta(days=days)
