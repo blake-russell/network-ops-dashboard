@@ -55,5 +55,21 @@ class DashboardPrefs(models.Model):
     def enabled_order(self, all_cards):
         order = self.layout.get("order") or [c["id"] for c in all_cards]
         hidden = set(self.layout.get("hidden") or [])
-        # keep only known cards, preserve order, drop hidden
         return [cid for cid in order if cid in {c["id"] for c in all_cards} and cid not in hidden]
+    
+class FeatureFlags(models.Model):
+    enable_asa_vpn_stats = models.BooleanField(default=False)
+    # Add new Features to enable here
+
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return "Feature Flags"
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj

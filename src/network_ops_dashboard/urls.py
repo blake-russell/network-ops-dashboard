@@ -31,7 +31,8 @@ urlpatterns = [
     re_path(r'^accounts/change_password/$', auth_views.PasswordChangeView.as_view(template_name='registration/change_password.html', success_url='done/'), name='change_password'),
     re_path(r'^accounts/change_password/done/$', views.change_password_done, name='change_password_done'),
     re_path(r'^dashboard/$', views.dashboard, name='dashboard'),
-    re_path(r'^dashboard/save-prefs/$', views.save_dashboard_prefs, name='save_dashboard_prefs'),
+    re_path(r'^dashboard/save-prefs/$', views.dashboard_save_prefs, name='dashboard_save_prefs'),
+    re_path(r'^dashboard/toggle/asa_vpn_stats$', views.dashboard_toggle_asa_vpn_stats, name='dashboard_toggle_asa_vpn_stats'),
     re_path(r'^public_scripts/$', views.public_scripts, name='public_scripts'),
     re_path(r'^protected_media/(?P<path>.*)', views.protected_media, name='protected_media'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

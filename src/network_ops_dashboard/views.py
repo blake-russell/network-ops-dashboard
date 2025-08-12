@@ -3,6 +3,7 @@ from django.contrib.auth.models import User, Group
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login, authenticate
+from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
 from django.db.models import Q
@@ -82,48 +83,100 @@ def protected_media(request, path, document_root=None, show_indexes=False):
     
 @login_required(login_url='/accounts/login/')
 def dashboard(request):
+    flags = FeatureFlags.load()
+
     site_settings = SiteSettings.objects.first()
-    asa_stats = AsaVpnConnectedUsers.objects.all().order_by('name')
     timecutoff = timezone.now() - timedelta(days=7)
+
     new_svcacts = SvcActExpiry.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
     new_certalerts = CertExpiry.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
     new_ciscoadvisory = CiscoAdvisory.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
     changelog = parse_changelog()
-    asastats = [{"name": a.name, "connected": a.connected, "load": a.load} for a in asa_stats]
+
+    # ASA stats only if globally enabled
+    card_asa_vpn_stats = []
+    if flags.enable_asa_vpn_stats:
+        asa_stats = AsaVpnConnectedUsers.objects.all().order_by('name')
+        card_asa_vpn_stats = [{"name": a.name, "connected": a.connected, "load": a.load} for a in asa_stats]
 
     all_cards = [
-        {"id": "notifications", "title": "Notifications"},
-        {"id": "vpn_stats", "title": "VPN Stats (5m interval)"},
-        {"id": "changelog", "title": "Recent Site Changes"},
-        # add future cards here
+        {"id": "changelog", "title": "Recent Site Changes", "required": True},
+        {"id": "notifications", "title": "Notifications", "required": True},
+        {"id": "asa_vpn_stats", "title": "VPN Stats (5m interval)", "required": False, "requires_feature": "enable_asa_vpn_stats"},
     ]
+
+    for c in all_cards:
+        req = c.get("requires_feature")
+        c["required"] = bool(c.get("required"))
+        c["feature_off"] = bool(req) and (not getattr(flags, req, False))
+
+    default_order = [c["id"] for c in all_cards]
+    required_ids = {c["id"] for c in all_cards if c["required"]}
+    feature_off_ids = {c["id"] for c in all_cards if c["feature_off"]}
 
     prefs, _ = DashboardPrefs.objects.get_or_create(
         user=request.user,
-        defaults={"layout": {"order": [c["id"] for c in all_cards], "hidden": []}},
+        defaults={"layout": {"order": default_order, "hidden": []}},
     )
-    visible_ids = prefs.enabled_order(all_cards)
+
+    # sanitize prefs
+    order = [cid for cid in (prefs.layout.get("order") or default_order) if cid in default_order] or default_order
+    hidden = set(prefs.layout.get("hidden") or [])
+    hidden -= required_ids
+    hidden |= feature_off_ids
+
+    visible_ids = [cid for cid in order if cid not in hidden]
 
     return render(request, "network_ops_dashboard/dashboard.html", {
         "site_settings": site_settings,
-        "asastats": asastats,
         "new_svcacts": new_svcacts,
         "new_certalerts": new_certalerts,
         "new_ciscoadvisory": new_ciscoadvisory,
         "changelog_entries": changelog,
         "all_cards": all_cards,
         "visible_ids": visible_ids,
-        "hidden_ids": set(prefs.layout.get("hidden", [])),
+        "hidden_ids": hidden,
+        "feature_flags": flags,
+        "card_asa_vpn_stats": card_asa_vpn_stats,
     })
 
 @login_required(login_url='/accounts/login/')
 @require_POST
-def save_dashboard_prefs(request):
+def dashboard_save_prefs(request):
     import json
     data = json.loads(request.body.decode() or "{}")
     order = data.get("order") or []
-    hidden = data.get("hidden") or []
+    hidden = set(data.get("hidden") or [])
+
+    flags = FeatureFlags.load()
+
+    all_cards = [
+        {"id": "notifications", "required": True},
+        {"id": "changelog", "required": True},
+        {"id": "asa_vpn_stats", "required": False, "requires_feature": "enable_asa_vpn_stats"},
+    ]
+    default_order = [c["id"] for c in all_cards]
+    required_ids = {c["id"] for c in all_cards if c.get("required")}
+    feature_off_ids = {
+        c["id"] for c in all_cards
+        if c.get("requires_feature") and not getattr(flags, c["requires_feature"], False)
+    }
+
+    order = [cid for cid in order if cid in default_order] or default_order
+    hidden -= required_ids
+    hidden |= feature_off_ids
+
     prefs, _ = DashboardPrefs.objects.get_or_create(user=request.user, defaults={"layout": {}})
-    prefs.layout = {"order": order, "hidden": hidden}
+    prefs.layout = {"order": order, "hidden": list(hidden)}
     prefs.save()
+    return JsonResponse({"ok": True})
+
+@staff_member_required
+@require_POST
+def dashboard_toggle_asa_vpn_stats(request):
+    on = request.POST.get("enabled") == "true"
+    flags = FeatureFlags.load()
+    flags.enable_asa_vpn_stats = on
+    flags.updated_by = request.user
+    flags.save()
     return JsonResponse({"ok": True})

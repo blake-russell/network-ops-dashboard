@@ -17,13 +17,13 @@ from django.utils.log import DEFAULT_LOGGING # noqa: F401
 from network_ops_dashboard.secrets import SECRET_KEY, DEBUG, ALLOWED_HOSTS, LOGGING # noqa: F401
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-# '..venv/'
+# '..project_venv/'
 VENV_DIR = Path(__file__).resolve().parent.parent.parent
-# '..venv/src/'
+# '..project_venv/src/'
 BASE_DIR = Path(__file__).resolve().parent.parent
-# '..venv/src/network_ops_dashboard/..'
+# '..project_venv/src/network_ops_dashboard/..'
 DJANGO_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
-# '..venv/src/network_ops_dashboard/../..'
+# '..project_venv/src/network_ops_dashboard/../..'
 PROJECT_ROOT = os.path.join(DJANGO_ROOT, '..')
 
 # Quick-start development settings - unsuitable for production
