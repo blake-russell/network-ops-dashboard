@@ -4,7 +4,6 @@ from django_cryptography.fields import encrypt
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
-from network_ops_dashboard.scripts.emojimap import *
 
 # Create your models here.
     
