@@ -3,7 +3,6 @@ from django.utils.translation import gettext, gettext_lazy as _
 from django_cryptography.fields import encrypt
 from django.db import models
 from django.conf import settings
-from django.utils import timezone
 
 # Create your models here.
     
@@ -48,3 +47,13 @@ class SiteSecrets(models.Model):
     varvalue = models.TextField()
     def __str__(self):
         return str(self.varname)
+    
+class DashboardPrefs(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    layout = models.JSONField(default=dict)
+
+    def enabled_order(self, all_cards):
+        order = self.layout.get("order") or [c["id"] for c in all_cards]
+        hidden = set(self.layout.get("hidden") or [])
+        # keep only known cards, preserve order, drop hidden
+        return [cid for cid in order if cid in {c["id"] for c in all_cards} and cid not in hidden]

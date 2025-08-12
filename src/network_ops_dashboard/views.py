@@ -3,7 +3,8 @@ from django.contrib.auth.models import User, Group
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login, authenticate
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
+from django.views.decorators.http import require_POST
 from django.db.models import Q
 from django.utils import timezone
 from datetime import timedelta
@@ -66,30 +67,6 @@ def themedark(request):
     user.groups.add(newtheme)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
-@login_required(login_url='/accounts/login/')
-def dashboard(request):
-    statusmessages = []
-    if not User.objects.all():
-        statusmessages.append('- No users exist. Create superuser in shell: "python manage.py createsuperuser"')
-    site_settings = SiteSettings.objects.first() # noqa: F405
-    asa_stats = AsaVpnConnectedUsers.objects.all().order_by('name')
-    timecutoff = timezone.now() - timedelta(days=7)
-    new_svcacts = SvcActExpiry.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
-    new_certalerts = CertExpiry.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
-    new_ciscoadvisory = CiscoAdvisory.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
-    changelog = parse_changelog()
-    asastats = []
-    for asa in asa_stats:
-        detaildict = {
-            'name' : asa.name,
-            'connected' : asa.connected,
-            'load' : asa.load,
-        }
-        asastats.append(detaildict)
-    return render(request, 'network_ops_dashboard/dashboard.html', {'statusmessages': statusmessages, 'asastats': asastats, 'site_settings': site_settings,
-                                                                    'new_svcacts': new_svcacts, 'new_certalerts': new_certalerts, 'new_ciscoadvisory': new_ciscoadvisory,
-                                                                    'changelog_entries': changelog})
-
 def public_scripts(request):
     site_settings = SiteSettings.objects.first() # noqa: F405
     return render(request, 'network_ops_dashboard/public_scripts.html', {'site_settings': site_settings})
@@ -102,3 +79,51 @@ def protected_media(request, path, document_root=None, show_indexes=False):
         return response
     else:
         return HttpResponse(status=400)
+    
+@login_required(login_url='/accounts/login/')
+def dashboard(request):
+    site_settings = SiteSettings.objects.first()
+    asa_stats = AsaVpnConnectedUsers.objects.all().order_by('name')
+    timecutoff = timezone.now() - timedelta(days=7)
+    new_svcacts = SvcActExpiry.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
+    new_certalerts = CertExpiry.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
+    new_ciscoadvisory = CiscoAdvisory.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
+    changelog = parse_changelog()
+    asastats = [{"name": a.name, "connected": a.connected, "load": a.load} for a in asa_stats]
+
+    all_cards = [
+        {"id": "notifications", "title": "Notifications"},
+        {"id": "vpn_stats", "title": "VPN Stats (5m interval)"},
+        {"id": "changelog", "title": "Recent Site Changes"},
+        # add future cards here
+    ]
+
+    prefs, _ = DashboardPrefs.objects.get_or_create(
+        user=request.user,
+        defaults={"layout": {"order": [c["id"] for c in all_cards], "hidden": []}},
+    )
+    visible_ids = prefs.enabled_order(all_cards)
+
+    return render(request, "network_ops_dashboard/dashboard.html", {
+        "site_settings": site_settings,
+        "asastats": asastats,
+        "new_svcacts": new_svcacts,
+        "new_certalerts": new_certalerts,
+        "new_ciscoadvisory": new_ciscoadvisory,
+        "changelog_entries": changelog,
+        "all_cards": all_cards,
+        "visible_ids": visible_ids,
+        "hidden_ids": set(prefs.layout.get("hidden", [])),
+    })
+
+@login_required(login_url='/accounts/login/')
+@require_POST
+def save_dashboard_prefs(request):
+    import json
+    data = json.loads(request.body.decode() or "{}")
+    order = data.get("order") or []
+    hidden = data.get("hidden") or []
+    prefs, _ = DashboardPrefs.objects.get_or_create(user=request.user, defaults={"layout": {}})
+    prefs.layout = {"order": order, "hidden": hidden}
+    prefs.save()
+    return JsonResponse({"ok": True})
