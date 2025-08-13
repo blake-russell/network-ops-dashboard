@@ -3,11 +3,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate, get_user_model, update_session_auth_hash
 from django.http import HttpResponseRedirect
 from django.db.models import Q
-#from django_xhtml2pdf.utils import generate_pdf, pdf_decorator
 import logging
 from network_ops_dashboard import settings
 from network_ops_dashboard.decorators import *
-from network_ops_dashboard.models import *
+from network_ops_dashboard.models import SiteSecrets, FeatureFlags
 from network_ops_dashboard.reports.changes.models import *
 from network_ops_dashboard.reports.changes.scripts.processchangesemail import *
 
@@ -24,7 +23,9 @@ def changes(request):
         site_secrets.setdefault(key, None)
     missing_keys = [key for key in secret_search if site_secrets[key] is None]
     changes = CompanyChanges.objects.all().order_by('scheduled_start')
-    return render(request, 'network_ops_dashboard/reports/changes/home.html', {'changes': changes, 'site_secrets': site_secrets, 'missing_keys': missing_keys })
+    flags = FeatureFlags.load()
+    return render(request, 'network_ops_dashboard/reports/changes/home.html', {'changes': changes, 'site_secrets': site_secrets, 'missing_keys': missing_keys,
+                                                                               'feature_flags': flags})
 
 @login_required(login_url='/accounts/login/')
 def changes_update(request):

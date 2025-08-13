@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 from django.utils.translation import gettext, gettext_lazy as _
 from django_cryptography.fields import encrypt
+from django.core.validators import MaxValueValidator
 from django.db import models
 from django.conf import settings
 
@@ -59,17 +60,20 @@ class DashboardPrefs(models.Model):
     
 class FeatureFlags(models.Model):
     enable_asa_vpn_stats = models.BooleanField(default=False)
-    # Add new Features to enable here
+    asa_vpn_interval_minutes = models.PositiveIntegerField(default=5, validators=[MaxValueValidator(60)])
+    asa_vpn_last_run = models.DateTimeField(null=True, blank=True)
+    enable_email_processing = models.BooleanField(default=False)
+    email_processing_time = models.CharField(max_length=5, default="06:30") # 24h time string; server-local time
 
-    updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
-    )
+    # Add new feature settings or features to enable
+
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
     updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return "Feature Flags"
 
     @classmethod
     def load(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+    
+    def __str__(self):
+        return "Feature Flags"

@@ -16,7 +16,7 @@
       {% if cid == "notifications" %}
         <div class="col-md-4 mb-4 dashboard-card" data-card-id="notifications">
           <div class="card h-100">
-            <div class="card-header text-center"><strong>Notifications</strong></div>
+            <div class="card-header text-center"><strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong></div>
             <div class="card-body">
               {% if new_svcacts %}
               <table class="table table-borderless mb-0">
@@ -60,7 +60,22 @@
             </div>
           </div>
         </div>
-      {% elif cid == "asa_vpn_stats" %}
+      {% elif cid == "changelog" %}
+        <div class="col-md-4 mb-4 dashboard-card" data-card-id="changelog">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong>
+              <div>
+                <button class="btn btn-sm btn-outline-secondary" id="chg-prev" disabled>&larr;</button>
+                <button class="btn btn-sm btn-outline-secondary" id="chg-next">&rarr;</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="changelog-container">{{ changelog_entries|json_script:"changelog-data" }}</div>
+            </div>
+          </div>
+        </div>
+        {% elif cid == "asa_vpn_stats" %}
         <div class="col-md-4 mb-4 dashboard-card" data-card-id="asa_vpn_stats">
           <div class="card h-100">
             <div class="card-header text-center"><strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong></div>
@@ -81,21 +96,6 @@
                   {% endfor %}
                 </tbody>
               </table><br>
-            </div>
-          </div>
-        </div>
-      {% elif cid == "changelog" %}
-        <div class="col-md-4 mb-4 dashboard-card" data-card-id="changelog">
-          <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <strong>Recent Site Changes</strong>
-              <div>
-                <button class="btn btn-sm btn-outline-secondary" id="chg-prev" disabled>&larr;</button>
-                <button class="btn btn-sm btn-outline-secondary" id="chg-next">&rarr;</button>
-              </div>
-            </div>
-            <div class="card-body">
-              <div id="changelog-container">{{ changelog_entries|json_script:"changelog-data" }}</div>
             </div>
           </div>
         </div>
@@ -143,17 +143,25 @@
         </ul>
 
         {% if request.user.is_staff %}
-          <hr>
-          <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="ff-asa"
-                   {% if feature_flags.enable_asa_vpn_stats %}checked{% endif %}>
-            <label class="form-check-label" for="ff-asa">
-              Collect ASA VPN stats (global)
-            </label>
-            <div class="form-text">
-              When off, the collector job no-ops and the VPN card is auto-hidden for everyone.
+        <hr>
+        <div class="row g-2 align-items-center">
+          <div class="col-auto">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="ff-asa"
+                     {% if feature_flags.enable_asa_vpn_stats %}checked{% endif %}>
+              <label class="form-check-label" for="ff-asa">
+                Collect ASA VPN stats (global)
+              </label>
             </div>
           </div>
+          <div class="col-auto">
+            <label for="ff-asa-interval" class="col-form-label">Interval (minutes)</label>
+          </div>
+          <div class="col-auto">
+            <input type="number" class="form-control" id="ff-asa-interval" min="1" max="60"
+                   value="{{ feature_flags.asa_vpn_interval_minutes }}">
+          </div>
+        </div>
         {% endif %}
       </div>
 
@@ -186,18 +194,28 @@
     });
 
     // 2) If staff, also save global collector toggle (optional)
-    const ff = document.getElementById('ff-asa');
     {% if request.user.is_staff %}
-    if (ff) {
-      const form = new FormData();
-      form.append('enabled', ff.checked ? 'true' : 'false');
-      form.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-      await fetch("{% url 'dashboard_toggle_asa_vpn_stats' %}", { method: 'POST', body: form });
-    }
+      const ff = document.getElementById('ff-asa');
+      const intervalEl = document.getElementById('ff-asa-interval');
+
+      if (intervalEl) {
+        const minutes = Math.max(parseInt(intervalEl.value || '5', 10), 1);
+        const fd1 = new FormData();
+        fd1.append('minutes', minutes.toString());
+        fd1.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        await fetch("{% url 'dashboard_set_asa_vpn_interval' %}", { method: 'POST', body: fd1 });
+      }
+
+      if (ff) {
+        const fd2 = new FormData();
+        fd2.append('enabled', ff.checked ? 'true' : 'false');
+        fd2.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        await fetch("{% url 'dashboard_toggle_asa_vpn_stats' %}", { method: 'POST', body: fd2 });
+      }
     {% endif %}
 
-    window.location.reload();
-  });
+  window.location.reload();
+});
 
   (function(){
     const dataTag = document.getElementById('changelog-data');

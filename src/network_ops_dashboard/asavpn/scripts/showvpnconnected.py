@@ -1,12 +1,12 @@
 import requests
 import logging
 from requests.auth import HTTPBasicAuth
-from network_ops_dashboard.models import *
-from network_ops_dashboard.inventory.models import *
-from network_ops_dashboard.asavpn.models import *
+from network_ops_dashboard.models import SiteSecrets, NetworkCredential
+from network_ops_dashboard.inventory.models import Inventory
+from network_ops_dashboard.asavpn.models import AsaVpnConnectedUsers 
 
 logger = logging.getLogger('network_ops_dashboard.asavpn')
-    
+
 def showVPNconnected():
     #urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     headers = {'User-Agent': 'ASDM'}

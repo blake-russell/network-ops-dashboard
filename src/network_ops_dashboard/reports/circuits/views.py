@@ -4,6 +4,7 @@ from django.http import HttpResponseRedirect
 from django.db.models import Q
 import logging
 from network_ops_dashboard.decorators import *
+from network_ops_dashboard.models import FeatureFlags
 from network_ops_dashboard.reports.circuits.models import *
 from network_ops_dashboard.reports.circuits.forms import *
 from network_ops_dashboard.reports.circuits.scripts.processmtcemails import *
@@ -25,9 +26,13 @@ def circuitsmtc(request):
         emails_qs = circuitmtcemails.filter(circuits__provider=provider).distinct()
         if emails_qs.exists():
             providers_with_emails.append((provider, emails_qs))
+
+    flags = FeatureFlags.load()
+
     context = {
         'circuits_exist': circuits_exist,
         'providers_with_emails': providers_with_emails,
+        'feature_flags': flags,
     }
     return render(request, 'network_ops_dashboard/reports/circuits/home.html', context)
 
