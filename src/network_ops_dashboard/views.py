@@ -101,8 +101,8 @@ def dashboard(request):
         card_asa_vpn_stats = [{"name": a.name, "connected": a.connected, "load": a.load} for a in asa_stats]
 
     all_cards = [
-        {"id": "changelog", "title": "Recent Site Changes", "required": True},
-        {"id": "notifications", "title": "Notifications", "required": True},
+        {"id": "changelog", "title": "Recent Site Changes", "required": False},
+        {"id": "notifications", "title": "Notifications", "required": False},
         {"id": "asa_vpn_stats", "title": f"VPN Stats ({flags.asa_vpn_interval_minutes}m interval)", "required": False, "requires_feature": "enable_asa_vpn_stats"},
     ]
 
@@ -171,8 +171,8 @@ def dashboard_save_prefs(request):
 
     flags = FeatureFlags.load()
     all_cards = [
-        {"id": "notifications", "required": True},
-        {"id": "changelog", "required": True},
+        {"id": "notifications", "required": False},
+        {"id": "changelog", "required": False},
         {"id": "asa_vpn_stats", "required": False, "requires_feature": "enable_asa_vpn_stats"},
     ]
     default_order = [c["id"] for c in all_cards]
