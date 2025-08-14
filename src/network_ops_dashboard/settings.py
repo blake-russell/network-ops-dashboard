@@ -13,8 +13,11 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import os
 from pathlib import Path
 import logging.config # noqa: F401
-from django.utils.log import DEFAULT_LOGGING # noqa: F401
-from network_ops_dashboard.secrets import SECRET_KEY, DEBUG, ALLOWED_HOSTS, LOGGING, CRON_USER # noqa: F401
+from django.utils.log import DEFAULT_LOGGING # noqa: F401,F403
+try:
+    from network_ops_dashboard.secrets import * # noqa: F401,F403
+except ImportError:
+    pass
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # '..project_venv/'

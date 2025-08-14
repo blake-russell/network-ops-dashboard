@@ -63,7 +63,10 @@ class FeatureFlags(models.Model):
     asa_vpn_interval_minutes = models.PositiveIntegerField(default=5, validators=[MaxValueValidator(60)])
     asa_vpn_last_run = models.DateTimeField(null=True, blank=True)
     enable_email_processing = models.BooleanField(default=False)
-    email_processing_time = models.CharField(max_length=5, default="06:30") # 24h time string; server-local time
+    email_processing_time = models.CharField(max_length=5, default="06:30")
+    enable_oncall_email = models.BooleanField(default=False)
+    oncall_email_to = models.TextField(blank=True, default="")
+    oncall_email_time = models.TimeField(null=True, blank=True)
 
     # Add new feature settings or features to enable
 
