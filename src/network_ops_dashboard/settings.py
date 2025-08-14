@@ -72,6 +72,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'network_ops_dashboard.context_processors.site_settings_context',
+                "network_ops_dashboard.context_processors.user_group_health",
             ],
         },
     },
