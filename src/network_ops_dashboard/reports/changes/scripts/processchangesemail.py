@@ -1,16 +1,15 @@
 import os
-import email
 from email import policy
 from email.parser import BytesParser
 from email.header import decode_header
 import pandas as pd
 from datetime import datetime, timedelta
-import json
 import re
 from django.utils.timezone import make_aware
+from typing import List, Set
 import logging
-from network_ops_dashboard.models import SiteSecrets
-from network_ops_dashboard.reports.changes.models import CompanyChanges
+from network_ops_dashboard.inventory.models import Site
+from network_ops_dashboard.reports.changes.models import CompanyChanges, CompanyChangesSettings
 
 logger = logging.getLogger('network_ops_dashboard.changes')
 
@@ -34,15 +33,54 @@ def make_serializable(value):
         return None
     return str(value)
 
+def _norm(s: str) -> str:
+    return (s or "").strip().casefold()
+
+def build_valid_locations(settings_obj) -> Set[str]:
+    names = []
+
+    if getattr(settings_obj, "use_sites_for_locations", False):
+        chosen = list(settings_obj.sites_to_filter.all().values_list("name", flat=True))
+        if chosen:
+            names = chosen
+        else:
+            names = list(Site.objects.values_list("name", flat=True))
+    else:
+        custom = getattr(settings_obj, "custom_valid_locations", None) or []
+        if custom:
+            names = list(custom)
+        else:
+            names = list(Site.objects.values_list("name", flat=True))
+
+    return set(_norm(n) for n in names if n)
+
+
 def ProcessChangesEmails():
     logger.info(f'ProcessChangesEmails Running.')
-    try:
-        changes_folder = SiteSecrets.objects.filter(varname='changes_folder')[0].varvalue
-        changes_extract_folder = SiteSecrets.objects.filter(varname='changes_extract_folder')[0].varvalue
-        os.makedirs(changes_extract_folder, exist_ok=True)
-    except Exception as e:
-        logger.exception(f"ProcessChangesEmails: No 'changes_folder' or 'changes_extract_folder' set in SiteSecrets.objects(): {e}")
-        raise
+    DEFAULT_COLUMN_MAP = {
+        "team_name": "Team Name",
+        "change_id": "Change#",
+        "scheduled_start": "Scheduled Start",
+        "scheduled_end": "Scheduled End",
+        "class_type": "Change Class",
+        "location": "Location",
+        "summary": "Change Description",
+        "reason": "Change Reason",
+        "risk": "Risk Level",
+        "group": "Assignment Group"
+    }
+    settings_obj, _ = CompanyChangesSettings.objects.get_or_create(pk=1)
+    if not settings_obj.column_map:
+        settings_obj.column_map = DEFAULT_COLUMN_MAP.copy()
+        settings_obj.save()
+    changes_folder = settings_obj.changes_folder
+    changes_extract_folder = settings_obj.extract_folder
+    skip_rows = settings_obj.header_row - 1
+    days_before = settings_obj.days_ahead
+    days_ahead = settings_obj.days_ahead
+    column_map = settings_obj.column_map
+    loc_col = settings_obj.column_map.get("location", "Location")
+    start_col = settings_obj.column_map.get("scheduled_start", "Scheduled Start")
     for filename in os.listdir(changes_folder):
         file_path = os.path.join(changes_folder, filename)
         if os.path.isfile(file_path) and filename.endswith('.msg'):
@@ -64,32 +102,22 @@ def ProcessChangesEmails():
                                 if payload:
                                     fp.write(payload)
                                     logger.info(f'ProcessChangesEmails: Extracted: {out_path}')
-                                    # Read Excel file, skipping to header row, filter next 7 days only
-                                    df = pd.read_excel(out_path, skiprows=3)  # Header row begins on row 4. Edit this if necessary for your own format.
-                                    df['Scheduled Start'] = pd.to_datetime(df['Scheduled Start'], errors='coerce')  # Handle parse errors safely
+                                    # Read Excel file, skipping to header row
+                                    df = pd.read_excel(out_path, skiprows=skip_rows)
+                                    df[start_col] = pd.to_datetime(df[start_col], errors='coerce')
+                                    days_before = max(days_before or 1, 1)
+                                    days_ahead = max(days_ahead or 7, 1)
                                     today = datetime.today()
-                                    next_7_days = today + timedelta(days=7)
-                                    df = df[df['Scheduled Start'].between(today, next_7_days)] # Your spreadsheet column name might differ - change if necessary
-                                    # Load location filter list from SiteSecrets to search "Location" Column in xlsx file
-                                    valid_locations = json.loads(SiteSecrets.objects.get(varname="changes_valid_locations").varvalue)
+                                    start_range = today - timedelta(days=days_before)
+                                    end_range = today + timedelta(days=days_ahead)
+                                    df = df[df[start_col].between(start_range, end_range)]
                                     # Filter only valid locations
-                                    df = df[df['Location'].isin(valid_locations)] # Your location column name might differ - change if necessary
+                                    df["_loc_norm"] = df[loc_col].astype(str).str.strip().str.casefold()
+                                    valid_locations = build_valid_locations(settings_obj)
+                                    df = df[df["_loc_norm"].isin(valid_locations)]
+                                    df = df.drop(columns=["_loc_norm"])
                                     # Clear existing entries
                                     CompanyChanges.objects.all().delete()
-                                    # Get dynamic field mapping from SiteSecrets
-                                    column_map = json.loads(SiteSecrets.objects.get(varname="changes_column_map").varvalue)
-                                    '''Create a SiteSecrets entry named "changes_column_map" with a json object to load like so:
-                                    {
-                                    "team_name": "Team Name",
-                                    "change_id": "Change#",
-                                    "start": "Scheduled Start",
-                                    "end": "Scheduled End",
-                                    "location": "Location",
-                                    "summary": "Change Description",
-                                    "reason": "Change Reason",
-                                    "risk": "Risk Level"
-                                    }
-                                    Add as you see fit to customize the script as needed '''
                                     # Get known model fields dynamically
                                     model_fields = [
                                         field.name for field in CompanyChanges._meta.get_fields()

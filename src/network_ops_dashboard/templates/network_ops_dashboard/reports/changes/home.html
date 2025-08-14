@@ -4,18 +4,19 @@
 
 <h3>Schedule Changes Report</h3>
 
-{% if site_secrets.changes_folder and site_secrets.changes_extract_folder and site_secrets.changes_column_map and site_secrets.changes_valid_locations %}
-    <a href="{% url 'changes_update' %}">Process New Emails</a>&nbsp;&nbsp;
-    <a href="#" id="toggle-column-link" class="btn btn-sm btn-outline-secondary mb-2">Show Metadata</a>&nbsp;&nbsp;
-    {% include 'network_ops_dashboard/partials/email_job_controls.html' %}
-    <br>
-{% else %}
-    <div class="alert alert-dismissible alert-warning">
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    <h4 class="alert-heading">Warning!</h4>
-    <p class="mb-0">No SiteSecrets.objects() entry found for {% for key in missing_keys %}{{ key }}, {% endfor %}. Go to the <a href="/admin" class="alert-link">admin</a> panel and configure.</p>
-  </div>
-{% endif %}
+<div class="d-flex align-items-center mb-2">
+  {% if settings_obj.changes_folder and settings_obj.extract_folder %}
+    <a href="{% url 'changes_update' %}" class="btn btn-sm btn-outline-primary mb-2">Process New Emails</a> &nbsp;&nbsp;
+  {% endif %}
+  <a href="#" id="toggle-column-link" class="btn btn-sm btn-outline-secondary mb-2">Show Metadata</a> &nbsp;&nbsp;
+  {% include 'network_ops_dashboard/partials/email_job_controls.html' %}
+  {% if request.user.is_staff %}
+    <button class="btn btn-sm btn-outline-dark ms-auto" data-bs-toggle="modal" data-bs-target="#changesSettingsModal">
+      ⚙ Settings
+    </button>
+  {% endif %}
+</div>
+
 <table class="table table-hover" id="my-table">
  <tr>
   <th>Change ID</th>
@@ -44,6 +45,119 @@
 {% endfor %}
 </table>
 
+{% if request.user.is_staff %}
+<div class="modal fade" id="changesSettingsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <form class="modal-content" id="changes-settings-form">
+      <div class="modal-header">
+        <h5 class="modal-title">Change Email Parser Settings</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row g-3">
+
+          <div class="col-md-6">
+            <label class="form-label">.msg folder</label>
+            <input type="text" name="changes_folder" class="form-control" value="{{ settings_obj.changes_folder|default:'' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Extract folder</label>
+            <input type="text" name="extract_folder" class="form-control" value="{{ settings_obj.extract_folder|default:'' }}">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Header row #</label>
+            <input type="number" min="1" name="header_row" class="form-control" value="{{ settings_obj.header_row|default:4 }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Days before</label>
+            <input type="number" min="1" name="days_before" class="form-control" value="{{ settings_obj.days_before|default:1 }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Days ahead</label>
+            <input type="number" min="1" name="days_ahead" class="form-control" value="{{ settings_obj.days_ahead|default:7 }}">
+          </div>
+
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="use_sites_for_locations" id="useSites"
+                     {% if settings_obj.use_sites_for_locations %}checked{% endif %}>
+              <label class="form-check-label" for="useSites">Use Site names for valid locations</label>
+              <div class="form-text">
+                When enabled, locations will be filtered by Sites below (if any selected), otherwise all Site names.
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12" id="sitesMultiWrap" {% if not settings_obj.use_sites_for_locations %}style="display:none"{% endif %}>
+            <label class="form-label">Limit to specific Sites (optional)</label>
+            <select name="sites_to_filter" class="form-select" multiple size="8">
+              {% for site in sites %}
+                <option value="{{ site.pk }}"
+                  {% if site in settings_obj.sites_to_filter.all %}selected{% endif %}>
+                  {{ site.name }}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">
+              Hold Ctrl/Cmd to select multiple. If none selected, all Sites are considered valid.
+            </div>
+          </div>
+
+          <!-- Custom locations (only if NOT using sites) -->
+          <div class="col-12" id="customLocationsWrap" {% if settings_obj.use_sites_for_locations %}style="display:none"{% endif %}>
+            <label class="form-label">Custom valid locations (comma-separated)</label>
+            <input type="text" name="custom_valid_locations" class="form-control"
+                   value="{{ settings_obj.custom_valid_locations|join:', ' }}">
+          </div>
+
+          <!-- Column Map JSON -->
+          <div class="col-12">
+            <label class="form-label">Column Map (JSON)</label>
+            <textarea name="column_map_json" class="form-control" rows="8"
+                      placeholder='{"team_name":"Team Name","change_id":"Change#","scheduled_start":"Scheduled Start","scheduled_end":"Scheduled End","location":"Location","summary":"Change Description","reason":"Change Reason","risk":"Risk Level","group":"Assignment Group","class_type":"Change Class"}'>{{ column_map_json|safe }}</textarea>
+            <div class="form-text">
+              Do not edit the key names, they are referenced on this template to call data into the tables. Only changes the vaules on the right side to match your spreadsheet.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary" type="submit">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Toggle visibility between Sites vs Custom list
+  (function(){
+    const useSites = document.getElementById('useSites');
+    const sitesWrap = document.getElementById('sitesMultiWrap');
+    const customWrap = document.getElementById('customLocationsWrap');
+    if (useSites) {
+      useSites.addEventListener('change', () => {
+        const on = useSites.checked;
+        if (sitesWrap) sitesWrap.style.display = on ? '' : 'none';
+        if (customWrap) customWrap.style.display = on ? 'none' : '';
+      });
+    }
+  })();
+
+  // Save settings via AJAX
+  document.getElementById('changes-settings-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    await fetch("{% url 'changes_save_settings' %}", { method: 'POST', body: fd });
+    window.location.reload();
+  });
+</script>
+
+
 <style>
   .hidden-column {
     display: none;
@@ -65,6 +179,5 @@
     toggleColumnLink.textContent = isHidden ? 'Hide Metadata' : 'Show Metadata';
   });
 </script>
-
+{% endif %}
 {% endblock %}
-

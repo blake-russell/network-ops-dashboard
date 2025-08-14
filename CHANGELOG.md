@@ -1,11 +1,13 @@
 # Changelog
 
-## v0.2.0 - 08-13-2025
-- 🆕 Dashboard: Added cusomize button to arrange & toggle display of cards. Site-Admins can also enable/disable scripted cards & change script settings.
-- 🆕 Reports/Notices: All email based reports/notice pages have been given an email processing button to enable/disable & set time.
+## v0.2.0 - 08-14-2025
+- 🆕 Reports/Changes: Added settings button for staff users to configure the changes module (folders, valid_locations, column_map, timeframe, etc.)
+- 🆕 Dashboard: Added customize button to arrange & toggle display of cards. Staff users can also enable/disable scripted cards & change script settings.
+- 🆕 Reports & Notices: All email based reports/notice pages have been given an email processing button to allow staff users ability to enable/disable & set time.
 - 🤖 Cronjobs: No more static configuration of cronjobs, that is now all handled through the UI. Jobs utilize management/command calls to manage.py.
 - ⚙️ Added DashboardPrefs model to track user-specific dashboard layout.
 - ⚙️ Added FeatureFlags model to track enablement of dashboard card scripts and cronjobs.
+- ⚙️ Added CompanyChangesSettings model to manage CompanyChanges modules settings from module page.
 
 ## v0.1.7 - 08-12-2025
 - 🆕 Dashboard: Add CHANGELOG.md and deliver content to "Recent Changes" card on dashboard.
