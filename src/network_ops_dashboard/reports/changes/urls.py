@@ -24,4 +24,5 @@ from . import views
 urlpatterns = [
     re_path(r'^$', views.changes, name='changes'),
     re_path(r'^update/$', views.changes_update, name='changes_update'),
+    re_path(r'save-settings/$', views.save_changes_settings, name='changes_save_settings'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

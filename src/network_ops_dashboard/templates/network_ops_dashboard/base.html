@@ -190,8 +190,25 @@
                 </div>
                 </nav>
 
+                {% if ungrouped_users_count %}
+                <div class="container mt-2">
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <strong>Warning:</strong> {{ ungrouped_users_count }} user{{ ungrouped_users_count|pluralize }}
+                        currently ha{{ ungrouped_users_count|pluralize:"s,ve" }} no groups. This can hide modules
+                        like Inventory/Reports for those accounts.
+                        {% if ungrouped_users_sample %}
+                        <br><small>Example{{ ungrouped_users_sample|length|pluralize }}: {{ ungrouped_users_sample|join:", " }}{% if ungrouped_users_count > ungrouped_users_sample|length %}, …{% endif %}</small>
+                        {% endif %}
+                        <br><small>
+                        Assign groups (e.g. <code>net-admin</code>, <code>site-admin</code>, <code>themedark</code>/<code>themelight</code>) in
+                        <a href="/admin/auth/user/" class="alert-link">Django Admin &raquo; Users</a>.
+                        </small>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        </div>
+                        {% endif %}
+
                 {% block content %}
                 {% endblock %}
         </body>
 </html>
-

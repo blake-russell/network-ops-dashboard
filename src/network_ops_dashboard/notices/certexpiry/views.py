@@ -3,11 +3,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate, get_user_model, update_session_auth_hash
 from django.http import HttpResponseRedirect
 from django.db.models import Q
-#from django_xhtml2pdf.utils import generate_pdf, pdf_decorator
 import logging
 from network_ops_dashboard import settings
 from network_ops_dashboard.decorators import *
-from network_ops_dashboard.models import *
+from network_ops_dashboard.models import FeatureFlags
 from network_ops_dashboard.notices.certexpiry.forms import *
 from network_ops_dashboard.notices.certexpiry.models import *
 from network_ops_dashboard.notices.certexpiry.scripts.processcertexpiryemail import *
@@ -20,7 +19,8 @@ logger = logging.getLogger('network_ops_dashboard.certexpiry')
 def certexpiry(request):
     cert_providers = CertProvider.objects.first()
     certs = CertExpiry.objects.filter(Q(status='Open')).order_by('expire_date')
-    return render(request, 'network_ops_dashboard/notices/certexpiry/home.html', {'certs': certs, 'cert_providers': cert_providers })
+    flags = FeatureFlags.load()
+    return render(request, 'network_ops_dashboard/notices/certexpiry/home.html', {'certs': certs, 'cert_providers': cert_providers, 'feature_flags': flags})
 
 @login_required(login_url='/accounts/login/')
 def certexpiry_update(request):

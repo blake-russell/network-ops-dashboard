@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 from django.utils.translation import gettext, gettext_lazy as _
 from django_cryptography.fields import encrypt
+from django.core.validators import MaxValueValidator
 from django.db import models
 from django.conf import settings
-from django.utils import timezone
 
 # Create your models here.
     
@@ -48,3 +48,32 @@ class SiteSecrets(models.Model):
     varvalue = models.TextField()
     def __str__(self):
         return str(self.varname)
+    
+class DashboardPrefs(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    layout = models.JSONField(default=dict)
+
+    def enabled_order(self, all_cards):
+        order = self.layout.get("order") or [c["id"] for c in all_cards]
+        hidden = set(self.layout.get("hidden") or [])
+        return [cid for cid in order if cid in {c["id"] for c in all_cards} and cid not in hidden]
+    
+class FeatureFlags(models.Model):
+    enable_asa_vpn_stats = models.BooleanField(default=False)
+    asa_vpn_interval_minutes = models.PositiveIntegerField(default=5, validators=[MaxValueValidator(60)])
+    asa_vpn_last_run = models.DateTimeField(null=True, blank=True)
+    enable_email_processing = models.BooleanField(default=False)
+    email_processing_time = models.CharField(max_length=5, default="06:30") # 24h time string; server-local time
+
+    # Add new feature settings or features to enable
+
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+    
+    def __str__(self):
+        return "Feature Flags"

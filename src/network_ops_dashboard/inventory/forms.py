@@ -43,7 +43,7 @@ class SiteForm(forms.ModelForm):
 	address = forms.CharField(label="Steet Address:", required=False)
 	city = forms.CharField(label="City:", required=False)
 	state = forms.CharField(label="State:", required=False)
-	zip = forms.CharField(label="Zipcode:", required=False)
+	zip = forms.CharField(label="Zipcode:", required=False, initial="0")
 	poc_name = forms.CharField(label="POC Name:", required=False)
 	poc_number = forms.CharField(label="POC Number:", required=False)
 

@@ -14,17 +14,21 @@ import os
 from pathlib import Path
 import logging.config # noqa: F401
 from django.utils.log import DEFAULT_LOGGING # noqa: F401
-from network_ops_dashboard.secrets import SECRET_KEY, DEBUG, ALLOWED_HOSTS, LOGGING # noqa: F401
+from network_ops_dashboard.secrets import SECRET_KEY, DEBUG, ALLOWED_HOSTS, LOGGING, CRON_USER # noqa: F401
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-# '..venv/'
+# '..project_venv/'
 VENV_DIR = Path(__file__).resolve().parent.parent.parent
-# '..venv/src/'
+# '..project_venv/src/'
 BASE_DIR = Path(__file__).resolve().parent.parent
-# '..venv/src/network_ops_dashboard/..'
-DJANGO_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
-# '..venv/src/network_ops_dashboard/../..'
+# '..project_venv/src/network_ops_dashboard/'
+DJANGO_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+# '..project_venv/src/network_ops_dashboard/../'
 PROJECT_ROOT = os.path.join(DJANGO_ROOT, '..')
+# manage.py 
+MANAGE_PY = os.path.join(BASE_DIR, "manage.py")
+# venv python bin
+PYTHON_BIN = os.path.join(VENV_DIR, "bin", "python")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
@@ -68,6 +72,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'network_ops_dashboard.context_processors.site_settings_context',
+                "network_ops_dashboard.context_processors.user_group_health",
             ],
         },
     },
