@@ -15,7 +15,7 @@ def clean_text(text):
 def decode_email(encoded_content):
     for part in encoded_content.walk():
         content_type = part.get_content_type()
-        content_disposition = part.get("Content-Disposition", "")
+        # content_disposition = part.get("Content-Disposition", "")
         content_transfer_encoding = part.get("Content-Transfer-Encoding", "").lower()
         # Look for text parts that are base64 encoded
         if content_type in ["text/plain", "text/html"] and content_transfer_encoding == "base64":

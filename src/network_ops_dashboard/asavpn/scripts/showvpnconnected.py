@@ -1,12 +1,12 @@
 import requests
 import logging
 from requests.auth import HTTPBasicAuth
-from network_ops_dashboard.models import *
-from network_ops_dashboard.inventory.models import *
-from network_ops_dashboard.asavpn.models import *
+from network_ops_dashboard.models import SiteSecrets, NetworkCredential
+from network_ops_dashboard.inventory.models import Inventory
+from network_ops_dashboard.asavpn.models import AsaVpnConnectedUsers 
 
 logger = logging.getLogger('network_ops_dashboard.asavpn')
-    
+
 def showVPNconnected():
     #urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     headers = {'User-Agent': 'ASDM'}
@@ -17,7 +17,7 @@ def showVPNconnected():
         logger.exception(f"No asavpn_primary_user set in SiteSecrets.objects(): {e}")
     auth = HTTPBasicAuth(creds[0].username, creds[0].password)
     baseStr = '/admin/exec/show%20vpn-sessiondb'
-    asaInv = Inventory.objects.filter(device_tag__name__exact='ASAVPN')
+    asaInv = Inventory.objects.filter(device_tag__name__exact='ASAVPN') # Update tag name if necessary or remove tags to ignore
     for TargetDevice in asaInv:
         try:
             r = requests.get('https://' + str(TargetDevice) + baseStr, headers=headers, auth=auth, verify=False)

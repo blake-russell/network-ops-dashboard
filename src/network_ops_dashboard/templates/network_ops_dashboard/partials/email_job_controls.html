@@ -1,0 +1,57 @@
+{% if request.user.is_staff %}
+<button class="btn btn-sm btn-outline-secondary mb-2" data-bs-toggle="modal" data-bs-target="#emailJobModal">
+  ⚙ Email Processing
+</button>
+
+<div class="modal fade" id="emailJobModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form class="modal-content" id="email-job-form">
+      <div class="modal-header">
+        <h5 class="modal-title">Daily Email Processing</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="ej-enabled"
+                 {% if feature_flags.enable_email_processing %}checked{% endif %}>
+          <label class="form-check-label" for="ej-enabled">Enable daily processing</label>
+        </div>
+        <div class="mb-2">
+          <label for="ej-time" class="form-label">Run time (HH:MM)</label>
+          <input type="time" class="form-control" id="ej-time"
+                 value="{{ feature_flags.email_processing_time|default:'06:30' }}">
+          <div class="form-text">Server local time.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" type="submit">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  const form = document.getElementById('email-job-form');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const on = document.getElementById('ej-enabled').checked ? 'true' : 'false';
+    const time = document.getElementById('ej-time').value || '06:30';
+
+    // Save time first so (re)enable uses latest
+    const fd1 = new FormData();
+    fd1.append('time', time);
+    fd1.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    await fetch("{% url 'dashboard_set_email_time' %}", { method: 'POST', body: fd1 });
+
+    const fd2 = new FormData();
+    fd2.append('enabled', on);
+    fd2.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    await fetch("{% url 'dashboard_toggle_email_processing' %}", { method: 'POST', body: fd2 });
+
+    window.location.reload();
+  });
+})();
+</script>
+{% endif %}

@@ -10,6 +10,7 @@
     <a href="{% url 'circuitprovider' %}">Circuit Providers</a> &nbsp;&nbsp;
     <a href="{% url 'circuittag' %}">Circuit Tags</a> &nbsp;&nbsp;
     <!--<a href="#" id="toggle-column-link" class="btn btn-sm btn-outline-secondary mb-2">Hide Action Column</a>-->
+    {% include 'network_ops_dashboard/partials/email_job_controls.html' %}
     <br>
 {% else %}
   <div class="alert alert-dismissible alert-warning">
@@ -21,6 +22,8 @@
     <a href="{% url 'circuitprovider' %}">Circuit Providers</a> &nbsp;&nbsp;
     <a href="{% url 'circuittag' %}">Circuit Tags</a> &nbsp;&nbsp;
 {% endif %}
+
+
 
 {% for provider, emails in providers_with_emails %}
 	<table class="table table-hover" id="my-table">

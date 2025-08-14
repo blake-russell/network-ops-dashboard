@@ -1,155 +1,242 @@
 {% extends 'network_ops_dashboard/base.html' %}
-{% load app_tags %}
 {% block content %}
 
-{% if site_settings %}
-  <h3>{{ site_settings.teamname }} Team Dashboard</h3>
-{% else %}
-  <div class="alert alert-dismissible alert-warning">
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    <h4 class="alert-heading">Warning!</h4>
-    <p class="mb-0">No SiteSecrets.objects() object founds. Go to the <a href="/admin" class="alert-link">admin</a> panel and configure one.</p>
-  </div>
-{% endif %}
+<div class="d-flex align-items-center">
+  <h3 class="me-auto">
+    {% if site_settings %}{{ site_settings.teamname }} Team Dashboard{% else %}Team Dashboard{% endif %}
+  </h3>
+  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#customizeModal">
+    ⚙ Customize
+  </button>
+</div>
 
 <div class="container-fluid mt-4">
-  <div class="row">
-    <!-- Card 1 -->
-    <div class="col-md-4 mb-4">
-      <div class="card h-100">
-
-        <div class="card-header text-center">
-          <strong>Notifications</strong>
-        </div>
-
-        <div class="card-body">
-          {% if new_svcacts %}
-          <table class="table table-borderless mb-0">
-              <strong>Service Account Password Expiry</strong>
-            <tbody>
-              {% for svc_act in new_svcacts %}
-              <tr>
-                <td><b>{{ svc_act.svc_act }}</b></td>
-                <td class="text-right"><small class="text-muted">{{ svc_act.expire_date }}</small></td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table><br>
-          {% endif %}
-
-          {% if new_certalerts %}
-          <table class="table table-borderless mb-0">
-              <strong>Certificate Expiry</strong>
-            <tbody>
-              {% for certs in new_certalerts %}
-              <tr>
-                <td><b>{{ certs.common_name }}</b></td>
-                <td class="text-right"><small class="text-muted">{{ certs.expire_date }}</small></td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table><br>
-          {% endif %}
-
-          {% if new_ciscoadvisory %}
-          <table class="table table-borderless mb-0">
-              <strong>Cisco Field Advisory</strong>
-            <tbody>
-              {% for advisory in new_ciscoadvisory %}
-              <tr>
-                <td><a href="{{ advisory.url }}" target="_new"><b>{{ advisory.title_short }}</a></b></td>
-                <td class="text-right"><small class="text-muted">{{ advisory.impact_rating }}</small></td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table><br>
-          {% endif %}
-
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 2 -->
-    <div class="col-md-4 mb-4">
-      <div class="card h-100">
-        
-        <div class="card-header text-center">
-          <strong>VPN Stats (5m interval)</strong>
-        </div>
-
-        <div class="card-body">
-          <table class="table table-borderless mb-0">
-            <tbody>
-              <tr>
-                <td>Device</b></td>
-                <td class="text-right"><small class="text-muted">Users</small></td>
-                <td class="text-right"><small class="text-muted">Load</small></td>
-              </tr>
-              {% for asa in asastats %}
-              <tr>
-                <td>{{ asa.name }}</b></td>
-                <td class="text-right"><small class="text-muted">{{ asa.connected }}</small></td>
-                <td class="text-right"><small class="text-muted">{{ asa.load }}</small></td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table><br>
-
-        </div>
-      </div>
-    </div>
-  
-    <!-- Card 3 -->
-    <div class="col-md-4 mb-4">
-      <div class="card h-100">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <strong>Recent Site Changes</strong>
-          <div>
-            <button class="btn btn-sm btn-outline-secondary" id="chg-prev" disabled>&larr;</button>
-            <button class="btn btn-sm btn-outline-secondary" id="chg-next">&rarr;</button>
+  <div id="card-grid" class="row" data-order='{{ visible_ids|json_script:"vis-ids" }}'>
+    {% for cid in visible_ids %}
+      {% if cid == "notifications" %}
+        <div class="col-md-4 mb-4 dashboard-card" data-card-id="notifications">
+          <div class="card h-100">
+            <div class="card-header text-center"><strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong></div>
+            <div class="card-body">
+              {% if new_svcacts %}
+              <table class="table table-borderless mb-0">
+                <strong>Service Account Password Expiry</strong>
+              <tbody>
+                {% for svc_act in new_svcacts %}
+                <tr>
+                  <td><b>{{ svc_act.svc_act }}</b></td>
+                  <td class="text-right"><small class="text-muted">{{ svc_act.expire_date }}</small></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table><br>
+              {% endif %}
+              {% if new_certalerts %}
+              <table class="table table-borderless mb-0">
+                <strong>Certificate Expiry</strong>
+              <tbody>
+                {% for certs in new_certalerts %}
+                <tr>
+                  <td><b>{{ certs.common_name }}</b></td>
+                  <td class="text-right"><small class="text-muted">{{ certs.expire_date }}</small></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table><br>
+              {% endif %}
+              {% if new_ciscoadvisory %}
+              <table class="table table-borderless mb-0">
+                <strong>Cisco Field Advisory</strong>
+              <tbody>
+                {% for advisory in new_ciscoadvisory %}
+                <tr>
+                  <td><a href="{{ advisory.url }}" target="_new"><b>{{ advisory.title_short }}</a></b></td>
+                  <td class="text-right"><small class="text-muted">{{ advisory.impact_rating }}</small></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table><br>
+              {% endif %}
+            </div>
           </div>
         </div>
-      <div class="card-body">
-        <div id="changelog-container">{{ changelog_entries|json_script:"changelog-data" }}</div>
-      </div>
-    </div>
+      {% elif cid == "changelog" %}
+        <div class="col-md-4 mb-4 dashboard-card" data-card-id="changelog">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong>
+              <div>
+                <button class="btn btn-sm btn-outline-secondary" id="chg-prev" disabled>&larr;</button>
+                <button class="btn btn-sm btn-outline-secondary" id="chg-next">&rarr;</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="changelog-container">{{ changelog_entries|json_script:"changelog-data" }}</div>
+            </div>
+          </div>
+        </div>
+        {% elif cid == "asa_vpn_stats" %}
+        <div class="col-md-4 mb-4 dashboard-card" data-card-id="asa_vpn_stats">
+          <div class="card h-100">
+            <div class="card-header text-center"><strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong></div>
+            <div class="card-body">
+              <table class="table table-borderless mb-0">
+                <tbody>
+                  <tr>
+                    <td>Device</b></td>
+                    <td class="text-right"><small class="text-muted">Users</small></td>
+                    <td class="text-right"><small class="text-muted">Load</small></td>
+                  </tr>
+                  {% for asa in card_asa_vpn_stats %}
+                  <tr>
+                    <td>{{ asa.name }}</b></td>
+                    <td class="text-right"><small class="text-muted">{{ asa.connected }}</small></td>
+                    <td class="text-right"><small class="text-muted">{{ asa.load }}</small></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table><br>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
   </div>
+</div>
 
+
+<!-- Customize modal -->
+<div class="modal fade" id="customizeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form class="modal-content" id="prefs-form">
+      <div class="modal-header">
+        <h5 class="modal-title">Customize dashboard</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <p class="text-muted small mb-2">Drag to reorder. Uncheck to hide.</p>
+
+        <ul id="card-list" class="list-group">
+          {% for c in all_cards %}
+          <li class="list-group-item d-flex justify-content-between align-items-center"
+              data-card-id="{{ c.id }}"
+              {% if c.feature_off %}style="opacity:.5;"{% endif %}>
+            <span class="handle me-2">⠿</span>
+            <span class="flex-grow-1">
+              {{ c.title }}
+              {% if c.required %}
+                <span class="badge bg-secondary ms-2">required</span>
+              {% endif %}
+              {% if c.feature_off %}
+                <span class="badge bg-warning text-dark ms-2">feature disabled</span>
+              {% endif %}
+            </span>
+            <div class="form-check form-switch">
+              <input class="form-check-input card-toggle"
+                     type="checkbox"
+                     {% if c.id not in hidden_ids %}checked{% endif %}
+                     {% if c.required or c.feature_off %}disabled{% endif %}>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+
+        {% if request.user.is_staff %}
+        <hr>
+        <div class="row g-2 align-items-center">
+          <div class="col-auto">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="ff-asa"
+                     {% if feature_flags.enable_asa_vpn_stats %}checked{% endif %}>
+              <label class="form-check-label" for="ff-asa">
+                Collect ASA VPN stats (global)
+              </label>
+            </div>
+          </div>
+          <div class="col-auto">
+            <label for="ff-asa-interval" class="col-form-label">Interval (minutes)</label>
+          </div>
+          <div class="col-auto">
+            <input type="number" class="form-control" id="ff-asa-interval" min="1" max="60"
+                   value="{{ feature_flags.asa_vpn_interval_minutes }}">
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary" type="submit">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
+  // Drag in modal
+  const listEl = document.getElementById('card-list');
+  new Sortable(listEl, { handle: '.handle', animation: 150 });
+
+  document.getElementById('prefs-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const items = [...document.querySelectorAll('#card-list li')];
+    const order = items.map(li => li.dataset.cardId);
+    const hidden = items.filter(li => !li.querySelector('.card-toggle').checked)
+                        .map(li => li.dataset.cardId);
+
+    // 1) Save per-user prefs
+    await fetch("{% url 'dashboard_save_prefs' %}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify({ order, hidden })
+    });
+
+    // 2) If staff, also save global collector toggle (optional)
+    {% if request.user.is_staff %}
+      const ff = document.getElementById('ff-asa');
+      const intervalEl = document.getElementById('ff-asa-interval');
+
+      if (intervalEl) {
+        const minutes = Math.max(parseInt(intervalEl.value || '5', 10), 1);
+        const fd1 = new FormData();
+        fd1.append('minutes', minutes.toString());
+        fd1.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        await fetch("{% url 'dashboard_set_asa_vpn_interval' %}", { method: 'POST', body: fd1 });
+      }
+
+      if (ff) {
+        const fd2 = new FormData();
+        fd2.append('enabled', ff.checked ? 'true' : 'false');
+        fd2.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        await fetch("{% url 'dashboard_toggle_asa_vpn_stats' %}", { method: 'POST', body: fd2 });
+      }
+    {% endif %}
+
+  window.location.reload();
+});
+
   (function(){
-    // Parse data safely from the script tag
-    const changelogEntries = JSON.parse(document.getElementById('changelog-data').textContent) || [];
+    const dataTag = document.getElementById('changelog-data');
+    if (!dataTag) return;
+    const changelogEntries = JSON.parse(dataTag.textContent) || [];
     const container = document.getElementById('changelog-container');
     const prevBtn = document.getElementById('chg-prev');
     const nextBtn = document.getElementById('chg-next');
-    if (!container || !changelogEntries.length) return;
-  
     let i = 0;
-  
     function render() {
       const entry = changelogEntries[i];
       let html = `<h6 class="mb-2"><strong>${entry.version}</strong></h6><ul class="mb-0">`;
-      for (const line of entry.changes) {
-        html += `<li>${line}</li>`;
-      }
+      for (const line of entry.changes) html += `<li>${line}</li>`;
       html += `</ul>`;
       container.innerHTML = html;
-  
-      prevBtn.disabled = (i === 0);
-      nextBtn.disabled = (i === changelogEntries.length - 1);
+      if (prevBtn) prevBtn.disabled = (i === 0);
+      if (nextBtn) nextBtn.disabled = (i === changelogEntries.length - 1);
     }
-  
-    prevBtn.addEventListener('click', () => { if (i > 0) { i--; render(); } });
-    nextBtn.addEventListener('click', () => { if (i < changelogEntries.length - 1) { i++; render(); } });
-  
+    if (prevBtn) prevBtn.addEventListener('click', () => { if (i > 0) { i--; render(); } });
+    if (nextBtn) nextBtn.addEventListener('click', () => { if (i < changelogEntries.length - 1) { i++; render(); } });
     render();
   })();
 </script>
-
-<script>
-  $(function () {
-    $('[data-toggle="tooltip"]').tooltip()
-  });
-</script>
-
 {% endblock %}

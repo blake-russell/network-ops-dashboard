@@ -5,7 +5,9 @@
 <h3>Cisco Advisory Notifications</h3>
 
 {% if site_secrets %}
-    <a href="{% url 'ciscoadvisory_update' %}">Process New Emails</a><br>
+    <a href="{% url 'ciscoadvisory_update' %}">Process New Emails</a>&nbsp;&nbsp;
+    {% include 'network_ops_dashboard/partials/email_job_controls.html' %}
+    <br>
 {% else %}
   <div class="alert alert-dismissible alert-warning">
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
