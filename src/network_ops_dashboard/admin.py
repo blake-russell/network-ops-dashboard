@@ -26,8 +26,6 @@ admin.site.register(APICMopInterface)
 admin.site.register(F5LBConfigOptions)
 admin.site.register(APICConfigOptions)
 admin.site.register(OnCallIncident)
-admin.site.register(OnCallSettings)
-admin.site.register(SiteSettings)
 admin.site.register(SiteSettingsWebsite)
 admin.site.register(SiteSecrets)
 admin.site.register(CompanyChanges)
@@ -41,4 +39,24 @@ admin.site.register(CircuitTag)
 admin.site.register(Circuit)
 admin.site.register(CircuitMtcEmail)
 admin.site.register(DashboardPrefs)
-admin.site.register(FeatureFlags)
+
+@admin.register(SiteSettings)
+class SiteSettingsAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        return not SiteSettings.objects.exists()
+    def has_delete_permission(self, request, obj=None):
+        return False
+    
+@admin.register(OnCallSettings)
+class OnCallSettingsAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        return not OnCallSettings.objects.exists()
+    def has_delete_permission(self, request, obj=None):
+        return False
+    
+@admin.register(FeatureFlags)
+class FeatureFlagsAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        return not FeatureFlags.objects.exists()
+    def has_delete_permission(self, request, obj=None):
+        return False

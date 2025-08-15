@@ -121,7 +121,6 @@
     window.location.reload();
   });
   </script>
-  {% endif %}
 
   <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#oncallDisplayModal">
     ⚙ Display Settings
@@ -192,6 +191,7 @@
       </form>
     </div>
   </div>
+  {% endif %}
   
   <script>
     document.getElementById('oncall-display-form').addEventListener('submit', async (e) => {

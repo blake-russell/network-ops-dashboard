@@ -1,0 +1,24 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+<h3>Network Credentials</h3>
+<a href="{% url 'networkcreds_add' %}" class="btn btn-sm btn-outline-primary">Add Network Credential</a><br>
+<table class="table table-hover">
+ <tr>
+  <th>Username Title</th>
+  <th>Username</th>
+ </tr>
+
+{% for cred in detaillist %}
+  <tr class="table-light">
+    <td>{{ cred.username_search_field }}</td>
+    <td>{{ cred.username }}</td>
+    <td>
+      <a href="{% url 'networkcreds_edit' cred.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+    </td>
+  </tr>
+{% endfor %}
+</table>
+
+{% endblock %}
