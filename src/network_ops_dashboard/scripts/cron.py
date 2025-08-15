@@ -9,6 +9,7 @@ log = logging.getLogger(__name__)
 COLLECTORS = {
     "asa_vpn_stats": "collect_asa_vpn_stats",
     "process_emails": "process_emails",
+    "send_oncall_email": "send_oncall_email",
 }
 
 def _job_comment(key: str) -> str:

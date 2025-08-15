@@ -57,6 +57,158 @@
 <button onclick="redirectToPrint()" class="btn btn-outline-primary btn-sm">🖨️ Print/Copy Mode</button> &nbsp;
 <a href="{% url 'oncall_incident_log' %}" class="btn btn-outline-secondary btn-sm hide-on-print">📜 Incident Log</a> &nbsp;
 <!-- <button onclick="copyCleanIncidentContent()" class="btn btn-outline-primary btn-sm">📋 Copy for Email</button> -->
+
+{% if request.user.is_staff %}
+<button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#oncallEmailModal">
+  ✉ Email Settings
+</button>
+
+<div class="modal fade" id="oncallEmailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form class="modal-content" id="oncall-email-form">
+      <div class="modal-header">
+        <h5 class="modal-title">On-Call Daily Email</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="oc-enable"
+                 {% if feature_flags.enable_oncall_email %}checked{% endif %}>
+          <label class="form-check-label" for="oc-enable">Enable daily email</label>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Recipients (comma or semicolon separated)</label>
+          <input type="text" class="form-control" id="oc-recipients"
+                 value="{{ feature_flags.oncall_email_to|default:'' }}">
+        </div>
+
+        <div class="mb-1">
+          <label class="form-label">Send time</label>
+          <input type="time" class="form-control" id="oc-time"
+                 value="{% if feature_flags.oncall_email_time %}{{ feature_flags.oncall_email_time|time:'H:i' }}{% endif %}">
+          <div class="form-text">Server local time</div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" type="submit">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.getElementById('oncall-email-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const recipients = document.getElementById('oc-recipients').value || '';
+    const send_time = document.getElementById('oc-time').value || '';
+    const enabled = document.getElementById('oc-enable').checked;
+  
+    // Save address/time first
+    const fd1 = new FormData();
+    fd1.append('recipients', recipients);
+    fd1.append('send_time', send_time);
+    fd1.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    await fetch("{% url 'oncall_email_save' %}", { method: 'POST', body: fd1 });
+  
+    // Toggle (also creates/removes cron)
+    const fd2 = new FormData();
+    fd2.append('enabled', enabled ? 'true' : 'false');
+    fd2.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    await fetch("{% url 'oncall_email_toggle' %}", { method: 'POST', body: fd2 });
+  
+    window.location.reload();
+  });
+  </script>
+  {% endif %}
+
+  <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#oncallDisplayModal">
+    ⚙ Display Settings
+  </button>
+  
+  <div class="modal fade" id="oncallDisplayModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form class="modal-content" id="oncall-display-form">
+        <div class="modal-header">
+          <h5 class="modal-title">On-Call Display Settings</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+  
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Circuit Maintenance – Include tags (any match)</label>
+            <select name="circuit_tags" id="oc-tags" class="form-select" multiple size="8">
+              {% for t in tags %}
+                <option value="{{ t.pk }}" {% if t in oncall_settings.circuit_tags.all %}selected{% endif %}>
+                  {{ t.name }}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Leave empty to include all circuit maintenance.</div>
+          </div>
+  
+          <hr>
+  
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="show_scheduled_maintenance" id="oc-sm"
+                       {% if oncall_settings.show_scheduled_maintenance %}checked{% endif %}>
+                <label class="form-check-label" for="oc-sm">Show Scheduled Maintenance</label>
+              </div>
+            </div>
+  
+            <div class="col-md-6">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="show_field_advisories" id="oc-fa"
+                       {% if oncall_settings.show_field_advisories %}checked{% endif %}>
+                <label class="form-check-label" for="oc-fa">Show Field Advisories</label>
+              </div>
+            </div>
+  
+            <div class="col-md-6">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="show_cert_expiry" id="oc-ce"
+                       {% if oncall_settings.show_cert_expiry %}checked{% endif %}>
+                <label class="form-check-label" for="oc-ce">Show Certificate Expirations</label>
+              </div>
+            </div>
+  
+            <div class="col-md-6">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="show_svcacct_expiry" id="oc-sa"
+                       {% if oncall_settings.show_svcacct_expiry %}checked{% endif %}>
+                <label class="form-check-label" for="oc-sa">Show Service Account Expirations</label>
+              </div>
+            </div>
+          </div>
+  
+        </div>
+  
+        <div class="modal-footer">
+          <button class="btn btn-primary" type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <script>
+    document.getElementById('oncall-display-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const fd = new FormData(form);
+      fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+      // add all selected tag ids
+      const sel = document.getElementById('oc-tags');
+      if (sel) {
+        [...sel.selectedOptions].forEach(o => fd.append('circuit_tags', o.value));
+      }
+      await fetch("{% url 'oncall_display_save' %}", { method: 'POST', body: fd });
+      window.location.reload();
+    });
+  </script>  
+  
 <hr>
 
 <div id="incident-print-section">
@@ -133,7 +285,7 @@
 	{% endif %}
 	
 	{% if certs %}
-	<br><h6><u>Certificate Expirations</u></h6>
+	<br><h5><u>Certificate Expirations</u></h5>
 	<table class="table table-hover" id="my-table">
 		<tr>
 		<th>Provider</th>
@@ -153,7 +305,7 @@
 	{% endif %}
 	
 	{% if svc_acts %}
-	<br><h6><u>Service Account Expirations</u></h6>
+	<br><h5><u>Service Account Expirations</u></h5>
 	<table class="table table-hover" id="my-table">
 		<tr>
 		<th>Service Account</th>

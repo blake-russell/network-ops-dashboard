@@ -3,30 +3,135 @@
 {% block content %}
 
 <h3>Circuits</h3>
-<a href="{% url 'circuitsmtc' %}"><< Back</a>&nbsp;&nbsp;
-<a href="{% url 'circuit_add' %}">Add Circuit</a><br>
-<table class="table table-hover">
- <tr>
-  <th>Name</th>
-  <th>Circuit ID/#</th>
-  <th>Provider</th>
-  <th>Site</th>
-  <th>Tag(s)</th>
-  <th>Actions</th>
- </tr>
+<a href="{% url 'circuitsmtc' %}" class="btn btn-sm btn-outline-secondary">Back</a>
+<a href="{% url 'circuit_add' %}" class="btn btn-sm btn-outline-primary">Add Circuit</a>
 
-{% for circuit in detaillist %}
-  <tr class="table-light">
-    <td>{{ circuit.name }}</td>
-    <td>{{ circuit.cktid }}</td>
-    <td>{{ circuit.provider }}</td>
-    <td>{% if circuit.site %} {{ circuit.site.address }}, {{ circuit.site.city }}, {{ circuit.site.state }} {{ circuit.site.zip }} {% endif %}</td>
-    <td>{% for tag in circuit.tag.all %} {{ tag.name }}<br>{% endfor %}</td>
-    <td>
-      <a href="{%url 'circuit_edit' circuit.pk %}">Edit</a>
-    </td>
-  </tr>
-{% endfor %}
+<!-- Filters -->
+<div class="card mt-3 mb-3">
+  <div class="card-body">
+    <form id="filters" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label mb-0">Provider</label>
+        <select name="provider" class="form-select form-select-sm" multiple size="6">
+          {% for p in provider_choices %}
+            <option value="{{ p }}">{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label mb-0">Site</label>
+        <select name="site" class="form-select form-select-sm" multiple size="6">
+          {% for s in site_choices %}
+            <option value="{{ s }}">{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label mb-0">Tags</label>
+        <select name="tag" class="form-select form-select-sm" multiple size="6">
+          {% for t in tag_choices %}
+            <option value="{{ t }}">{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label mb-0">Search</label>
+        <input type="text" class="form-control form-control-sm" name="q" placeholder="name / ID / provider / site / tag">
+      </div>
+      <div class="col-12 mt-1">
+        <button class="btn btn-sm btn-primary">Apply</button>
+        <button class="btn btn-sm btn-outline-secondary" id="reset-filters" type="button">Reset</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Results -->
+<table class="table table-hover" id="results-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Circuit ID/#</th>
+      <th>Provider</th>
+      <th>Site</th>
+      <th>Tag(s)</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="results-body">
+    <!-- filled by JS -->
+  </tbody>
 </table>
 
+<script>
+(function(){
+  const form = document.getElementById('filters');
+  const bodyEl = document.getElementById('results-body');
+  const resetBtn = document.getElementById('reset-filters');
+
+  function esc(s){ return (s||'').toString().replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+
+  function getParams() {
+    const fd = new FormData(form);
+    const params = new URLSearchParams();
+    // append scalar values except multi-selects we handle below
+    for (const [k, v] of fd.entries()) {
+      if (!v) continue;
+      if (k === 'provider' || k === 'site' || k === 'tag') continue;
+      params.append(k, v);
+    }
+    // multi-selects
+    const getMulti = (name) => [...form.querySelectorAll(`select[name="${name}"] option:checked`)].map(o => o.value);
+    getMulti('provider').forEach(p => params.append('provider', p));
+    getMulti('site').forEach(s => params.append('site', s));
+    getMulti('tag').forEach(t => params.append('tag', t));
+    return params;
+  }
+
+  async function fetchRows() {
+    const params = getParams();
+    const resp = await fetch("{% url 'circuit_data' %}?" + params.toString());
+    const data = await resp.json();
+    render(data.rows || []);
+  }
+
+  function render(rows){
+    if (!rows.length) {
+      bodyEl.innerHTML = `<tr><td colspan="6" class="text-muted">No results.</td></tr>`;
+      return;
+    }
+    let html = '';
+    rows.forEach(r => {
+      const tags = (r.tags || []).map(esc).join('<br>');
+      const siteCell = esc(r.site_full) || esc(r.site);
+      html += `
+        <tr class="table-light">
+          <td>${esc(r.name)}</td>
+          <td>${esc(r.cktid)}</td>
+          <td>${esc(r.provider)}</td>
+          <td>${siteCell}</td>
+          <td>${tags}</td>
+          <td><a href="{% url 'circuit_edit' 0 %}".replace('/0/', '/'+r.pk+'/') class="btn btn-sm btn-outline-secondary">Edit</a></td>
+        </tr>
+      `;
+    });
+    bodyEl.innerHTML = html;
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    fetchRows();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    form.reset();
+    // clear multi-selects explicitly
+    form.querySelectorAll('select[multiple] option').forEach(o => o.selected = false);
+    fetchRows();
+  });
+
+  // initial load
+  fetchRows();
+})();
+</script>
 {% endblock %}

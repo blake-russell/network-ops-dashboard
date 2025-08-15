@@ -5,7 +5,7 @@
 <h3>Cisco Advisory Notifications</h3>
 
 {% if site_secrets %}
-    <a href="{% url 'ciscoadvisory_update' %}">Process New Emails</a>&nbsp;&nbsp;
+    <a href="{% url 'ciscoadvisory_update' %}" class="btn btn-sm btn-outline-primary">Process New Emails</a>
     {% include 'network_ops_dashboard/partials/email_job_controls.html' %}
     <br>
 {% else %}
@@ -33,7 +33,7 @@
     <td style="word-wrap; break-word; white-space: normal;">{{ advisory.description }}</td>
     <td>{{ advisory.date }}</td>
     <td>
-      <a href="{% url 'ciscoadvisory_archive' advisory.pk %}" onclick="return confirm('Are you sure you want to archive this?')">Archive</a>
+      <a href="{% url 'ciscoadvisory_archive' advisory.pk %}" class="btn btn-sm btn-outline-secondary" onclick="return confirm('Are you sure you want to archive this?')">Archive</a>
     </td>
   </tr>
 {% endfor %}

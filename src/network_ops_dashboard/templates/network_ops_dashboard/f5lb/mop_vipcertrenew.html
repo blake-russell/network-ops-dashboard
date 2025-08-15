@@ -16,7 +16,7 @@
 {% endif %}
 
 
-<a href="{% url 'f5lb_vipcertrenew_add' %}">Create MOP</a><br>
+<a href="{% url 'f5lb_vipcertrenew_add' %}" class="btn btn-sm btn-outline-primary">Create MOP</a><br>
 <!-- Here was the link to run loadconfigoptions against all load balancers :
 &nbsp; <a href="{% url 'f5lb_loadconfigoptions' load_all %}" onclick="return confirm('Runs against all load balancers. Please Confirm.')">Reload Config Options</a>
  -->
@@ -40,15 +40,15 @@
     <td><a href="{% get_media_prefix %}{{ mop.cert_file }}">{{ mop.cert_name }}</a></td>
     <td>
       {% if mop.status == 'Planned' %}
-        <a href="{% url 'f5lb_vipcertrenew_run' mop.pk %}" onclick="return confirm('Are you sure you are ready to run this mop now?')">Run MOP</a>
+        <a href="{% url 'f5lb_vipcertrenew_run' mop.pk %}" class="btn btn-sm btn-outline-primary" onclick="return confirm('Are you sure you are ready to run this mop now?')">Run MOP</a>
       {% elif mop.status == 'Running' %}
         <b>MOP Running</b>
       {% else %}
-        <a href="{% url 'f5lb_vipcertrenew_archive' mop.pk %}" onclick="return confirm('Are you sure you want to archive this?')">Close MOP</a>
+        <a href="{% url 'f5lb_vipcertrenew_archive' mop.pk %}" class="btn btn-sm btn-outline-primary" onclick="return confirm('Are you sure you want to archive this?')">Close MOP</a>
       {% endif %}
     </td>
     <td>
-      <a href="{% url 'f5lb_vipcertrenew_edit' mop.pk %}">Edit</a>
+      <a href="{% url 'f5lb_vipcertrenew_edit' mop.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
     </td>
   </tr>
   {% endif %}

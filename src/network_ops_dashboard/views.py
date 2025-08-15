@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login, authenticate
@@ -225,13 +225,13 @@ def dashboard_set_asa_vpn_interval(request):
 @staff_member_required
 @require_POST
 def dashboard_toggle_email_processing(request):
-    on = request.POST.get("enabled") == "true"
     flags = FeatureFlags.load()
+    on = request.POST.get("enabled") == "true"
     flags.enable_email_processing = on
     flags.updated_by = request.user
     flags.save()
     key = "process_emails"
-    if on:
+    if on and flags.email_processing_time:
         ensure_daily_cron(key, flags.email_processing_time or "06:30")
     else:
         remove_cron(key)
@@ -250,7 +250,8 @@ def dashboard_set_email_time(request):
     flags.email_processing_time = hhmm
     flags.updated_by = request.user
     flags.save()
+    key = "process_emails"
     # If enabled, rewrite cron at new time
     if flags.enable_email_processing:
-        ensure_daily_cron("process_emails", hhmm)
+        ensure_daily_cron(key, hhmm)
     return JsonResponse({"ok": True, "time": hhmm})

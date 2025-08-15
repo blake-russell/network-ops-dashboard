@@ -6,6 +6,7 @@ from django.db import models
 from django.conf import settings
 from network_ops_dashboard.settings import PROTECTED_MEDIA_ROOT
 from network_ops_dashboard.inventory.models import *
+from network_ops_dashboard.reports.circuits.models import CircuitTag
 
 # Create your models here.
 
@@ -24,3 +25,19 @@ class OnCallIncident(models.Model):
 
     def __str__(self):
         return f"{self.headline} - {self.status}"
+
+class OnCallSettings(models.Model):
+    circuit_tags = models.ManyToManyField(CircuitTag, blank=True, related_name="oncall_settings")
+
+    show_scheduled_maintenance = models.BooleanField(default=True)
+    show_field_advisories = models.BooleanField(default=True)
+    show_cert_expiry = models.BooleanField(default=True)
+    show_svcacct_expiry = models.BooleanField(default=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @classmethod
+    def load(cls):
+        # always load/create the singleton row
+        obj, _ = cls.objects.get_or_create(id=1)
+        return obj

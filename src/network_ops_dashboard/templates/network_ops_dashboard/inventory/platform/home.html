@@ -3,7 +3,7 @@
 {% block content %}
 
 <h3>Platforms</h3>
-<a href="{% url 'platform_add' %}">Add Platform</a><br>
+<a href="{% url 'platform_add' %}" class="btn btn-sm btn-outline-primary">Add Platform</a><br>
 <table class="table table-hover">
  <tr>
   <th>Manufacturer</th>
@@ -22,7 +22,7 @@
     <td>{{ platform.ansible_namespace }}</td>
     <td>{{ platform.netmiko_namespace }}</td>
     <td>
-      <a href="{% url 'platform_edit' platform.pk %}">Edit</a>
+      <a href="{% url 'platform_edit' platform.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
     </td>
   </tr>
 {% endfor %}

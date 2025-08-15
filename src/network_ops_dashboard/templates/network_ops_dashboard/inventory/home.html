@@ -1,33 +1,156 @@
 {% extends 'network_ops_dashboard/base.html' %}
-{% load app_tags %}
 {% block content %}
-
 <h3>Network Inventory</h3>
-<a href="{% url 'inventory_add' %}">Add Network Device</a><br>
-<table class="table table-hover">
- <tr>
-  <th>Name</th>
-  <th>Site</th>
-  <th>Device</th>
-  <th>Serial#</th>
-  <th>IP Address (MGMT)</th>
-  <th>Device Tags</th>
-  <th>Actions</th>
- </tr>
 
-{% for inv in detaillist %}
-  <tr class="table-light">
-    <td>{{ inv.name }}</td>
-    <td>{{ inv.site }}</td>
-    <td>{{ inv.platform }}</td>
-    <td>{{ inv.serial_number }}</td>
-    <td>{{ inv.ipaddress_mgmt }}</td>
-    <td>{% for tag in inv.device_tag.all %} {{ tag.name }}<br>{% endfor %}</td>
-    <td>
-      <a href="{% url 'inventory_edit' inv.pk %}">Edit</a>
-    </td>
-  </tr>
-{% endfor %}
+<form id="filters" class="row g-2 align-items-end mb-3">
+  <div class="col-sm-3">
+    <label class="form-label">Site</label>
+    <select name="site" class="form-select" id="f-site">
+      <option value="">All</option>
+      {% for s in site_choices %}
+        <option value="{{ s }}">{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-sm-3">
+    <label class="form-label">Device type (Platform)</label>
+    <select name="platform" class="form-select" id="f-platform">
+      <option value="">All</option>
+      {% for p in platform_choices %}
+        <option value="{{ p }}">{{ p }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-sm-2">
+    <label class="form-label">Tag</label>
+    <select name="tag" class="form-select" id="f-tag">
+      <option value="">All</option>
+      {% for t in tag_choices %}
+        <option value="{{ t }}">{{ t }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-sm-3">
+    <label class="form-label">Search</label>
+    <input type="text" name="q" class="form-control" id="f-q" placeholder="name, serial, IP">
+  </div>
+  <div class="col-sm-1 d-grid">
+    <button class="btn btn-primary" type="submit">Filter</button>
+  </div>
+  <div class="col-12 mt-1">
+    <a href="#" id="reset-filters" class="btn btn-sm btn-outline-secondary">Reset</a>
+    <a href="{% url 'inventory_add' %}" class="btn btn-sm btn-outline-primary">Add Network Device</a>
+  </div>
+</form>
+
+<table class="table table-hover" id="inv-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Site</th>
+      <th>Device</th>
+      <th>Serial#</th>
+      <th>IP Address (MGMT)</th>
+      <th>Device Tags</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="inv-tbody">
+    <tr><td colspan="7" class="text-muted">Loading…</td></tr>
+  </tbody>
 </table>
 
+<script>
+(function(){
+  const tbody = document.getElementById('inv-tbody');
+  const form  = document.getElementById('filters');
+  const siteEl = document.getElementById('f-site');
+  const platEl = document.getElementById('f-platform');
+  const tagEl  = document.getElementById('f-tag');
+  const qEl    = document.getElementById('f-q');
+  const resetBtn = document.getElementById('reset-filters');
+
+  let typingTimer;
+  const debounce = (fn, wait=300) => {
+    return (...args) => {
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => fn.apply(this, args), wait);
+    };
+  };
+
+  function buildQuery() {
+    const p = new URLSearchParams();
+    if (siteEl.value) p.set('site', siteEl.value);
+    if (platEl.value) p.set('platform', platEl.value);
+    if (tagEl.value)  p.set('tag', tagEl.value);
+    if (qEl.value.trim()) p.set('q', qEl.value.trim());
+    return p.toString();
+  }
+
+  async function fetchRows() {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-muted">Loading…</td></tr>`;
+    const qs = buildQuery();
+    const url = `{% url 'inventory_data' %}` + (qs ? `?${qs}` : '');
+    const res = await fetch(url, {headers: {'X-Requested-With':'XMLHttpRequest'}});
+    const data = await res.json();
+    renderRows(data.rows || []);
+  }
+
+  function renderRows(rows) {
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-muted">No results.</td></tr>`;
+      return;
+    }
+    const html = rows.map(r => `
+      <tr class="table-light">
+        <td>${escapeHtml(r.name)}</td>
+        <td>${escapeHtml(r.site)}</td>
+        <td>${escapeHtml(r.platform)}</td>
+        <td>${escapeHtml(r.serial_number)}</td>
+        <td>${escapeHtml(r.ipaddress_mgmt)}</td>
+        <td>${(r.tags || []).map(t => escapeHtml(t)).join('<br>')}</td>
+        <td><a href="${buildEditUrl(r.pk)}" class="btn btn-sm btn-outline-secondary">Edit</a></td>
+      </tr>
+    `).join('');
+    tbody.innerHTML = html;
+  }
+
+  function buildEditUrl(pk) {
+    return "{% url 'inventory_edit' 0 %}".replace("0", String(pk));
+  }
+
+  function escapeHtml(s) {
+    return (s ?? '').toString()
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;");
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    fetchRows();
+  });
+
+  qEl.addEventListener('input', debounce(fetchRows, 300));
+
+  siteEl.addEventListener('change', fetchRows);
+  platEl.addEventListener('change', fetchRows);
+  tagEl.addEventListener('change', fetchRows);
+
+  // Reset
+  resetBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    siteEl.value = '';
+    platEl.value = '';
+    tagEl.value = '';
+    qEl.value = '';
+    fetchRows();
+  });
+
+  // Initial load
+  fetchRows();
+})();
+</script>
 {% endblock %}

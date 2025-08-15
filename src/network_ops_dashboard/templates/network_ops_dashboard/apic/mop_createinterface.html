@@ -14,7 +14,8 @@
   <h3>APIC Create Interface MOPs</h3>
 {% endif %}
 
-<a href="{% url 'apic_createinterface_add' %}">Create MOP</a>  &nbsp;  <a href="{% url 'apic_createinterface_intf' %}">Interface List</a><br>
+<a href="{% url 'apic_createinterface_add' %}" class="btn btn-sm btn-outline-primary">Create MOP</a>
+<a href="{% url 'apic_createinterface_intf' %}" class="btn btn-sm btn-outline-secondary">Interface List</a><br>
 <!--<ol class="breadcrumb">
   <li class="breadcrumb-item"><a href="{% url 'apic_createinterface_add' %}">Create MOP</a></li>
   <li class="breadcrumb-item"><a href="{% url 'apic_createinterface_intf' %}">Interface List</a></li>
@@ -38,20 +39,20 @@
     <td>{% for intf in mop.interfaces.all %} {{ intf.intfdesc }}<br>{% endfor %}</td>
     <td>
       {% if mop.status == 'Planned' %}
-        <a href="{% url 'apic_createinterface_addintf' mop.pk %}">Add Interface</a>
+        <a href="{% url 'apic_createinterface_addintf' mop.pk %}" class="btn btn-sm btn-outline-primary">Add Interface</a>
       {% endif %}
     </td>
     <td>
       {% if mop.status == 'Planned' %}
-        <a href="{% url 'apic_createinterface_run' mop.pk %}" onclick="return confirm('Are you sure you are ready to run this mop now?')">Run MOP</a>
+        <a href="{% url 'apic_createinterface_run' mop.pk %}" class="btn btn-sm btn-outline-primary" onclick="return confirm('Are you sure you are ready to run this mop now?')">Run MOP</a>
       {% elif mop.status == 'Running' %}
         <b>MOP Running</b>
       {% else %}
-        <a href="{% url 'apic_createinterface_archive' mop.pk %}" onclick="return confirm('Are you sure you want to archive this?')">Close MOP</a>
+        <a href="{% url 'apic_createinterface_archive' mop.pk %}" class="btn btn-sm btn-outline-primary" onclick="return confirm('Are you sure you want to archive this?')">Close MOP</a>
       {% endif %}
     </td>
     <td>
-      <a href="{% url 'apic_createinterface_edit' mop.pk %}">Edit</a>
+      <a href="{% url 'apic_createinterface_edit' mop.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
     </td>
   </tr>
   {% endif %}
