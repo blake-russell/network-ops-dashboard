@@ -1,35 +1,158 @@
 {% extends 'network_ops_dashboard/base.html' %}
-{% load app_tags %}
 {% block content %}
-
 <h3>Sites</h3>
-<a href="{% url 'site_add' %}">Add Site</a><br>
-<table class="table table-hover">
- <tr>
-  <th>Name</th>
-  <th>Address</th>
-  <th>City</th>
-  <th>State</th>
-  <th>ZIP</th>
-  <th>POC</th>
-  <th>POC Number</th>
-  <th>Actions</th>
- </tr>
 
-{% for site in detaillist %}
-  <tr class="table-light">
-    <td>{{ site.name }}</td>
-    <td>{{ site.address }}</td>
-    <td>{{ site.city }}</td>
-    <td>{{ site.state }}</td>
-    <td>{{ site.zip }}</td>
-    <td>{{ site.poc_name }}</td>
-    <td>{{ site.poc_number }}</td>
-    <td>
-      <a href="{% url 'site_edit' site.pk %}">Edit</a>
-    </td>
-  </tr>
-{% endfor %}
+<form id="site-filters" class="row g-2 align-items-end mb-3">
+  <div class="col-sm-3">
+    <label class="form-label">Name</label>
+    <select name="name" id="f-name" class="form-select">
+      <option value="">All</option>
+      {% for n in name_choices %}
+        <option value="{{ n }}">{{ n }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-sm-3">
+    <label class="form-label">City</label>
+    <select name="city" id="f-city" class="form-select">
+      <option value="">All</option>
+      {% for c in city_choices %}
+        <option value="{{ c }}">{{ c }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-sm-2">
+    <label class="form-label">State</label>
+    <select name="state" id="f-state" class="form-select">
+      <option value="">All</option>
+      {% for s in state_choices %}
+        <option value="{{ s }}">{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-sm-3">
+    <label class="form-label">Search</label>
+    <input type="text" name="q" id="f-q" class="form-control" placeholder="name, addr, POC, zip…">
+  </div>
+
+  <div class="col-sm-1 d-grid">
+    <button class="btn btn-primary" type="submit">Filter</button>
+  </div>
+
+  <div class="col-12 mt-1">
+    <a href="#" id="reset-filters" class="btn btn-sm btn-outline-secondary">Reset</a>
+    <a href="{% url 'site_add' %}" class="btn btn-sm btn-outline-primary">Add Site</a>
+  </div>
+</form>
+
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Address</th>
+      <th>City</th>
+      <th>State</th>
+      <th>ZIP</th>
+      <th>POC</th>
+      <th>POC Number</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="site-tbody">
+    <tr><td colspan="8" class="text-muted">Loading…</td></tr>
+  </tbody>
 </table>
 
+<script>
+(function(){
+  const form   = document.getElementById('site-filters');
+  const tbody  = document.getElementById('site-tbody');
+  const nameEl = document.getElementById('f-name');
+  const cityEl = document.getElementById('f-city');
+  const stateEl= document.getElementById('f-state');
+  const qEl    = document.getElementById('f-q');
+  const resetEl= document.getElementById('reset-filters');
+
+  let typingTimer;
+  const debounce = (fn, wait=300) => (...args) => {
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => fn.apply(this, args), wait);
+  };
+
+  function qs() {
+    const p = new URLSearchParams();
+    if (nameEl.value)  p.set('name', nameEl.value);
+    if (cityEl.value)  p.set('city', cityEl.value);
+    if (stateEl.value) p.set('state', stateEl.value);
+    if (qEl.value.trim()) p.set('q', qEl.value.trim());
+    return p.toString();
+  }
+
+  async function loadRows() {
+    tbody.innerHTML = `<tr><td colspan="8" class="text-muted">Loading…</td></tr>`;
+    const url = `{% url 'site_data' %}` + (qs() ? `?${qs()}` : '');
+    const res = await fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+    const data = await res.json();
+    renderRows(data.rows || []);
+  }
+
+  function renderRows(rows) {
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="8" class="text-muted">No results.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = rows.map(r => `
+      <tr class="table-light">
+        <td>${esc(r.name)}</td>
+        <td>${esc(r.address)}</td>
+        <td>${esc(r.city)}</td>
+        <td>${esc(r.state)}</td>
+        <td>${esc(r.zip)}</td>
+        <td>${esc(r.poc_name)}</td>
+        <td>${esc(r.poc_number)}</td>
+        <td><a href="${editUrl(r.pk)}" class="btn btn-sm btn-outline-secondary">Edit</a></td>
+      </tr>
+    `).join('');
+  }
+
+  function editUrl(pk) {
+    return "{% url 'site_edit' 0 %}".replace("0", String(pk));
+  }
+
+  function esc(s) {
+    return (s ?? '').toString()
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;");
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    loadRows();
+  });
+
+  nameEl.addEventListener('change', loadRows);
+  cityEl.addEventListener('change', loadRows);
+  stateEl.addEventListener('change', loadRows);
+  qEl.addEventListener('input', debounce(loadRows, 300));
+
+  // reset
+  resetEl.addEventListener('click', (e) => {
+    e.preventDefault();
+    nameEl.value = '';
+    cityEl.value = '';
+    stateEl.value = '';
+    qEl.value = '';
+    loadRows();
+  });
+
+  // initial fetch
+  loadRows();
+})();
+</script>
 {% endblock %}

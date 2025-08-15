@@ -1,84 +1,171 @@
 {% extends 'network_ops_dashboard/base.html' %}
 {% load app_tags %}
 {% block content %}
-
 <h3>Circuit Maintenance Report</h3>
 
 {% if circuits_exist %}
-    <a href="{% url 'circuitsmtc_update' %}">Process New Emails</a> &nbsp;&nbsp;
-    <a href="{% url 'circuit' %}">Circuits</a> &nbsp;&nbsp;
-    <a href="{% url 'circuitprovider' %}">Circuit Providers</a> &nbsp;&nbsp;
-    <a href="{% url 'circuittag' %}">Circuit Tags</a> &nbsp;&nbsp;
-    <!--<a href="#" id="toggle-column-link" class="btn btn-sm btn-outline-secondary mb-2">Hide Action Column</a>-->
-    {% include 'network_ops_dashboard/partials/email_job_controls.html' %}
-    <br>
-{% else %}
-  <div class="alert alert-dismissible alert-warning">
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    <h4 class="alert-heading">Warning!</h4>
-    <p class="mb-0">No Circuit.objects() entries found to process emails. Please Configure a Provider and Circuit.</p>
+  <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
+    <a href="{% url 'circuitsmtc_update' %}" class="btn btn-sm btn-outline-primary">Process New Emails</a>
+    <a href="{% url 'circuit' %}" class="btn btn-sm btn-outline-secondary">Circuits</a>
+    <a href="{% url 'circuitprovider' %}" class="btn btn-sm btn-outline-secondary">Circuit Providers</a>
+    <a href="{% url 'circuittag' %}" class="btn btn-sm btn-outline-secondary">Circuit Tags</a>
+
+    <div class="ms-auto"></div>
   </div>
-    <a href="{% url 'circuit' %}">Circuits</a> &nbsp;&nbsp;
-    <a href="{% url 'circuitprovider' %}">Circuit Providers</a> &nbsp;&nbsp;
-    <a href="{% url 'circuittag' %}">Circuit Tags</a> &nbsp;&nbsp;
+
+  {# Filters #}
+  <div class="card mb-3">
+    <div class="card-body">
+      <form id="filters" class="row g-2 align-items-end">
+  
+        <div class="col-md-3">
+          <label class="form-label mb-0">Status</label>
+          <select name="status" class="form-select form-select-sm">
+            <option value="">Any</option>
+            {% for s in status_choices %}
+              <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+  
+        <div class="col-md-3">
+          <label class="form-label mb-0">Tag</label>
+          <select name="tag" class="form-select form-select-sm">
+            <option value="">Any</option>
+            {% for t in tag_choices %}
+              <option value="{{ t }}">{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+  
+        <div class="col-md-3">
+          <label class="form-label mb-0">Search</label>
+          <input type="text" class="form-control form-control-sm" name="q" placeholder="name or Mtc#">
+        </div>
+  
+        <div class="col-12 mt-2">
+          <button class="btn btn-sm btn-primary">Apply</button>
+          <button class="btn btn-sm btn-outline-secondary" id="reset-filters" type="button">Reset</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# Results container (grouped by provider) #}
+  <div id="results"></div>
+
+{% else %}
+  <div class="alert alert-warning">
+    No circuits found. Please configure Providers and Circuits first.
+  </div>
 {% endif %}
 
-
-
-{% for provider, emails in providers_with_emails %}
-	<table class="table table-hover" id="my-table">
-		<tr>
-			<th colspan="8"><strong>{{ provider.name }}</strong></th> 
-		</tr>
-		<tr>
-			<th>Name</th>
-			<th>Circuit ID(s)</th>
-			<th>Mtc#</th>
-			<th>Status</th>
-			<th>Impact</th>
-			<th>Start Time</th>
-			<th>End Time</th>
-      <th>Actions</th>
-		</tr>
-		{% for circuit in emails %}
-			<tr class="table-light">
-				<td>{% for cktname in circuit.circuits.all %} {{ cktname.name }}<br>{% endfor %}</td>
-				<td>{% for cktid in circuit.circuits.all %} {{ cktid.cktid }}<br>{% endfor %}</td>
-				<td>{{ circuit.mtc_id }}</td>
-				<td>{{ circuit.status }}</td>
-				<td>{{ circuit.impact }}</td>
-				<td>{{ circuit.startdatetime }}</td>
-				<td>{{ circuit.enddatetime }}</td>
-				<td>
-					<a href="{% url 'circuitsmtc_archive' circuit.pk %}" onclick="return confirm('Are you sure you want to archive this?')">Archive</a>
-				</td>
-			</tr>
-		{% endfor %}
-	</table><br>
-{% endfor %}
-
-
-<style>
-  .hidden-column {
-    display: none;
-  }
-</style>
-
 <script>
-  const toggleColumnLink = document.getElementById('toggle-column-link');
-  const targetColumn = document.querySelectorAll('#my-table th:nth-child(8), #my-table td:nth-child(8)'); // Target Column 8
+(function(){
+  const form = document.getElementById('filters');
+  const resultsEl = document.getElementById('results');
+  const resetBtn = document.getElementById('reset-filters');
 
-  toggleColumnLink.addEventListener('click', function() {
-    targetColumn.forEach(function(cell) {
-      cell.classList.toggle('hidden-column');
-    });
-
-    if (toggleColumnLink.textContent === 'Hide Action Column') {
-      toggleColumnLink.textContent = 'Show Action Column';
-    } else {
-      toggleColumnLink.textContent = 'Hide Action Column';
+  function getParams() {
+    const fd = new FormData(form);
+    // collect multi-selects explicitly
+    const params = new URLSearchParams();
+    for (const [k, v] of fd.entries()) {
+      if (!v) continue;
+      if (k === 'status' || k === 'tag') continue;
+      params.append(k, v);
     }
-  });
-</script>
+    const statuses = [...form.querySelectorAll('select[name="status"] option:checked')].map(o => o.value);
+    const tags = [...form.querySelectorAll('select[name="tag"] option:checked')].map(o => o.value);
+    statuses.forEach(s => params.append('status', s));
+    tags.forEach(t => params.append('tag', t));
+    return params;
+  }
 
+  async function fetchRows() {
+    const params = getParams();
+    const resp = await fetch("{% url 'circuitsmtc_data' %}?" + params.toString());
+    const data = await resp.json();
+    render(data.rows || []);
+  }
+
+  function groupByProvider(rows) {
+    const buckets = {};
+    rows.forEach(r => {
+      const p = r.provider || '(Unknown)';
+      (buckets[p] = buckets[p] || []).push(r);
+    });
+    return buckets;
+  }
+
+  function esc(s){ return (s||'').toString().replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+
+  function render(rows){
+    const byProv = groupByProvider(rows);
+    const providers = Object.keys(byProv).sort();
+    if (!providers.length) {
+      resultsEl.innerHTML = '<div class="text-muted">No results.</div>';
+      return;
+    }
+    let html = '';
+    providers.forEach(p => {
+      html += `
+        <table class="table table-hover">
+          <tr><th colspan="9"><strong>${esc(p)}</strong></th></tr>
+          <tr>
+            <th>Name</th>
+            <th>Circuit ID(s)</th>
+            <th>Mtc#</th>
+            <th>Status</th>
+            <th>Impact</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Tags</th>
+            <th>Actions</th>
+          </tr>
+      `;
+      byProv[p].forEach(r => {
+        const names = r.name_list.join('<br>');
+        const ids = r.cktid_list.join('<br>');
+        const tags = r.tags.join('<br>');
+        const start = esc(r.startdatetime || '');
+        const end = esc(r.enddatetime || '');
+        const archiveCell = r.can_archive
+          ? `<a href="{% url 'circuitsmtc_archive' 0 %}".replace('/0/', '/'+r.pk+'/')" class="btn btn-sm btn-outline-secondary" onclick="return confirm('Archive this item?')">Archive</a>`
+          : `<span class="text-muted" title="No permission">—</span>`;
+        html += `
+          <tr class="table-light">
+            <td>${names || ''}</td>
+            <td>${ids || ''}</td>
+            <td>${esc(r.mtc_id)}</td>
+            <td>${esc(r.status)}</td>
+            <td>${esc(r.impact)}</td>
+            <td>${start}</td>
+            <td>${end}</td>
+            <td>${tags}</td>
+            <td>${archiveCell}</td>
+          </tr>
+        `;
+      });
+      html += `</table><br>`;
+    });
+    resultsEl.innerHTML = html;
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    fetchRows();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    form.reset();
+    // clear multi-selects
+    form.querySelectorAll('select[multiple] option').forEach(o => o.selected = false);
+    fetchRows();
+  });
+
+  // initial load
+  fetchRows();
+})();
+</script>
 {% endblock %}

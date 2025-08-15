@@ -3,7 +3,8 @@
 {% block content %}
 
 <h3>Certificate Providers</h3>
-<a href="{% url 'certexpiry' %}"><< Back</a>&nbsp;&nbsp;&nbsp;<a href="{% url 'certexpiry_provider_add' %}">Add Provider</a><br>
+<a href="{% url 'certexpiry' %}" class="btn btn-sm btn-outline-secondary">Back</a>
+<a href="{% url 'certexpiry_provider_add' %}" class="btn btn-sm btn-outline-primary">Add Provider</a><br>
 <table class="table table-hover" id="my-table">
  <tr>
   <th>Provider</th>
@@ -16,7 +17,7 @@
     <td>{{ cert_provider.name }}</td>
     <td>{{ cert_provider.certexpiry_folder }}</td>
     <td>
-      <a href="{% url 'certexpiry_provider_edit' cert_provider.pk %}">Edit</a>
+      <a href="{% url 'certexpiry_provider_edit' cert_provider.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
     </td>
   </tr>
 {% endfor %}

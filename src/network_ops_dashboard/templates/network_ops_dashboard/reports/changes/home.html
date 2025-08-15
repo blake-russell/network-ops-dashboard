@@ -1,14 +1,13 @@
 {% extends 'network_ops_dashboard/base.html' %}
 {% load app_tags %}
 {% block content %}
-
 <h3>Schedule Changes Report</h3>
 
 <div class="d-flex align-items-center mb-2">
   {% if settings_obj.changes_folder and settings_obj.extract_folder %}
-    <a href="{% url 'changes_update' %}" class="btn btn-sm btn-outline-primary mb-2">Process New Emails</a> &nbsp;&nbsp;
+    <a href="{% url 'changes_update' %}" class="btn btn-sm btn-outline-primary mb-2">Process New Emails</a>&nbsp;&nbsp;
   {% endif %}
-  <a href="#" id="toggle-column-link" class="btn btn-sm btn-outline-secondary mb-2">Show Metadata</a> &nbsp;&nbsp;
+  <a href="#" id="toggle-column-link" class="btn btn-sm btn-outline-secondary mb-2">Show Metadata</a>&nbsp;&nbsp;
   {% include 'network_ops_dashboard/partials/email_job_controls.html' %}
   {% if request.user.is_staff %}
     <button class="btn btn-sm btn-outline-dark ms-auto" data-bs-toggle="modal" data-bs-target="#changesSettingsModal">
@@ -17,167 +16,170 @@
   {% endif %}
 </div>
 
-<table class="table table-hover" id="my-table">
- <tr>
-  <th>Change ID</th>
-  <th>Location</th>
-  <th>Team</th>
-  <th>Group</th>
-  <th>Class</th>
-  <th>Start Time</th>
-  <th>End Time</th>
-  <th>Summary</th>
-  <th class="hidden-column">Metadata</th>
- </tr>
+<form id="changes-filters" class="row g-2 align-items-end mb-3">
+  <div class="col-sm-3">
+    <label class="form-label">Location</label>
+    <select name="location" id="f-location" class="form-select">
+      <option value="">All</option>
+      {% for loc in locations %}
+      <option value="{{ loc }}">{{ loc }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-sm-3">
+    <label class="form-label">Team</label>
+    <select name="team_name" id="f-team" class="form-select">
+      <option value="">All</option>
+      {% for t in teams %}
+      <option value="{{ t }}">{{ t }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-sm-3">
+    <label class="form-label">Group</label>
+    <select name="group" id="f-group" class="form-select">
+      <option value="">All</option>
+      {% for g in groups %}
+      <option value="{{ g }}">{{ g }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-sm-2">
+    <label class="form-label">Search</label>
+    <input type="text" name="q" id="f-q" class="form-control" placeholder="summary, reason, id…">
+  </div>
+  <div class="col-sm-1 d-grid">
+    <button class="btn btn-primary" type="submit">Filter</button>
+  </div>
+  <div class="col-12 mt-1">
+    <a href="#" id="reset-filters" class="btn btn-sm btn-outline-secondary">Reset</a>
+  </div>
+</form>
 
-{% for change in changes %}
-  <tr class="table-light">
-    <td>{{ change.change_id }}</td>
-    <td style="word-wrap; break-word; white-space: normal;">{{ change.location }}</td>
-    <td style="word-wrap; break-word; white-space: normal;">{{ change.team_name }}</td>
-    <td>{{ change.group }}</td>
-    <td>{{ change.class_type }}</td>
-    <td>{{ change.scheduled_start }}</td>
-    <td>{{ change.scheduled_end }}</td>
-    <td>{{ change.summary }}</td>
-    <td class="hidden-column">{% for key, value in change.metadata.items %} {{ key }}:{{ value }}, {% endfor %}</td>
-  </tr>
-{% endfor %}
+<table class="table table-hover" id="my-table">
+  <thead>
+    <tr>
+      <th>Change ID</th>
+      <th>Location</th>
+      <th>Team</th>
+      <th>Group</th>
+      <th>Class</th>
+      <th>Start Time</th>
+      <th>End Time</th>
+      <th>Summary</th>
+      <th class="hidden-column">Metadata</th>
+    </tr>
+  </thead>
+  <tbody id="changes-tbody">
+    <tr><td colspan="9" class="text-muted">Loading…</td></tr>
+  </tbody>
 </table>
 
 {% if request.user.is_staff %}
-<div class="modal fade" id="changesSettingsModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <form class="modal-content" id="changes-settings-form">
-      <div class="modal-header">
-        <h5 class="modal-title">Change Email Parser Settings</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
+  {# keep your existing settings modal block here unchanged #}
+{% endif %}
 
-      <div class="modal-body">
-        <div class="row g-3">
-
-          <div class="col-md-6">
-            <label class="form-label">.msg folder</label>
-            <input type="text" name="changes_folder" class="form-control" value="{{ settings_obj.changes_folder|default:'' }}">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Extract folder</label>
-            <input type="text" name="extract_folder" class="form-control" value="{{ settings_obj.extract_folder|default:'' }}">
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label">Header row #</label>
-            <input type="number" min="1" name="header_row" class="form-control" value="{{ settings_obj.header_row|default:4 }}">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Days before</label>
-            <input type="number" min="1" name="days_before" class="form-control" value="{{ settings_obj.days_before|default:1 }}">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Days ahead</label>
-            <input type="number" min="1" name="days_ahead" class="form-control" value="{{ settings_obj.days_ahead|default:7 }}">
-          </div>
-
-          <div class="col-12">
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" name="use_sites_for_locations" id="useSites"
-                     {% if settings_obj.use_sites_for_locations %}checked{% endif %}>
-              <label class="form-check-label" for="useSites">Use Site names for valid locations</label>
-              <div class="form-text">
-                When enabled, locations will be filtered by Sites below (if any selected), otherwise all Site names.
-              </div>
-            </div>
-          </div>
-
-          <div class="col-12" id="sitesMultiWrap" {% if not settings_obj.use_sites_for_locations %}style="display:none"{% endif %}>
-            <label class="form-label">Limit to specific Sites (optional)</label>
-            <select name="sites_to_filter" class="form-select" multiple size="8">
-              {% for site in sites %}
-                <option value="{{ site.pk }}"
-                  {% if site in settings_obj.sites_to_filter.all %}selected{% endif %}>
-                  {{ site.name }}
-                </option>
-              {% endfor %}
-            </select>
-            <div class="form-text">
-              Hold Ctrl/Cmd to select multiple. If none selected, all Sites are considered valid.
-            </div>
-          </div>
-
-          <!-- Custom locations (only if NOT using sites) -->
-          <div class="col-12" id="customLocationsWrap" {% if settings_obj.use_sites_for_locations %}style="display:none"{% endif %}>
-            <label class="form-label">Custom valid locations (comma-separated)</label>
-            <input type="text" name="custom_valid_locations" class="form-control"
-                   value="{{ settings_obj.custom_valid_locations|join:', ' }}">
-          </div>
-
-          <!-- Column Map JSON -->
-          <div class="col-12">
-            <label class="form-label">Column Map (JSON)</label>
-            <textarea name="column_map_json" class="form-control" rows="8"
-                      placeholder='{"team_name":"Team Name","change_id":"Change#","scheduled_start":"Scheduled Start","scheduled_end":"Scheduled End","location":"Location","summary":"Change Description","reason":"Change Reason","risk":"Risk Level","group":"Assignment Group","class_type":"Change Class"}'>{{ column_map_json|safe }}</textarea>
-            <div class="form-text">
-              Do not edit the key names, they are referenced on this template to call data into the tables. Only changes the vaules on the right side to match your spreadsheet.
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-primary" type="submit">Save</button>
-      </div>
-    </form>
-  </div>
-</div>
-
+<style>.hidden-column { display: none; }</style>
 <script>
-  // Toggle visibility between Sites vs Custom list
   (function(){
-    const useSites = document.getElementById('useSites');
-    const sitesWrap = document.getElementById('sitesMultiWrap');
-    const customWrap = document.getElementById('customLocationsWrap');
-    if (useSites) {
-      useSites.addEventListener('change', () => {
-        const on = useSites.checked;
-        if (sitesWrap) sitesWrap.style.display = on ? '' : 'none';
-        if (customWrap) customWrap.style.display = on ? 'none' : '';
-      });
-    }
+    const toggleColumnLink = document.getElementById('toggle-column-link');
+    const table = document.getElementById('my-table');
+    const headerCells = table.querySelectorAll('th:nth-child(9)');
+    const dataCells = () => table.querySelectorAll('td:nth-child(9)');
+
+    toggleColumnLink.addEventListener('click', function () {
+      const isHidden = headerCells[0].classList.contains('hidden-column');
+      headerCells.forEach(cell => cell.classList.toggle('hidden-column'));
+      dataCells().forEach(cell => cell.classList.toggle('hidden-column'));
+      toggleColumnLink.textContent = isHidden ? 'Hide Metadata' : 'Show Metadata';
+    });
   })();
 
-  // Save settings via AJAX
-  document.getElementById('changes-settings-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-    await fetch("{% url 'changes_save_settings' %}", { method: 'POST', body: fd });
-    window.location.reload();
-  });
+  // AJAX loader
+  (function(){
+    const form   = document.getElementById('changes-filters');
+    const tbody  = document.getElementById('changes-tbody');
+    const locEl  = document.getElementById('f-location');
+    const teamEl = document.getElementById('f-team');
+    const groupEl= document.getElementById('f-group');
+    const qEl    = document.getElementById('f-q');
+    const resetEl= document.getElementById('reset-filters');
+
+    let typingTimer;
+    const debounce = (fn, wait=300) => (...args) => {
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => fn.apply(this, args), wait);
+    };
+
+    function qs() {
+      const p = new URLSearchParams();
+      if (locEl.value)  p.set('location', locEl.value);
+      if (teamEl.value) p.set('team_name', teamEl.value);
+      if (groupEl.value) p.set('group', groupEl.value);
+      if (qEl.value.trim()) p.set('q', qEl.value.trim());
+      return p.toString();
+    }
+
+    function esc(s) {
+      return (s ?? '').toString()
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'","&#039;");
+    }
+
+    function fmt(dt) {
+      if (!dt) return '';
+      try { return new Date(dt).toLocaleString(); } catch { return dt; }
+    }
+
+    async function loadRows() {
+      tbody.innerHTML = `<tr><td colspan="9" class="text-muted">Loading…</td></tr>`;
+      const url = `{% url 'changes_data' %}` + (qs() ? `?${qs()}` : '');
+      const res = await fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+      const data = await res.json();
+      renderRows(data.rows || []);
+    }
+
+    function renderRows(rows) {
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-muted">No results.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = rows.map(r => `
+        <tr class="table-light">
+          <td>${esc(r.change_id)}</td>
+          <td style="word-wrap; break-word; white-space: normal;">${esc(r.location)}</td>
+          <td style="word-wrap; break-word; white-space: normal;">${esc(r.team_name)}</td>
+          <td>${esc(r.group)}</td>
+          <td>${esc(r.class_type)}</td>
+          <td>${esc(fmt(r.scheduled_start))}</td>
+          <td>${esc(fmt(r.scheduled_end))}</td>
+          <td>${esc(r.summary)}</td>
+          <td class="hidden-column">${esc(r.metadata)}</td>
+        </tr>
+      `).join('');
+    }
+
+    form.addEventListener('submit', (e) => { e.preventDefault(); loadRows(); });
+    locEl.addEventListener('change', loadRows);
+    teamEl.addEventListener('change', loadRows);
+    groupEl.addEventListener('change', loadRows);
+    qEl.addEventListener('input', debounce(loadRows, 300));
+
+    // reset
+    resetEl.addEventListener('click', (e) => {
+      e.preventDefault();
+      locEl.value = '';
+      teamEl.value = '';
+      groupEl.value = '';
+      qEl.value = '';
+      loadRows();
+    });
+
+    // initial load
+    loadRows();
+  })();
 </script>
-
-
-<style>
-  .hidden-column {
-    display: none;
-  }
-</style>
-
-<script>
-  const toggleColumnLink = document.getElementById('toggle-column-link');
-  const table = document.getElementById('my-table');
-  const headerCells = table.querySelectorAll('th:nth-child(9)');
-  const dataCells = table.querySelectorAll('td:nth-child(9)');
-
-  toggleColumnLink.addEventListener('click', function () {
-    const isHidden = headerCells[0].classList.contains('hidden-column');
-
-    headerCells.forEach(cell => cell.classList.toggle('hidden-column'));
-    dataCells.forEach(cell => cell.classList.toggle('hidden-column'));
-
-    toggleColumnLink.textContent = isHidden ? 'Hide Metadata' : 'Show Metadata';
-  });
-</script>
-{% endif %}
 {% endblock %}

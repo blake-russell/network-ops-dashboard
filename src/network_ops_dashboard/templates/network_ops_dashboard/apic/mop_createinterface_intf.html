@@ -4,7 +4,7 @@
 {% load static %}
 
 <h3>APIC Create Interface MOP Interfaces</h3>
-<a href="{% url 'apic_createinterface' %}"><< Back</a><br>
+<a href="{% url 'apic_createinterface' %}" class="btn btn-sm btn-outline-secondary">Back</a><br>
 <table class="table table-hover">
  <tr>
   <th>Description</th>
@@ -25,10 +25,10 @@
     <td>{{ intf.intffromport }}</td>
     <td>{{ intf.intftoport }}</td>
     <td>
-        <a href="{% url 'apic_createinterface_delintf' intf.pk %}" onclick="return confirm('Are you sure you want to delete this?')">Delete Interface</a>
+        <a href="{% url 'apic_createinterface_delintf' intf.pk %}" class="btn btn-sm btn-outline-secondary"  onclick="return confirm('Are you sure you want to delete this?')">Delete Interface</a>
     </td>
     <td>
-        <a href="{% url 'apic_createinterface_editintf' intf.pk %}">Edit</a>
+        <a href="{% url 'apic_createinterface_editintf' intf.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
     </td>
   </tr>
 {% endfor %}

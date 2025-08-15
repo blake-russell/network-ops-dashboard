@@ -5,7 +5,7 @@
 <h3>Service Account Expiration Notices</h3>
 
 {% if site_secrets %}
-    <a href="{% url 'svcactexpiry_update' %}">Process New Emails</a>&nbsp;&nbsp;
+    <a href="{% url 'svcactexpiry_update' %}" class="btn btn-sm btn-outline-primary">Process New Emails</a>
     {% include 'network_ops_dashboard/partials/email_job_controls.html' %}
     <br>
 {% else %}
@@ -29,7 +29,7 @@
     <td>{{ svc_act.svc_act }}</td>
     <td>{{ svc_act.expire_date }}</td>
     <td>
-      <a href="{% url 'svcactexpiry_archive' svc_act.pk %}" onclick="return confirm('Are you sure you want to archive this?')">Archive</a>
+      <a href="{% url 'svcactexpiry_archive' svc_act.pk %}" class="btn btn-sm btn-outline-secondary" onclick="return confirm('Are you sure you want to archive this?')">Archive</a>
     </td>
   </tr>
 {% endfor %}

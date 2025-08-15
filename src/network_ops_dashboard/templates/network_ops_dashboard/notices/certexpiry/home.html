@@ -5,8 +5,8 @@
 <h3>Certificate Expiry Notices</h3>
 
 {% if cert_providers %}
-  <a href="{% url 'certexpiry_update' %}">Process New Emails</a>&nbsp;&nbsp;
-  <a href="{% url 'certexpiry_provider' %}">Certificate Providers</a>&nbsp;&nbsp;
+  <a href="{% url 'certexpiry_update' %}" class="btn btn-sm btn-outline-primary">Process New Emails</a>
+  <a href="{% url 'certexpiry_provider' %}" class="btn btn-sm btn-outline-secondary">Certificate Providers</a>
   {% include 'network_ops_dashboard/partials/email_job_controls.html' %}
   <br>
 {% else %}
@@ -16,7 +16,7 @@
     <p class="mb-0">No certificate providers or folders are configured in <strong>CertProvider</strong>. 
     Please add at least one entry to begin processing. Go to the <a href="/admin" class="alert-link">admin</a> panel and configure.</p>
   </div>
-  <a href="{% url 'certexpiry_provider' %}">Certificate Providers</a><br>
+  <a href="{% url 'certexpiry_provider' %}" class="btn btn-sm btn-outline-secondary">Certificate Providers</a><br>
 {% endif %}
 <table class="table table-hover" id="my-table">
  <tr>
@@ -34,7 +34,7 @@
     <td>{{ cert.common_name }}</td>
     <td>{{ cert.expire_date }}</td>
     <td>
-      <a href="{% url 'certexpiry_archive' cert.pk %}" onclick="return confirm('Are you sure you want to archive this?')">Archive</a>
+      <a href="{% url 'certexpiry_archive' cert.pk %}" class="btn btn-sm btn-outline-secondary" onclick="return confirm('Are you sure you want to archive this?')">Archive</a>
     </td>
   </tr>
 {% endfor %}
