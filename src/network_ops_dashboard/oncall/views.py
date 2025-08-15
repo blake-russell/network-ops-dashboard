@@ -20,31 +20,48 @@ from network_ops_dashboard.scripts.cron import ensure_daily_cron, remove_cron
 
 logger = logging.getLogger('network_ops_dashboard.oncall')
 
+def build_providers_with_emails(settings_obj: OnCallSettings):
+    base = (CircuitMtcEmail.objects
+            .filter(status__in=['Planned','Completed','Cancelled','Updated','Demand','Emergency'])
+            .order_by('startdatetime')
+            .prefetch_related('circuits__provider', 'circuits__tag'))
+
+    selected_tags = list(settings_obj.circuit_tags.values_list('pk', flat=True))
+    if selected_tags:
+        base = base.filter(circuits__tag__in=selected_tags).distinct()
+
+    providers_with_emails = []
+    for provider in CircuitProvider.objects.all():
+        emails_qs = base.filter(circuits__provider=provider).distinct()
+        if emails_qs.exists():
+            providers_with_emails.append((provider, emails_qs))
+    return providers_with_emails
+
 # Create your views here. 
 
 @login_required(login_url='/accounts/login/')
 def oncall(request):
-    circuitmtcemails = (
-        CircuitMtcEmail.objects
-        .filter(
-            Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') |
-            Q(status='Updated') | Q(status='Demand') | Q(status='Emergency')
-        )
-        .order_by('startdatetime')
-        .prefetch_related('circuits__provider')
-    )
-    providers_with_emails = []
-    for provider in CircuitProvider.objects.all():
-        emails_qs = circuitmtcemails.filter(circuits__provider=provider).distinct()
-        if emails_qs.exists():
-            providers_with_emails.append((provider, emails_qs))
+    tags = CircuitTag.objects.order_by('name')
+    settings_obj = OnCallSettings.load()
     flags = FeatureFlags.load()
-    open_incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
-    certs = CertExpiry.objects.filter(Q(status='Open')).order_by('expire_date')
-    advisories = CiscoAdvisory.objects.filter(Q(status='Open')).order_by('date')
-    svc_acts = SvcActExpiry.objects.filter(Q(status='Open')).order_by('expire_date')
-    return render(request, 'network_ops_dashboard/oncall/home.html', {'incidents': open_incidents, 'providers_with_emails': providers_with_emails, 'certs': certs, 
-                                                                      'advisories': advisories, 'svc_acts': svc_acts, 'feature_flags': flags})
+
+    providers_with_emails = build_providers_with_emails(settings_obj) if settings_obj.show_scheduled_maintenance else []
+
+    incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
+    certs     = CertExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_cert_expiry else CertExpiry.objects.none()
+    advisories= CiscoAdvisory.objects.filter(status='Open').order_by('date')     if settings_obj.show_field_advisories else CiscoAdvisory.objects.none()
+    svc_acts  = SvcActExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_svcacct_expiry else SvcActExpiry.objects.none()
+
+    return render(request, 'network_ops_dashboard/oncall/home.html', {
+        'incidents': incidents,
+        'providers_with_emails': providers_with_emails,
+        'certs': certs,
+        'advisories': advisories,
+        'svc_acts': svc_acts,
+        'feature_flags': flags,
+        'tags': tags,
+        'oncall_settings': settings_obj,
+    })
 
 @login_required(login_url='/accounts/login/')
 def oncall_incident_log(request):
@@ -53,49 +70,41 @@ def oncall_incident_log(request):
 
 @login_required(login_url='/accounts/login/')
 def oncall_incident_print(request):
-    circuitmtcemails = (
-        CircuitMtcEmail.objects
-        .filter(
-            Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') |
-            Q(status='Updated') | Q(status='Demand') | Q(status='Emergency')
-        )
-        .order_by('startdatetime')
-        .prefetch_related('circuits__provider')
-    )
-    providers_with_emails = []
-    for provider in CircuitProvider.objects.all():
-        emails_qs = circuitmtcemails.filter(circuits__provider=provider).distinct()
-        if emails_qs.exists():
-            providers_with_emails.append((provider, emails_qs))
-    open_incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
-    certs = CertExpiry.objects.filter(Q(status='Open')).order_by('expire_date')
-    advisories = CiscoAdvisory.objects.filter(Q(status='Open')).order_by('date')
-    svc_acts = SvcActExpiry.objects.filter(Q(status='Open')).order_by('expire_date')
-    return render(request, 'network_ops_dashboard/oncall/incident_print.html', {'incidents': open_incidents, 'providers_with_emails': providers_with_emails, 'certs': certs, 
-                                                                                'advisories': advisories, 'svc_acts': svc_acts})
+    settings_obj = OnCallSettings.load()
+
+    providers_with_emails = build_providers_with_emails(settings_obj) if settings_obj.show_scheduled_maintenance else []
+    incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
+    certs     = CertExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_cert_expiry else CertExpiry.objects.none()
+    advisories= CiscoAdvisory.objects.filter(status='Open').order_by('date')     if settings_obj.show_field_advisories else CiscoAdvisory.objects.none()
+    svc_acts  = SvcActExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_svcacct_expiry else SvcActExpiry.objects.none()
+
+    return render(request, 'network_ops_dashboard/oncall/incident_print.html', {
+        'incidents': incidents,
+        'providers_with_emails': providers_with_emails,
+        'certs': certs,
+        'advisories': advisories,
+        'svc_acts': svc_acts,
+        'oncall_settings': settings_obj,
+    })
 
 @login_required(login_url='/accounts/login/')
 def oncall_incident_email(request):
-    circuitmtcemails = (
-        CircuitMtcEmail.objects
-        .filter(
-            Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') |
-            Q(status='Updated') | Q(status='Demand') | Q(status='Emergency')
-        )
-        .order_by('startdatetime')
-        .prefetch_related('circuits__provider')
-    )
-    providers_with_emails = []
-    for provider in CircuitProvider.objects.all():
-        emails_qs = circuitmtcemails.filter(circuits__provider=provider).distinct()
-        if emails_qs.exists():
-            providers_with_emails.append((provider, emails_qs))
-    open_incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
-    certs = CertExpiry.objects.filter(Q(status='Open')).order_by('expire_date')
-    advisories = CiscoAdvisory.objects.filter(Q(status='Open')).order_by('date')
-    svc_acts = SvcActExpiry.objects.filter(Q(status='Open')).order_by('expire_date')
-    return render(request, 'network_ops_dashboard/oncall/incident_email.html', {'incidents': open_incidents, 'providers_with_emails': providers_with_emails, 'certs': certs, 
-                                                                                'advisories': advisories, 'svc_acts': svc_acts})
+    settings_obj = OnCallSettings.load()
+
+    providers_with_emails = build_providers_with_emails(settings_obj) if settings_obj.show_scheduled_maintenance else []
+    incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
+    certs     = CertExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_cert_expiry else CertExpiry.objects.none()
+    advisories= CiscoAdvisory.objects.filter(status='Open').order_by('date')     if settings_obj.show_field_advisories else CiscoAdvisory.objects.none()
+    svc_acts  = SvcActExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_svcacct_expiry else SvcActExpiry.objects.none()
+
+    return render(request, 'network_ops_dashboard/oncall/incident_email.html', {
+        'incidents': incidents,
+        'providers_with_emails': providers_with_emails,
+        'certs': certs,
+        'advisories': advisories,
+        'svc_acts': svc_acts,
+        'oncall_settings': settings_obj,
+    })
 
 @require_POST
 @login_required(login_url='/accounts/login/')
@@ -172,4 +181,27 @@ def oncall_email_toggle(request):
         ensure_daily_cron(key, flags.oncall_email_time or "8:30")
     else:
         remove_cron(key)
+    return JsonResponse({"ok": True})
+
+@staff_member_required
+@require_POST
+def oncall_display_save(request):
+    s = OnCallSettings.load()
+
+    # toggles
+    s.show_scheduled_maintenance = (request.POST.get("show_scheduled_maintenance") == "on")
+    s.show_field_advisories      = (request.POST.get("show_field_advisories") == "on")
+    s.show_cert_expiry           = (request.POST.get("show_cert_expiry") == "on")
+    s.show_svcacct_expiry        = (request.POST.get("show_svcacct_expiry") == "on")
+
+    # tags (multi-select)
+    tag_ids = request.POST.getlist("circuit_tags")  # values are tag PKs
+    s.save()  # must save before setting M2M on unsaved instance
+    if tag_ids:
+        tags = CircuitTag.objects.filter(pk__in=tag_ids)
+        s.circuit_tags.set(tags)
+    else:
+        s.circuit_tags.clear()
+
+    s.save()
     return JsonResponse({"ok": True})

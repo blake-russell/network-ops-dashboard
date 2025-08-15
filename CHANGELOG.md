@@ -1,7 +1,12 @@
 # Changelog
 
+## v0.2.1 - 08-15-2025
+- 🖥️ UX: Added styling to all buttons across the project.
+- ⚙️ Filters: Added filtering to Iventory, Sites, Reports/Changes, Reports/Circuits, & Reports/Circuits/Circuit
+- 🆕 On-call: Added email settings, automated cronjob enablement, & module configuration modal.
+
+
 ## v0.2.0 - 08-14-2025
-- 🆕 Reports/Changes: Added settings button for staff users to configure the changes module (folders, valid_locations, column_map, timeframe, etc.)
 - 🆕 Dashboard: Added customize button to arrange & toggle display of cards. Staff users can also enable/disable scripted cards & change script settings.
 - 🆕 Reports & Notices: All email based reports/notice pages have been given an email processing to allow staff users ability to enable/disable & set time.
 - 🤖 Cronjobs: No more static configuration of cronjobs, that is now all handled through the UI. Jobs utilize management/command calls to manage.py.

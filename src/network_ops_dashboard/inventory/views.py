@@ -1,12 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import login, authenticate, get_user_model, update_session_auth_hash
+from django.http import JsonResponse
 from django.db.models import Q
 import logging
-from network_ops_dashboard import settings
 from network_ops_dashboard.decorators import *
 from network_ops_dashboard.models import *
-from network_ops_dashboard.inventory.models import *
+from network_ops_dashboard.inventory.models import Inventory, Site, Platform, DeviceTag
 from network_ops_dashboard.inventory.forms import *
 
 
@@ -16,20 +15,15 @@ logger = logging.getLogger('network_ops_dashboard.inventory')
 
 @login_required(login_url='/accounts/login/')
 def inventory_home(request):
-    inventory_all = Inventory.objects.all().order_by('name')
-    detaillist = []
-    for inv in inventory_all:
-        detaildict = {
-            'pk' : inv.pk,
-            'name' : inv.name,
-            'site' : inv.site,
-            'platform' : inv.platform,
-			'serial_number' : inv.serial_number,
-            'ipaddress_mgmt' : inv.ipaddress_mgmt,
-            'device_tag' : inv.device_tag
-            }
-        detaillist.append(detaildict)
-    return render(request, 'network_ops_dashboard/inventory/home.html', {'detaillist': detaillist})
+    site_choices = Site.objects.order_by('name').values_list('name', flat=True).distinct()
+    platform_choices = Platform.objects.order_by('name').values_list('name', flat=True).distinct()
+    tag_choices = DeviceTag.objects.order_by('name').values_list('name', flat=True)
+
+    return render(request, "network_ops_dashboard/inventory/home.html", {
+        "site_choices": site_choices,
+        "platform_choices": platform_choices,
+        "tag_choices": tag_choices,
+    })
 
 @login_required(login_url='/accounts/login/')
 def inventory_edit(request, pk):
@@ -99,21 +93,30 @@ def platform_add(request):
 
 @login_required(login_url='/accounts/login/')
 def site_home(request):
-    site_all = Site.objects.all().order_by('name')
-    detaillist = []
-    for site in site_all:
-        detaildict = {
-            'pk' : site.pk,
-            'name' : site.name,
-            'address' : site.address,
-            'city' : site.city,
-            'zip' : site.zip,
-            'state' : site.state,
-            'poc_name' : site.poc_name,
-            'poc_number' : site.poc_number,
-            }
-        detaillist.append(detaildict)
-    return render(request, 'network_ops_dashboard/inventory/site/home.html', {'detaillist': detaillist})
+    name_choices = (Site.objects
+                    .exclude(name__isnull=True)
+                    .exclude(name__exact="")
+                    .order_by('name')
+                    .values_list('name', flat=True)
+                    .distinct())
+    city_choices = (Site.objects
+                    .exclude(city__isnull=True)
+                    .exclude(city__exact="")
+                    .order_by('city')
+                    .values_list('city', flat=True)
+                    .distinct())
+    state_choices = (Site.objects
+                     .exclude(state__isnull=True)
+                     .exclude(state__exact="")
+                     .order_by('state')
+                     .values_list('state', flat=True)
+                     .distinct())
+
+    return render(request, "network_ops_dashboard/inventory/site/home.html", {
+        "name_choices": name_choices,
+        "city_choices": city_choices,
+        "state_choices": state_choices,
+    })
 
 @login_required(login_url='/accounts/login/')
 def site_edit(request, pk):
@@ -163,3 +166,83 @@ def devicetag_add(request):
     else:
         form = DeviceTagForm()
     return render(request, 'network_ops_dashboard/inventory/devicetag/add.html', {'form': form})
+
+@login_required(login_url='/accounts/login/')
+def inventory_data(request):
+    site = request.GET.get('site', '').strip()
+    platform = request.GET.get('platform', '').strip()
+    tag = request.GET.get('tag', '').strip()
+    q = request.GET.get('q', '').strip()
+
+    qs = (Inventory.objects
+          .select_related('site', 'platform')
+          .prefetch_related('device_tag')
+          .all())
+    
+    if site:
+        qs = qs.filter(site__name__icontains=site)
+    if platform:
+        qs = qs.filter(platform__name__icontains=platform)
+    if tag:
+        qs = qs.filter(device_tag__name__iexact=tag)
+    if q:
+        qs = qs.filter(
+            Q(name__icontains=q) |
+            Q(serial_number__icontains=q) |
+            Q(ipaddress_mgmt__icontains=q)
+        ).distinct()
+
+    rows = []
+
+    for d in qs:
+        rows.append({
+            "pk": d.pk,
+            "name": d.name,
+            "site": d.site.name if d.site else "",
+            "platform": d.platform.name if d.platform else "",
+            "serial_number": d.serial_number or "",
+            "ipaddress_mgmt": d.ipaddress_mgmt or "",
+            "tags": [t.name for t in d.device_tag.all()],
+        })
+    return JsonResponse({"rows": rows})
+
+@login_required(login_url='/accounts/login/')
+def site_data(request):
+    name  = request.GET.get('name', '').strip()
+    city  = request.GET.get('city', '').strip()
+    state = request.GET.get('state', '').strip()
+    q     = request.GET.get('q', '').strip()
+
+    qs = Site.objects.all()
+
+    if name:
+        qs = qs.filter(name__icontains=name)
+    if city:
+        qs = qs.filter(city__icontains=city)
+    if state:
+        qs = qs.filter(state__iexact=state)
+    if q:
+        qs = qs.filter(
+            Q(name__icontains=q) |
+            Q(address__icontains=q) |
+            Q(city__icontains=q) |
+            Q(state__icontains=q) |
+            Q(zip__icontains=q) |
+            Q(poc_name__icontains=q) |
+            Q(poc_number__icontains=q)
+        ).distinct()
+
+    rows = []
+
+    for s in qs:
+        rows.append({
+            "pk": s.pk,
+            "name": s.name or "",
+            "address": s.address or "",
+            "city": s.city or "",
+            "state": s.state or "",
+            "zip": s.zip or "",
+            "poc_name": s.poc_name or "",
+            "poc_number": s.poc_number or "",
+        })
+    return JsonResponse({"rows": rows})

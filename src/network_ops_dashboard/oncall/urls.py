@@ -30,4 +30,5 @@ urlpatterns = [
     re_path(r'^incident/email/$', views.oncall_incident_email, name='oncall_incident_email'),
     re_path(r'^oncall/email/save/$', views.oncall_email_save_settings, name='oncall_email_save'),
     re_path(r'^oncall/email/toggle/$', views.oncall_email_toggle, name='oncall_email_toggle'),
+    re_path(r'^oncall/display/save/$', views.oncall_display_save, name='oncall_display_save'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

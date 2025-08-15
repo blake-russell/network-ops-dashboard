@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect
+from django.http import JsonResponse, HttpResponseForbidden, HttpResponseRedirect
 from django.db.models import Q
 import logging
 from network_ops_dashboard.decorators import *
@@ -11,30 +11,86 @@ from network_ops_dashboard.reports.circuits.scripts.processmtcemails import *
 
 logger = logging.getLogger('network_ops_dashboard.circuits')
 
+def _user_can_archive(user, email_obj: CircuitMtcEmail) -> bool:
+    if user.is_superuser or user.is_staff:
+        return True
+    user_groups = set(user.groups.values_list('name', flat=True))
+    tag_names = set(email_obj.circuits.values_list('tag__name', flat=True))
+    return bool(user_groups & tag_names)
+    
 # Create your views here.
 
 @login_required(login_url='/accounts/login/')
 def circuitsmtc(request):
-    circuits_exist = Circuit.objects.first()
-    circuitmtcemails = (
-        CircuitMtcEmail.objects.filter(Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') | Q(status='Updated') | Q(status='Demand') | Q(status='Emergency'))
-        .order_by('startdatetime')
-        .prefetch_related('circuits__provider')
-    )
-    providers_with_emails = []
-    for provider in CircuitProvider.objects.all():
-        emails_qs = circuitmtcemails.filter(circuits__provider=provider).distinct()
-        if emails_qs.exists():
-            providers_with_emails.append((provider, emails_qs))
-
+    status_choices = (CircuitMtcEmail.objects
+                      .values_list('status', flat=True)
+                      .distinct().order_by('status'))
+    tag_choices = (CircuitTag.objects
+                   .values_list('name', flat=True)
+                   .distinct().order_by('name'))
     flags = FeatureFlags.load()
-
-    context = {
-        'circuits_exist': circuits_exist,
-        'providers_with_emails': providers_with_emails,
+    return render(request, 'network_ops_dashboard/reports/circuits/home.html', {
+        'circuits_exist': Circuit.objects.first(),
         'feature_flags': flags,
-    }
-    return render(request, 'network_ops_dashboard/reports/circuits/home.html', context)
+        'status_choices': status_choices,
+        'tag_choices': tag_choices,
+    })
+
+@login_required(login_url='/accounts/login/')
+def circuitsmtc_data(request):
+    q = (request.GET.get('q') or '').strip()
+
+    def _get_multi(param):
+        vals = request.GET.getlist(param)
+        if not vals and request.GET.get(param):
+            vals = [v.strip() for v in request.GET.get(param).split(',')]
+        return [v for v in (vals or []) if v]
+
+    statuses = _get_multi('status')
+    tags = _get_multi('tag')
+
+    base = (CircuitMtcEmail.objects
+            .filter(status__in=['Planned','Completed','Cancelled','Updated','Demand','Emergency'])
+            .select_related()
+            .prefetch_related('circuits__provider', 'circuits__tag'))
+
+    if statuses:
+        base = base.filter(status__in=statuses)
+
+    if tags:
+        base = base.filter(circuits__tag__name__in=tags)
+
+    if q:
+        base = base.filter(
+            Q(circuits__name__icontains=q) |
+            Q(mtc_id__icontains=q)
+        )
+
+    base = base.distinct()
+
+    rows = []
+
+    for e in base:
+        providers = sorted({c.provider.name for c in e.circuits.all() if c.provider})
+        circuits = sorted({c.name for c in e.circuits.all()})
+        circuit_ids = sorted({c.cktid for c in e.circuits.all() if getattr(c, 'cktid', None)})
+        tag_names = sorted({t.name for c in e.circuits.all() for t in c.tag.all()})
+        rows.append({
+            "pk": e.pk,
+            "providers": providers,
+            "provider": providers[0] if providers else "",
+            "name_list": circuits,
+            "name": circuits[0] if circuits else "",
+            "cktid_list": circuit_ids,
+            "mtc_id": e.mtc_id,
+            "status": e.status or "",
+            "impact": e.impact or "",
+            "startdatetime": str(e.startdatetime) if e.startdatetime else "",
+            "enddatetime": str(e.enddatetime) if e.enddatetime else "",
+            "tags": tag_names,
+            "can_archive": _user_can_archive(request.user, e),
+        })
+    return JsonResponse({"rows": rows})
 
 @login_required(login_url='/accounts/login/')
 def circuitsmtc_update(request):
@@ -112,20 +168,74 @@ def circuitprovider_add(request):
 
 @login_required(login_url='/accounts/login/')
 def circuit(request):
-    circuit_all = Circuit.objects.all().order_by('name')
-    detaillist = []
-    for circuit in circuit_all:
-        detaildict = {
-            'pk' : circuit.pk,
-            'name' : circuit.name,
-            'cktid' : circuit.cktid,
-            'provider' : circuit.provider,
-            'site' : circuit.site,
-            'tag' : circuit.tag,
-            'notes': circuit.notes,
-        }
-        detaillist.append(detaildict)
-    return render(request, 'network_ops_dashboard/reports/circuits/circuit.html', {'detaillist': detaillist})
+    provider_choices = (CircuitProvider.objects
+                        .order_by('name')
+                        .values_list('name', flat=True)
+                        .distinct())
+    site_choices = (Site.objects
+                    .order_by('name')
+                    .values_list('name', flat=True)
+                    .distinct())
+    tag_choices = (CircuitTag.objects
+                   .order_by('name')
+                   .values_list('name', flat=True)
+                   .distinct())
+
+    return render(request, 'network_ops_dashboard/reports/circuits/circuit.html', {
+        'provider_choices': provider_choices,
+        'site_choices': site_choices,
+        'tag_choices': tag_choices,
+    })
+
+@login_required(login_url='/accounts/login/')
+def circuit_data(request):
+    def _get_multi(param):
+        vals = request.GET.getlist(param)
+        if not vals and request.GET.get(param):
+            vals = [v.strip() for v in request.GET.get(param).split(',')]
+        return [v for v in (vals or []) if v]
+
+    providers = _get_multi('provider')
+    sites = _get_multi('site')
+    tags = _get_multi('tag')
+    q = (request.GET.get('q') or '').strip()
+
+    qs = (Circuit.objects
+          .select_related('provider', 'site')
+          .prefetch_related('tag')
+          .all())
+
+    if providers:
+        qs = qs.filter(provider__name__in=providers)
+    if sites:
+        qs = qs.filter(site__name__in=sites)
+    if tags:
+        qs = qs.filter(tag__name__in=tags)
+
+    if q:
+        qs = qs.filter(
+            Q(name__icontains=q) |
+            Q(cktid__icontains=q) |
+            Q(provider__name__icontains=q) |
+            Q(site__name__icontains=q) |
+            Q(tag__name__icontains=q)
+        ).distinct()
+
+    rows = []
+    for c in qs:
+        rows.append({
+            "pk": c.pk,
+            "name": c.name or "",
+            "cktid": c.cktid or "",
+            "provider": c.provider.name if c.provider else "",
+            "site": c.site.name if c.site else "",
+            "site_full": (
+                f"{c.site.address}, {c.site.city}, {c.site.state} {c.site.zip}"
+                if c.site else ""
+            ),
+            "tags": [t.name for t in c.tag.all()],
+        })
+    return JsonResponse({"rows": rows})
 
 @login_required(login_url='/accounts/login/')
 def circuit_edit(request, pk):

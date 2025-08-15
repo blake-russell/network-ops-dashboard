@@ -41,6 +41,7 @@
   </head>
 <body>
   {% load tz %}
+      <!-- <h3>{{ site_settings.teamname|default:"Team" }} Update - {% now "m-d-Y" %}</h3> -->
         {% for incident in incidents %}
         <div class="incident">
             <div><span class="title">Issue Date:</span> {{ incident.date_created }}</div>
@@ -53,7 +54,7 @@
         {% endfor %}
 
     {% if providers_with_emails %}
-      <div class="section-title">Scheduled Maintenance</div>
+      <h3>Scheduled Maintenance</h3>
       {% for provider, emails in providers_with_emails %}
         <table cellpadding="0" cellspacing="0" role="presentation" width="100%">
           <tr>
@@ -87,13 +88,12 @@
               <td>{{ circuit.enddatetime }}</td>
             </tr>
           {% endfor %}
-        </table>
-        <div class="spacer"></div>
+        </table><br>
       {% endfor %}
     {% endif %}
 
     {% if advisories %}
-      <div class="section-title">Field Advisories</div>
+      <h3>Field Advisories</h3>
       <table cellpadding="0" cellspacing="0" role="presentation" width="100%">
         <tr>
           <th>Title</th>
@@ -109,11 +109,12 @@
             <td>{{ advisory.date }}</td>
           </tr>
         {% endfor %}
-      </table>
+      </table><br>
+      <div class="spacer"></div>
     {% endif %}
 
     {% if certs %}
-      <div class="section-title">Certificate Expirations</div>
+      <h3>Certificate Expirations</h3>
       <table cellpadding="0" cellspacing="0" role="presentation" width="100%">
         <tr>
           <th>Provider</th>
@@ -129,11 +130,12 @@
             <td>{{ cert.expire_date }}</td>
           </tr>
         {% endfor %}
-      </table>
+      </table><br>
+      <div class="spacer"></div>
     {% endif %}
 
     {% if svc_acts %}
-      <div class="section-title">Service Account Expirations</div>
+      <h3>Service Account Expirations</h3>
       <table cellpadding="0" cellspacing="0" role="presentation" width="100%">
         <tr>
           <th>Service Account</th>
@@ -145,7 +147,7 @@
             <td>{{ svc_act.expire_date }}</td>
           </tr>
         {% endfor %}
-      </table>
+      </table><br>
     {% endif %}
 </body>
 </html>
