@@ -17,7 +17,6 @@ logger = logging.getLogger('network_ops_dashboard.asavpn')
 
 @login_required(login_url='/accounts/login/')
 def asavpn_findanddiscouser(request):
-    site_secrets = SiteSecrets.objects.filter(varname='asavpn_primary_user')
     if request.method == 'POST':
         form = AsaVpnFindAndDiscoForm(request.POST)
         if form.is_valid():
@@ -29,7 +28,7 @@ def asavpn_findanddiscouser(request):
             return render(request, 'network_ops_dashboard/asavpn/findanddiscouser_exec.html', {'output': output})
     else:
         form = AsaVpnFindAndDiscoForm()
-    return render(request, 'network_ops_dashboard/asavpn/findanddiscouser.html', {'form': form, 'site_secrets': site_secrets})
+    return render(request, 'network_ops_dashboard/asavpn/findanddiscouser.html', {'form': form})
 
 @login_required(login_url='/accounts/login/')
 def asavpn_findanddiscouser_log(request):

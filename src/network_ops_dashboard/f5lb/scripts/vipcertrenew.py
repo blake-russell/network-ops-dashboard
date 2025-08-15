@@ -14,11 +14,7 @@ logger = logging.getLogger('network_ops_dashboard.f5lb')
 
 # Inputs from f5lb_vipcertrenew_run view
 
-def RunF5LBMopVipCertRenew(mop, reqUser, theme, creds):
-    try:
-        backLink = SiteSecrets.objects.filter(varname='backLink_f5lb_vipcertrenew')[0].varvalue
-    except:
-        backLink = '#'
+def RunF5LBMopVipCertRenew(mop, reqUser, theme):
     # Build StreamingHTTPresponse page
     yield "<html><head><title>F5 LB VIP Certificate Renew MOP</title>\n"
     yield "<link rel='stylesheet' href='/static/css/base.css'>\n"
@@ -39,7 +35,7 @@ def RunF5LBMopVipCertRenew(mop, reqUser, theme, creds):
     # Start of Script Logic
     yield "Validating load balancer active states.<br>\n"
     try:
-        device = BIGIP(mop[0].device.name, creds[0].username, creds[0].password, session_verify=False)
+        device = BIGIP(mop[0].device.name, mop[0].device.creds_rest.username, mop[0].device.creds_rest.password, session_verify=False)
         if f5lbCheckActiveState(mop[0].device.name, device) == True:
             yield "Target load balancer is active state and can proceed.<br>\n"
             targetDevice = mop[0].device.name
@@ -48,16 +44,16 @@ def RunF5LBMopVipCertRenew(mop, reqUser, theme, creds):
             if  str(mop[0].device.name)[-1] == '1':
                 yield "Target load balancer is not active state, changing target to -02.<br>\n"
                 targetDevice = str(mop[0].device.name)[:-1] + '2'
-                device = BIGIP(targetDevice, creds[0].username, creds[0].password, session_verify=False)
+                device = BIGIP(targetDevice, mop[0].device.creds_rest.username, mop[0].device.creds_rest.password, session_verify=False)
             else:
                 yield "Target load balancer is not active state, changing target to -01.<br>\n"
                 targetDevice = str(mop[0].device.name)[:-1] + '1'
-                device = BIGIP(targetDevice, creds[0].username, creds[0].password, session_verify=False)
+                device = BIGIP(targetDevice, mop[0].device.creds_rest.username, mop[0].device.creds_rest.password, session_verify=False)
     except Exception as e:
         yield "Exception connecting to load balancer(s): %s (MOP: %s)<br>\n" % (e, mop[0].name)
         logger.error('Exception connecting to load balancer(s): {0} (MOP: {1})'.format(e, mop[0].name))
         F5LBMopVipCertRenew.objects.filter(pk=mop[0].pk).update(status='Planned')
-        yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+        yield "<a href='../../'>Back to MOP Page</a><br>\n"
         sys.exit(1)
 
     # Now we have a new 'device' with a session to the active load balancer if the original target was in standby
@@ -80,19 +76,19 @@ def RunF5LBMopVipCertRenew(mop, reqUser, theme, creds):
                 yield "No client SSL profile with that name exists...Verify you have the correct client SSL profile name entered in the MOP.<br>\n"
                 logger.error('No client SSL profile with that name exists: ({0} - MOP: {1})'.format(e, mop[0].name))
                 F5LBMopVipCertRenew.objects.filter(pk=mop[0].pk).update(status='Planned')
-                yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+                yield "<a href='../../'>Back to MOP Page</a><br>\n"
                 sys.exit(1)
         else:
             yield "No virtual server with that name exists...Verify you have the correct virtual server name entered in the MOP.<br>\n"
             logger.error('No virtual server with that name exists: ({0} - MOP: {1})'.format(e, mop[0].name))
             F5LBMopVipCertRenew.objects.filter(pk=mop[0].pk).update(status='Planned')
-            yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+            yield "<a href='../../'>Back to MOP Page</a><br>\n"
             sys.exit(1)
     except Exception as e:
         yield "Exception finding virtual server: %s (MOP: %s)<br>\n" % (e, mop[0].name)
         logger.error('Exception finding virtual server: {0} (MOP: {1})'.format(e, mop[0].name))
         F5LBMopVipCertRenew.objects.filter(pk=mop[0].pk).update(status='Planned')
-        yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+        yield "<a href='../../'>Back to MOP Page</a><br>\n"
         sys.exit(1)
 
     # Upload and build new cert and key files/entries on the F5
@@ -105,7 +101,7 @@ def RunF5LBMopVipCertRenew(mop, reqUser, theme, creds):
         yield "Failed to upload certificate file. %s (MOP: %s)<br>\n" % (e, mop[0].name)
         logger.error('Failed to upload certificate file. {0} (MOP: {1})'.format(e, mop[0].name))
         F5LBMopVipCertRenew.objects.filter(pk=mop[0].pk).update(status='Planned')
-        yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+        yield "<a href='../../'>Back to MOP Page</a><br>\n"
         sys.exit(1)
     try:
         device.upload(f'/mgmt/shared/file-transfer/uploads/', mop[0].cert_key_file.path)
@@ -114,7 +110,7 @@ def RunF5LBMopVipCertRenew(mop, reqUser, theme, creds):
         yield "Failed to upload key file. %s (MOP: %s)<br>\n" % (e, mop[0].name)
         logger.error('Failed to upload key file. {0} (MOP: {1})'.format(e, mop[0].name))
         F5LBMopVipCertRenew.objects.filter(pk=mop[0].pk).update(status='Planned')
-        yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+        yield "<a href='../../'>Back to MOP Page</a><br>\n"
         sys.exit(1)
     # Create key entry in traffic certificate manager
     try:
@@ -128,7 +124,7 @@ def RunF5LBMopVipCertRenew(mop, reqUser, theme, creds):
         yield "Failed to create key entry in cert manager. %s (MOP: %s)<br>\n" % (e, mop[0].name)
         logger.error('Failed to create key entry in cert manager. {0} (MOP: {1})'.format(e, mop[0].name))
         F5LBMopVipCertRenew.objects.filter(pk=mop[0].pk).update(status='Planned')
-        yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+        yield "<a href='../../'>Back to MOP Page</a><br>\n"
         sys.exit(1)
     # Create cerfificate entry in traffic certificate manager
     try:
@@ -142,7 +138,7 @@ def RunF5LBMopVipCertRenew(mop, reqUser, theme, creds):
         yield "Failed to create cert entry in cert manager. %s (MOP: %s)<br>\n" % (e, mop[0].name)
         logger.error('Failed to create cert entry in cert manager. {0} (MOP: {1})'.format(e, mop[0].name))
         F5LBMopVipCertRenew.objects.filter(pk=mop[0].pk).update(status='Planned')
-        yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+        yield "<a href='../../'>Back to MOP Page</a><br>\n"
         sys.exit(1)
     # Delete cert and key file from the upload directories on the F5
     try:
@@ -157,7 +153,7 @@ def RunF5LBMopVipCertRenew(mop, reqUser, theme, creds):
         yield "Failed to delete the certificate and key files from the upload directory off of the F5. %s (MOP: %s)<br>\n" % (e, mop[0].name)
         logger.error('Failed to delete the certificate and key files from the upload directory off of the F5. {0} (MOP: {1})'.format(e, mop[0].name))
         F5LBMopVipCertRenew.objects.filter(pk=mop[0].pk).update(status='Planned')
-        yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+        yield "<a href='../../'>Back to MOP Page</a><br>\n"
         sys.exit(1)
 
     # Modify the SSL profile to add new cert/key/passphrase entry.
@@ -181,7 +177,7 @@ def RunF5LBMopVipCertRenew(mop, reqUser, theme, creds):
         yield "Failed to modify SSL profile with new cert/key entry. %s (MOP: %s)<br>\n" % (e, mop[0].name)
         logger.error('Failed to modify SSL profile with new cert/key entry. {0} (MOP: {1})'.format(e, mop[0].name))
         F5LBMopVipCertRenew.objects.filter(pk=mop[0].pk).update(status='Planned')
-        yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+        yield "<a href='../../'>Back to MOP Page</a><br>\n"
         sys.exit(1)
 
     # Validation
@@ -201,17 +197,17 @@ def RunF5LBMopVipCertRenew(mop, reqUser, theme, creds):
                 pass
             F5LBMopVipCertRenew.objects.filter(pk=mop[0].pk).update(status='Completed')
             yield 'Please visit the load balancers web gui to validate and sync configuration: <a href="https://%s/xui">https://%s/xui</a><br>\n' % (targetDevice,targetDevice)
-            yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+            yield "<a href='../../'>Back to MOP Page</a><br>\n"
             sys.exit(1)
         else:
             yield 'Post Validation of the SSL profile certificate (%s) does not match what is listed on the MOP: %s<br>\n' % (sslprofile.properties['cert'].split('/Common/')[1], mop[0].cert_name)
             logger.error('Post Validation of the SSL profile certificate  ({0})  does not match what is listed on the MOP: {1}. (MOP: {2})'.format(sslprofile.properties['cert'].split('/Common/')[1], mop[0].cert_name, mop[0].name))
             F5LBMopVipCertRenew.objects.filter(pk=mop[0].pk).update(status='Planned')
-            yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+            yield "<a href='../../'>Back to MOP Page</a><br>\n"
     except Exception as e:
         yield "Exception validating the new configuration: %s (MOP: %s)<br>\n" % (e, mop[0].name)
         logger.error('Exception validating the new configuration: {0} (MOP: {1})'.format(e, mop[0].name))
         F5LBMopVipCertRenew.objects.filter(pk=mop[0].pk).update(status='Planned')
-        yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+        yield "<a href='../../'>Back to MOP Page</a><br>\n"
         raise
     yield "</div></body></html>\n"
