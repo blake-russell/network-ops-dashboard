@@ -76,8 +76,117 @@
 </table>
 
 {% if request.user.is_staff %}
-  {# keep your existing settings modal block here unchanged #}
+<div class="modal fade" id="changesSettingsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <form class="modal-content" id="changes-settings-form">
+      <div class="modal-header">
+        <h5 class="modal-title">Change Email Parser Settings</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row g-3">
+
+          <div class="col-md-6">
+            <label class="form-label">.msg folder</label>
+            <input type="text" name="changes_folder" class="form-control" value="{{ settings_obj.changes_folder|default:'' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Extract folder</label>
+            <input type="text" name="extract_folder" class="form-control" value="{{ settings_obj.extract_folder|default:'' }}">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Header row #</label>
+            <input type="number" min="1" name="header_row" class="form-control" value="{{ settings_obj.header_row|default:4 }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Days before</label>
+            <input type="number" min="1" name="days_before" class="form-control" value="{{ settings_obj.days_before|default:1 }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Days ahead</label>
+            <input type="number" min="1" name="days_ahead" class="form-control" value="{{ settings_obj.days_ahead|default:7 }}">
+          </div>
+
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="use_sites_for_locations" id="useSites"
+                     {% if settings_obj.use_sites_for_locations %}checked{% endif %}>
+              <label class="form-check-label" for="useSites">Use Site names for valid locations</label>
+              <div class="form-text">
+                When enabled, locations will be filtered by Sites below (if any selected), otherwise all Site names.
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12" id="sitesMultiWrap" {% if not settings_obj.use_sites_for_locations %}style="display:none"{% endif %}>
+            <label class="form-label">Limit to specific Sites (optional)</label>
+            <select name="sites_to_filter" class="form-select" multiple size="8">
+              {% for site in sites %}
+                <option value="{{ site.pk }}"
+                  {% if site in settings_obj.sites_to_filter.all %}selected{% endif %}>
+                  {{ site.name }}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">
+              Hold Ctrl/Cmd to select multiple. If none selected, all Sites are considered valid.
+            </div>
+          </div>
+
+          <!-- Custom locations (only if NOT using sites) -->
+          <div class="col-12" id="customLocationsWrap" {% if settings_obj.use_sites_for_locations %}style="display:none"{% endif %}>
+            <label class="form-label">Custom valid locations (comma-separated)</label>
+            <input type="text" name="custom_valid_locations" class="form-control"
+                   value="{{ settings_obj.custom_valid_locations|join:', ' }}">
+          </div>
+
+          <!-- Column Map JSON -->
+          <div class="col-12">
+            <label class="form-label">XLSX Column Map (JSON)</label>
+            <textarea name="column_map_json" class="form-control" rows="8"
+                      placeholder='{"team_name":"Team Name","change_id":"Change#","scheduled_start":"Scheduled Start","scheduled_end":"Scheduled End","location":"Location","summary":"Change Description","reason":"Change Reason","risk":"Risk Level","group":"Assignment Group","class_type":"Change Class"}'>{{ column_map_json|safe }}</textarea>
+            <div class="form-text">
+              Do not edit the key names, they are referenced on this template to call data into the tables. Only changes the vaules on the right side to match your spreadsheet.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary" type="submit">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endif %}
+
+<script>
+  // Toggle visibility between Sites vs Custom list
+  (function(){
+    const useSites = document.getElementById('useSites');
+    const sitesWrap = document.getElementById('sitesMultiWrap');
+    const customWrap = document.getElementById('customLocationsWrap');
+    if (useSites) {
+      useSites.addEventListener('change', () => {
+        const on = useSites.checked;
+        if (sitesWrap) sitesWrap.style.display = on ? '' : 'none';
+        if (customWrap) customWrap.style.display = on ? 'none' : '';
+      });
+    }
+  })();
+
+  // Save settings via AJAX
+  document.getElementById('changes-settings-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    await fetch("{% url 'changes_save_settings' %}", { method: 'POST', body: fd });
+    window.location.reload();
+  });
+</script>
 
 <style>.hidden-column { display: none; }</style>
 <script>
