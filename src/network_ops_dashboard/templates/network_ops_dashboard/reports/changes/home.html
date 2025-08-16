@@ -3,11 +3,11 @@
 {% block content %}
 <h3>Schedule Changes Report</h3>
 
-<div class="d-flex align-items-center mb-2">
+<div class="d-flex align-items-center flex-wrap gap-2 mb-3">
   {% if settings_obj.changes_folder and settings_obj.extract_folder %}
-    <a href="{% url 'changes_update' %}" class="btn btn-sm btn-outline-primary mb-2">Process New Emails</a>&nbsp;&nbsp;
+    <a href="{% url 'changes_update' %}" class="btn btn-sm btn-outline-primary mb-0">Process New Emails</a>
   {% endif %}
-  <a href="#" id="toggle-column-link" class="btn btn-sm btn-outline-secondary mb-2">Show Metadata</a>&nbsp;&nbsp;
+  <a href="#" id="toggle-column-link" class="btn btn-sm btn-outline-secondary mb-0">Show Metadata</a>
   {% include 'network_ops_dashboard/partials/email_job_controls.html' %}
   {% if request.user.is_staff %}
     <button class="btn btn-sm btn-outline-dark ms-auto" data-bs-toggle="modal" data-bs-target="#changesSettingsModal">

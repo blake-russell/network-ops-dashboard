@@ -22,13 +22,6 @@ logger = logging.getLogger('network_ops_dashboard.apic')
 
 @login_required(login_url='/accounts/login/')
 def apic_createinterface(request):
-    # SiteSecrets.objects() check
-    secret_search = ['apic_primary_user', 'apic_secondary_user', 'backLink_apic_createinterface', 'apic_lab_device_1', 'apic_lab_device_2']
-    site_secret = SiteSecrets.objects.filter(varname__in=secret_search)
-    site_secrets = {s.varname: s.varvalue for s in site_secret}
-    for key in secret_search:
-        site_secrets.setdefault(key, None)
-    missing_keys = [key for key in secret_search if site_secrets[key] is None]
     # Instead of sending entire objects.all do filtering here in view then display entire dict in template.
     if request.user.groups.filter(name='site-admin').exists():
         apic_mops_all = APICMopCreateInterface.objects.filter(Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') | Q(status='Running')).order_by('status')
@@ -44,7 +37,7 @@ def apic_createinterface(request):
             'interfaces' : mop.interfaces,
             }
         detaillist.append(detaildict)
-    return render(request, 'network_ops_dashboard/apic/mop_createinterface.html', {'detaillist': detaillist, 'site_secrets': site_secrets, 'missing_keys': missing_keys })
+    return render(request, 'network_ops_dashboard/apic/mop_createinterface.html', {'detaillist': detaillist})
 
 @login_required(login_url='/accounts/login/')
 def apic_createinterface_edit(request, pk):
@@ -113,18 +106,8 @@ def apic_createinterface_addintf(request, pk):
             apic_mop.interfaces.add(apic_intf)
             return redirect('apic_createinterface')
     else:
-        # SiteSecrets.objects() check
-        secret_search = ['apic_primary_user', 'apic_secondary_user', 'backLink_apic_createinterface', 'apic_lab_device_1', 'apic_lab_device_2']
-        site_secret = SiteSecrets.objects.filter(varname__in=secret_search)
-        site_secrets = {s.varname: s.varvalue for s in site_secret}
-        for key in secret_search:
-            site_secrets.setdefault(key, None)
-        missing_keys = [key for key in secret_search if site_secrets[key] is None]
-        initial_data = {
-            'device': apic_mop.device
-        }
-        form = APICMopInterfaceForm(initial=initial_data, readonly_device=True)
-    return render(request, 'network_ops_dashboard/apic/mop_createinterface_addintf.html', {'form': form, 'site_secrets': site_secrets, 'missing_keys': missing_keys })
+        form = APICMopInterfaceForm(initial={'device': apic_mop.device}, readonly_device=True)
+    return render(request, 'network_ops_dashboard/apic/mop_createinterface_addintf.html', {'form': form})
 
 @login_required(login_url='/accounts/login/')
 def apic_createinterface_editintf(request, pk):
@@ -136,15 +119,8 @@ def apic_createinterface_editintf(request, pk):
             apic_intf.save()
             return redirect('apic_createinterface_intf')
     else:
-        # SiteSecrets.objects() check
-        secret_search = ['apic_primary_user', 'apic_secondary_user', 'backLink_apic_createinterface', 'apic_lab_device_1', 'apic_lab_device_2']
-        site_secret = SiteSecrets.objects.filter(varname__in=secret_search)
-        site_secrets = {s.varname: s.varvalue for s in site_secret}
-        for key in secret_search:
-            site_secrets.setdefault(key, None)
-        missing_keys = [key for key in secret_search if site_secrets[key] is None]
         form = APICMopInterfaceForm(instance=apic_intf, readonly_device=True)
-    return render(request, 'network_ops_dashboard/apic/mop_createinterface_editintf.html', {'form': form, 'site_secrets': site_secrets, 'missing_keys': missing_keys })
+    return render(request, 'network_ops_dashboard/apic/mop_createinterface_editintf.html', {'form': form})
 
 @login_required(login_url='/accounts/login/')
 def apic_createinterface_delintf(request, pk):
@@ -156,30 +132,12 @@ def apic_createinterface_delintf(request, pk):
 def apic_createinterface_run(request, pk):
     APICMopCreateInterface.objects.filter(pk=pk).update(status='Running')
     mop = APICMopCreateInterface.objects.filter(pk=pk)
-    try:
-        apic_lab_device_1 = SiteSecrets.objects.filter(varname='apic_lab_device_1')[0].varvalue
-        apic_lab_device_2 = SiteSecrets.objects.filter(varname='apic_lab_device_2')[0].varvalue
-        apic_primary_user = SiteSecrets.objects.filter(varname='apic_primary_user')[0].varvalue
-        apic_secondary_user = SiteSecrets.objects.filter(varname='apic_secondary_user')[0].varvalue
-        if mop[0].device.ipaddress_mgmt == apic_lab_device_1 or mop[0].device.ipaddress_mgmt == apic_lab_device_2:
-            creds = NetworkCredential.objects.filter(username_lookup=apic_secondary_user) # Use this apic_secondary_user if LAB device
-        else:
-            creds = NetworkCredential.objects.filter(username_lookup=apic_primary_user) # Use apic_primary_user if production device
-    except Exception as e:
-        try:
-            # exception here if apic_lab_device_1 and apic_lab_device_2 are not set in SiteSecrets.objects() for lab devices
-            creds = NetworkCredential.objects.filter(username_lookup=apic_primary_user) # Use apic_primary_user if production device
-            logger.exception('apic_createinterface_run (Exception) importing apic_lab_device_1/2 or secondary_user from SiteSecrets.objects(). %s' %(e))
-        except Exception as e:
-            logger.exception('apic_createinterface_run (Exception) importing apic_primary_user/secondary_user or apic_lab_device_1/2 from SiteSecrets.objects() %s' %(e))
-            response = HttpResponse(f"apic_createinterface_run (Exception) importing apic_primary_user/secondary_user or apic_lab_device_1/2 from SiteSecrets.objects().: {e}", content_type='text/html')
-            return response
     reqUser = User.objects.get(username=request.user)
     if User.objects.filter(pk=reqUser.pk, groups__name='themelight').exists():
         theme = 'themelight'
     else:
         theme = 'themedark'
-    response = StreamingHttpResponse(APICMopCreateInterfaceRun(mop, reqUser.username, theme, creds), content_type='text/html')
+    response = StreamingHttpResponse(APICMopCreateInterfaceRun(mop, reqUser.username, theme), content_type='text/html')
     response['X-Accel-Buffering'] = 'no'  # Disable buffering in nginx
     response['Cache-Control'] = 'no-cache'  # Ensure clients don't cache the data
     response['Transfer-Encoding'] = 'chunked'
@@ -191,26 +149,12 @@ def apic_loadconfigoptions(request, device_id):
         deviceList = APICConfigOptions.objects.all()
     else:
         deviceList = APICConfigOptions.objects.filter(device__id=device_id)
-    try:
-        apic_primary_user = SiteSecrets.objects.filter(varname='apic_primary_user')[0].varvalue
-        apic_secondary_user = SiteSecrets.objects.filter(varname='apic_secondary_user')[0].varvalue
-        creds = NetworkCredential.objects.filter(username_lookup=apic_primary_user)
-        creds2 = NetworkCredential.objects.filter(username_lookup=apic_secondary_user)
-    except Exception as e:
-        try:
-            creds = NetworkCredential.objects.filter(username_lookup=apic_primary_user)
-            creds2 = NetworkCredential.objects.filter(username_lookup=apic_primary_user)
-            logger.exception('apic_loadconfigoptions (Exception) importing apic_secondary_user from SiteSecrets.objects(). %s' %(e))
-        except Exception as e:
-            logger.exception('apic_loadconfigoptions (Exception) importing apic_primary_user from SiteSecrets.objects(). %s' %(e))
-            response = HttpResponse(f"apic_loadconfigoptions (Exception) importing apic_primary_user from SiteSecrets.objects(): {e}", content_type='text/html')
-            return response
     reqUser = User.objects.get(username=request.user)
     if User.objects.filter(pk=reqUser.pk, groups__name='themelight').exists():
         theme = 'themelight'
     else:
         theme = 'themedark'
-    response = StreamingHttpResponse(LoadAPICConfigListOptions(deviceList, reqUser.username, theme, creds, creds2), content_type='text/html')
+    response = StreamingHttpResponse(LoadAPICConfigListOptions(deviceList, reqUser.username, theme), content_type='text/html')
     response['X-Accel-Buffering'] = 'no'  # Disable buffering in nginx
     response['Cache-Control'] = 'no-cache'  # Ensure clients don't cache the data
     response['Transfer-Encoding'] = 'chunked'

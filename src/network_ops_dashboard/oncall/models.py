@@ -11,7 +11,7 @@ from network_ops_dashboard.reports.circuits.models import CircuitTag
 # Create your models here.
 
 class OnCallIncident(models.Model):
-    STATUS_CHOICES = [('Open', 'Open'), ('Closed', 'Closed')]
+    STATUS_CHOICES = [('Open', 'Open'), ('Closed', 'Closed'), ('Archived', 'Archived')]
 
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Open')
     date_created = models.DateField(auto_now_add=True)
@@ -33,6 +33,18 @@ class OnCallSettings(models.Model):
     show_field_advisories = models.BooleanField(default=True)
     show_cert_expiry = models.BooleanField(default=True)
     show_svcacct_expiry = models.BooleanField(default=True)
+
+    show_closed_in_report = models.BooleanField(default=True)
+    report_window_days = models.PositiveIntegerField(default=7)
+
+    auto_archive_enabled = models.BooleanField(default=False)
+    auto_archive_frequency = models.CharField(
+        max_length=10,
+        choices=(("daily", "Daily"), ("weekly", "Weekly")),
+        default="weekly",
+    )
+    auto_archive_time = models.CharField(max_length=5, default="08:30")
+    auto_archive_weekday = models.PositiveSmallIntegerField(default=0)   # 0=Mon ... 6=Sun
 
     updated_at = models.DateTimeField(auto_now=True)
 

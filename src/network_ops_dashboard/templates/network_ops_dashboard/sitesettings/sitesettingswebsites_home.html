@@ -1,0 +1,25 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+
+<h3>Site Settings Websites</h3>
+<a href="{% url 'websites_add' %}" class="btn btn-sm btn-outline-primary">Add Website</a><br>
+<table class="table table-hover">
+ <tr>
+  <th>Name</th>
+  <th>URL</th>
+  <th>Actions</th>
+ </tr>
+
+{% for website in detaillist %}
+  <tr class="table-light">
+    <td><a href="{{ website.url }}">{{ website.name }}</a></td>
+    <td>{{ website.url }}</td>
+    <td>
+      <a href="{% url 'websites_edit' website.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+    </td>
+  </tr>
+{% endfor %}
+</table>
+
+{% endblock %}

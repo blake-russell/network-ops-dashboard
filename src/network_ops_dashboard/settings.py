@@ -135,15 +135,15 @@ STATICFILES_FINDERS = [
 ]
 
 # '/django/venv/static/'
-STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
+STATIC_ROOT = os.path.join(VENV_DIR, 'static') # Was PROJECT_ROOT
 STATIC_URL = '/static/'
 
 # '/django/venv/media/'
-MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'media')
+MEDIA_ROOT = os.path.join(VENV_DIR, 'media') # Was PROJECT_ROOT
 MEDIA_URL = '/media/'
 
 # '/django/venv/protected_media/'
-PROTECTED_MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'protected_media')
+PROTECTED_MEDIA_ROOT = os.path.join(VENV_DIR, 'protected_media') # Was PROJECT_ROOT
 
 ADMIN_MEDIA_PREFIX = '/static/admin'
 

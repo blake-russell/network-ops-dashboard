@@ -4,6 +4,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 from django_cryptography.fields import encrypt
 from django.db import models
 from django.conf import settings
+from network_ops_dashboard.models import NetworkCredential
 
 # Create your models here.
 
@@ -53,6 +54,8 @@ class Inventory(models.Model):
     port_gnmi = models.IntegerField(default=0)
     device_tag = models.ManyToManyField(DeviceTag)
     priority_interfaces = models.CharField(max_length=750, blank=True)
+    creds_ssh = models.ForeignKey(NetworkCredential, null=True, on_delete=models.SET_NULL, blank=True, related_name="inventory_creds_ssh")
+    creds_rest = models.ForeignKey(NetworkCredential, null=True, on_delete=models.SET_NULL, blank=True, related_name="inventory_creds_rest")
     def get_priority_interfaces(self):
         return [k.strip() for k in self.priority_interfaces.split(',') if k.strip()]
     def set_priority_interfaces(self, priority_interfaces_list):

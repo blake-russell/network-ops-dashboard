@@ -13,16 +13,11 @@ def findVPNuser(targetUser, username1, password1, targetAction):
     #urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     logger.info(f"findVPNuser Running.")
     headers = {'User-Agent': 'ASDM'}
-    try:
-        creds_name = SiteSecrets.objects.filter(varname='asavpn_primary_user')[0].varvalue
-        creds = NetworkCredential.objects.filter(username_lookup=creds_name)
-    except Exception as e:
-        logger.exception(f"No asavpn_primary_user set in SiteSecrets.objects(): {e}")
-    auth = HTTPBasicAuth(creds[0].username, creds[0].password)
     baseStr = '/admin/exec/show%20vpn-sessiondb%20anyconnect%20%7C%20i%20'
     asaInv = Inventory.objects.filter(device_tag__name__exact='ASAVPN')
     for TargetDevice in asaInv:
         try:
+            auth = HTTPBasicAuth(TargetDevice.creds_rest.username, TargetDevice.creds_rest.password)
             r1 = requests.get('https://' + str(TargetDevice) + baseStr + targetUser.upper(), headers=headers, auth=auth, verify=False)
             r2 = requests.get('https://' + str(TargetDevice) + baseStr + targetUser.lower(), headers=headers, auth=auth, verify=False)
             targetUsers = r1.text or r2.text
