@@ -1,8 +1,8 @@
 # Changelog
 
 ## v0.2.2 - 08-15-2025
-- ⚙️ On-call(WIP): Added ability to auto-archive incidents that are "Closed" daily or weekly at a provided time.
-- ✅ On-call(WIP): Added status "Archived". Incident log will now show incidents that are "Archived".
+- ⚙️ On-call: Added ability to auto-archive incidents that are "Closed" daily or weekly at a provided time.
+- ✅ On-call: Added status "Archived". Incident log will now show incidents that are "Archived".
 - ✅ Scripts: Lookup NetworkCredential from Inventoy object instead of referring to it due to duplicates and ease.
 - 🗃️ Inventory.object (WIP): Add Forgeignkey fields to NetworkCredential for SSH and REST.
 - 🖥️ UX: Added superuser views to edit/add SiteSettings & SiteSettingsWebsites.

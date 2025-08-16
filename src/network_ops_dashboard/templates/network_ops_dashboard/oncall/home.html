@@ -123,7 +123,7 @@
   </script>
 
   <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#oncallDisplayModal">
-    ⚙ Display Settings
+    ⚙ On-Call Settings
   </button>
   
   <div class="modal fade" id="oncallDisplayModal" tabindex="-1" aria-hidden="true">
@@ -182,9 +182,60 @@
               </div>
             </div>
           </div>
-  
         </div>
-  
+
+				<hr>
+				
+				<h6 class="mb-2">Incident Archiving</h6>
+				<div class="row g-3 mb-3">
+				<div class="col-md-4">
+					<label class="form-label">Days to display</label>
+					<input type="number" min="1" class="form-control" name="report_window_days"
+						value="{{ oncall_settings.report_window_days|default:7 }}">
+				</div>
+				<div class="col-md-8 d-flex align-items-end">
+					<div class="form-check form-switch">
+					<input class="form-check-input" type="checkbox" name="show_closed_in_report" id="oc-closed"
+							{% if oncall_settings.show_closed_in_report %}checked{% endif %}>
+					<label class="form-check-label" for="oc-closed">Include closed incidents in report</label>
+					</div>
+				</div>
+				</div>
+				
+				<h6 class="mb-2">Auto-Archive Closed Incidents</h6>
+				<div class="form-check form-switch mb-3">
+				<input class="form-check-input" type="checkbox" name="auto_archive_enabled" id="oc-arch-enabled"
+						{% if oncall_settings.auto_archive_enabled %}checked{% endif %}>
+				<label class="form-check-label" for="oc-arch-enabled">Enable auto-archive</label>
+				</div>
+				
+				<div class="row g-3 mb-1">
+				<div class="col-md-5">
+					<label class="form-label">Frequency</label>
+					<select class="form-select" name="auto_archive_frequency" id="oc-arch-freq">
+					<option value="daily"  {% if oncall_settings.auto_archive_frequency == 'daily' %}selected{% endif %}>Daily</option>
+					<option value="weekly" {% if oncall_settings.auto_archive_frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+					</select>
+				</div>
+				<div class="col-md-4">
+					<label class="form-label">Time</label>
+					<input type="time" class="form-control" name="auto_archive_time"
+						value="{{ oncall_settings.auto_archive_time|default:'08:30' }}">
+					<div class="form-text">Server local time</div>
+				</div>
+				<div class="col-md-3" id="oc-arch-weekday-wrap"
+					{% if oncall_settings.auto_archive_frequency != 'weekly' %}style="display:none"{% endif %}>
+					<label class="form-label">Weekday</label>
+					<select class="form-select" name="auto_archive_weekday">
+					{% for day in days %}
+						<option value="{{ forloop.counter0 }}"
+								{% if oncall_settings.auto_archive_weekday == forloop.counter0 %}selected{% endif %}>
+						{{ day }}
+						</option>
+					{% endfor %}
+					</select>
+				</div>
+			  </div>
         <div class="modal-footer">
           <button class="btn btn-primary" type="submit">Save</button>
         </div>
@@ -199,7 +250,6 @@
       const form = e.target;
       const fd = new FormData(form);
       fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-      // add all selected tag ids
       const sel = document.getElementById('oc-tags');
       if (sel) {
         [...sel.selectedOptions].forEach(o => fd.append('circuit_tags', o.value));
@@ -207,7 +257,19 @@
       await fetch("{% url 'oncall_display_save' %}", { method: 'POST', body: fd });
       window.location.reload();
     });
-  </script>  
+  </script>
+
+  <script>
+    (function(){
+      const freq = document.getElementById('oc-arch-freq');
+      const wrap = document.getElementById('oc-arch-weekday-wrap');
+      if (freq && wrap) {
+      const sync = () => { wrap.style.display = (freq.value === 'weekly') ? '' : 'none'; };
+      freq.addEventListener('change', sync);
+      sync();
+      }
+    })();
+  </script>
   
 <hr>
 
@@ -226,8 +288,13 @@
         <button class="save-button hide-on-print" style="display:none;">💾 Save</button>
         <form method="POST" action="{% url 'oncall_close_incident' incident.id %}" onsubmit="return confirm('Are you sure you want to close this incident?');">
             {% csrf_token %}
-            <button type="submit" class="close-button btn btn-danger btn-sm hide-on-print">✖ Close</button>
+            {% if incident.status == 'Open' %}
+              <button type="submit" class="close-button btn btn-danger btn-sm hide-on-print">✖ Close</button>
+            {% elif incident.status == 'Closed' %}
+              <button type="submit" class="close-button btn btn-danger btn-sm hide-on-print">✖ Archive</button>
+            {% endif %}
         </form>
+
       </div>
       <hr>
     </div>
