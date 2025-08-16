@@ -32,16 +32,7 @@ def LoadF5LBConfigListsOptions(deviceList, reqUser, theme):
         if not isinstance(deviceList, (list, QuerySet)):
             deviceList = [deviceList]
         for targetDevice in deviceList:
-            try:
-                f5lb_temp_devicecheck = json.loads(SiteSecrets.objects.filter(varname='f5lb_temp_devicecheck')[0].varvalue)
-                if any(check in targetDevice.device.name for check in f5lb_temp_devicecheck):
-                    device = BIGIP(targetDevice.device.name, targetDevice.device.creds_rest.username, targetDevice.device.creds_rest.password, session_verify=False)
-                else:
-                    device = BIGIP(targetDevice.device.name, targetDevice.device.creds_rest.username, targetDevice.device.creds_rest.password, session_verify=False)
-            except:
-                # Maybe f5lb_temp_devicecheck is empty so continue with normal creds
-                device = BIGIP(targetDevice.device.name, targetDevice.device.creds_rest.username, targetDevice.device.creds_rest.password, session_verify=False)
-                continue
+            device = BIGIP(targetDevice.device.name, targetDevice.device.creds_rest.username, targetDevice.device.creds_rest.password, session_verify=False)
             virtuals = []
             profiles = []
             try:
