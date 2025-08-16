@@ -4,17 +4,7 @@
 {% load static %}
 <body data-media-url="{% get_media_prefix %}"></body>
 
-{% if site_secrets.f5lb_primary_user and site_secrets.f5lb_secondary_user and site_secrets.backLink_f5lb_vipcertrenew and site_secrets.f5lb_temp_devicecheck %}
-  <h3>F5 LB VIP Certificate Renew MOPs</h3>
-{% else %}
-  <div class="alert alert-dismissible alert-warning">
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    <h4 class="alert-heading">Warning!</h4>
-    <p class="mb-0">No SiteSecrets.objects() entry found for: {% for key in missing_keys %}{{ key }}, {% endfor %} Go to the <a href="/admin" class="alert-link">admin</a> panel and configure.</p>
-  </div>
-  <h3>F5 LB VIP Certificate Renew MOPs</h3>
-{% endif %}
-
+<h3>F5 LB VIP Certificate Renew MOPs</h3>
 
 <a href="{% url 'f5lb_vipcertrenew_add' %}" class="btn btn-sm btn-outline-primary">Create MOP</a><br>
 <!-- Here was the link to run loadconfigoptions against all load balancers :

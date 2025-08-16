@@ -34,4 +34,7 @@ urlpatterns = [
     re_path(r'^site/edit/(?P<pk>[0-9]{1,10})/$', views.site_edit, name='site_edit'),
     re_path(r'^devicetag/$', views.devicetag_home, name='devicetag_home'),
     re_path(r'^devicetag/add/$', views.devicetag_add, name='devicetag_add'),
+    re_path(r'^networkcreds/$', views.networkcreds_home, name='networkcreds_home'),
+    re_path(r'^networkcreds/add/$', views.networkcreds_add, name='networkcreds_add'),
+    re_path(r'^networkcreds/edit/(?P<pk>[0-9]{1,10})/$', views.networkcreds_edit, name='networkcreds_edit'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -9,15 +9,16 @@ from django.conf import settings
     
 class NetworkCredential(models.Model):
     class Meta:
-        ordering = ['username_lookup']
+        ordering = ['username_search_field']
     username = encrypt(models.CharField(max_length=100))
     password = encrypt(models.CharField(max_length=100))
     username_lookup = models.CharField(max_length=100, blank=True)
+    username_search_field = models.CharField(max_length=100, blank=False, unique=True)
     def save(self, *args, **kwargs):
         self.username_lookup = self.username
         super().save(*args, **kwargs)
     def __str__(self):
-        return str(self.username_lookup)
+        return str(self.username_search_field)
     
 class SiteSettingsWebsite(models.Model):
     class Meta:

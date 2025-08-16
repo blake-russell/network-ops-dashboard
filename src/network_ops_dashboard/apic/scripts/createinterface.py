@@ -13,11 +13,7 @@ logger = logging.getLogger('network_ops_dashboard.apic')
 # Inputs from apic_createinterface_run view
 
 # Create Interface (standard) - requires already configured Interface Profile, Selector, & IPG
-def APICMopCreateInterfaceRun(mop, reqUser, theme, creds):
-    try:
-        backLink = SiteSecrets.objects.filter(varname='backLink_apic_createinterface')[0].varvalue
-    except ImportError:
-        backLink = '#'
+def APICMopCreateInterfaceRun(mop, reqUser, theme):
     # Build StreamingHTTPresponse page
     yield "<html><head><title>APIC Create Interface MOP</title>\n"
     yield "<link rel='stylesheet' href='/static/css/base.css'>\n"
@@ -40,7 +36,8 @@ def APICMopCreateInterfaceRun(mop, reqUser, theme, creds):
     yield " " * 1024  # Encourage browser to render incrementally
     try:
         for intf in mop[0].interfaces.all():
-            aci_token = apicCookie(mop[0].device.ipaddress_mgmt, creds[0].username, creds[0].password)
+            # aci_token = apicCookie(mop[0].device.ipaddress_mgmt, creds[0].username, creds[0].password)
+            aci_token = apicCookie(mop[0].device.ipaddress_mgmt, mop[0].device.creds_rest.username, mop[0].device.creds_rest.password)
             headers = {'Content-Type': 'application/json', 'Cookie': f'APIC-Cookie='+aci_token}
             try:
                 payload = {
@@ -84,17 +81,17 @@ def APICMopCreateInterfaceRun(mop, reqUser, theme, creds):
                 yield f'Exception creating {intf.intfdesc}. ({e})<br>'
                 logger.error('Exception creating {0} APIC interface: {1} (MOP: {2})'.format(intf.intfdesc, e, mop[0].name))
                 APICMopCreateInterface.objects.filter(pk=mop[0].pk).update(status='Planned')
-                yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+                yield "<a href='../../'>Back to MOP Page</a><br>\n"
                 raise
         yield "Successfully Completed APIC interface MOP: %s <br>\n" % (mop[0].name)
         logger.info('Successfully Completed APIC interface MOP: {0})'.format(mop[0].name))
         APICMopCreateInterface.objects.filter(pk=mop[0].pk).update(status='Completed')
-        yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+        yield "<a href='../../'>Back to MOP Page</a><br>\n"
     except Exception as e:
         yield "Exception running APIC Create Interface MOP: %s (MOP: %s)<br>\n" % (e, mop[0].name)
         logger.error('Exception APIC interface MOP: {0} (MOP: {1})'.format(e, mop[0].name))
         APICMopCreateInterface.objects.filter(pk=mop[0].pk).update(status='Planned')
-        yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+        yield "<a href='../../'>Back to MOP Page</a><br>\n"
         raise
     yield "</div></body></html>\n"
         

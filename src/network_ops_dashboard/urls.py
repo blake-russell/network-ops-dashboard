@@ -42,6 +42,7 @@ urlpatterns = [
 
 urlpatterns += [
     re_path(r'^inventory/', include('network_ops_dashboard.inventory.urls')),
+    re_path(r'^sitesettings/', include('network_ops_dashboard.sitesettings.urls')),
     re_path(r'^f5lb/', include('network_ops_dashboard.f5lb.urls')),
     re_path(r'^asavpn/', include('network_ops_dashboard.asavpn.urls')),
     re_path(r'^apic/', include('network_ops_dashboard.apic.urls')),

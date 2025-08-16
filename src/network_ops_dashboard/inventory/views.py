@@ -246,3 +246,41 @@ def site_data(request):
             "poc_number": s.poc_number or "",
         })
     return JsonResponse({"rows": rows})
+
+@login_required(login_url='/accounts/login/')
+def networkcreds_home(request):
+    networkcreds_all = NetworkCredential.objects.all().order_by('username_search_field')
+    detaillist = []
+    for networkcreds in networkcreds_all:
+        detaildict = {
+            'pk' : networkcreds.pk,
+            'username' : networkcreds.username,
+            'username_search_field' : networkcreds.username_search_field,
+            }
+        detaillist.append(detaildict)
+    return render(request, 'network_ops_dashboard/inventory/networkcreds/home.html', {'detaillist': detaillist})
+
+@login_required(login_url='/accounts/login/')
+def networkcreds_edit(request, pk):
+    networkcred = get_object_or_404(NetworkCredential, pk=pk)
+    if request.method == 'POST':
+        form = NetworkCredentialForm(request.POST, instance=networkcred)
+        if form.is_valid():
+            cred = form.save(commit=True)
+            cred.save()
+            return redirect('networkcreds_home')
+    else:
+        form = NetworkCredentialForm(instance=networkcred)
+    return render(request, 'network_ops_dashboard/inventory/networkcreds/edit.html', {'form': form})
+
+@login_required(login_url='/accounts/login/')
+def networkcreds_add(request):
+    if request.method == 'POST':
+        form = NetworkCredentialForm(request.POST)
+        if form.is_valid():
+            cred = form.save(commit=False)
+            cred.save()
+            return redirect('networkcreds_home')
+    else:
+        form = NetworkCredentialForm()
+    return render(request, 'network_ops_dashboard/inventory/networkcreds/add.html', {'form': form})

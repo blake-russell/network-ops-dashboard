@@ -13,11 +13,7 @@ logger = logging.getLogger('network_ops_dashboard.apic')
 # Inputs from apic_loadconfigoptions view
 
 # Load interface profiles and interface group policies into local database for create interface mop
-def LoadAPICConfigListOptions(deviceList, reqUser, theme, creds, creds2):
-    try:
-        backLink = SiteSecrets.objects.filter(varname='backLink_apic_createinterface')[0].varvalue
-    except ImportError:
-        backLink = '#'
+def LoadAPICConfigListOptions(deviceList, reqUser, theme):
     # Build StreamingHTTPresponse page
     yield "<html><head><title>APIC Loading Config Options into DB</title>\n"
     yield "<link rel='stylesheet' href='/static/css/base.css'>\n"
@@ -40,24 +36,11 @@ def LoadAPICConfigListOptions(deviceList, reqUser, theme, creds, creds2):
         if not isinstance(deviceList, (list, QuerySet)):
             deviceList = [deviceList]
         for targetDevice in deviceList:
-            try:
-                apic_lab_devicecheck = json.loads(SiteSecrets.objects.filter(varname='apic_lab_devicecheck')[0].varvalue)
-                if any(check in targetDevice.device.name for check in apic_lab_devicecheck):
-                    username = creds2[0].username
-                    password = creds2[0].password
-                else:
-                    username = creds[0].username
-                    password = creds[0].password
-            except Exception:
-                # Maybe apic_lab_devicecheck is empty so continue with normal creds
-                username = creds[0].username
-                password = creds[0].password
-                continue
             # Get the Interface Profiles
             try:
                 yield 'Gathering interface profiles on  %s.<br>' % (targetDevice.device.name)
                 intf_ipfs = []
-                aci_token = apicCookie(targetDevice.device.ipaddress_mgmt, username, password)
+                aci_token = apicCookie(targetDevice.device.ipaddress_mgmt, targetDevice.device.creds_rest.username, targetDevice.device.creds_rest.password)
                 headers = {'Content-Type': 'application/json', 'Cookie': f'APIC-Cookie='+aci_token}
                 r = requests.get(f'https://{targetDevice.device.ipaddress_mgmt}/api/node/class/infraAccPortP.json', headers=headers, verify=False)
                 intf_profiles = json.loads(r.text)
@@ -71,13 +54,13 @@ def LoadAPICConfigListOptions(deviceList, reqUser, theme, creds, creds2):
             except Exception as e:
                 yield f'LoadAPICConfigListOptions (Exception) fetching configs on {targetDevice.device.name}. ({e})<br>'
                 logger.error('LoadAPICConfigListOptions (Exception) fetching configs on {0}. {1}'.format(targetDevice.device.name, e))
-                yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+                yield "<a href='../../'>Back to MOP Page</a><br>\n"
                 continue
             # Get the Interface Policy Groups
             try:
                 yield 'Gathering interface group policies from %s.<br>' % (targetDevice.device.name)
                 intf_igps = []
-                aci_token = apicCookie(targetDevice.device.ipaddress_mgmt, username, password)
+                aci_token = apicCookie(targetDevice.device.ipaddress_mgmt, targetDevice.device.creds_rest.username, targetDevice.device.creds_rest.password)
                 headers = {'Content-Type': 'application/json', 'Cookie': f'APIC-Cookie='+aci_token}
                 r = requests.get(f'https://{targetDevice.device.ipaddress_mgmt}/api/node/class/infraAccPortGrp.json', headers=headers, verify=False)
                 intf_groups = json.loads(r.text)
@@ -91,11 +74,11 @@ def LoadAPICConfigListOptions(deviceList, reqUser, theme, creds, creds2):
             except Exception as e:
                 yield f'LoadAPICConfigListOptions (Exception) fetching configs on {targetDevice.device.name}. ({e})<br>'
                 logger.error('LoadAPICConfigListOptions (Exception) fetching configs on {0}. {1}'.format(targetDevice.device.name, e))
-                yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+                yield "<a href='../../'>Back to MOP Page</a><br>\n"
                 continue
     except Exception as e:
         yield f'LoadAPICConfigListOptions (Exception) fetching configs on {targetDevice.device.name} (outer). ({e})<br>'
         logger.error('LoadAPICConfigListOptions (Exception) fetching configs on {0} (outer). {1}'.format(targetDevice.device.name, e))
-        yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+        yield "<a href='../../'>Back to MOP Page</a><br>\n"
         raise
     yield "</div></body></html>\n"

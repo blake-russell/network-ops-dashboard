@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
+from datetime import timedelta
 from django.conf import settings
 import logging
 from premailer import transform
@@ -15,6 +16,15 @@ from network_ops_dashboard.oncall.models import OnCallIncident, OnCallSettings
 
 logger = logging.getLogger(f'network_ops_dashboard.{__name__}')
 
+def _incidents_for_report(settings_obj):
+    days = max(settings_obj.report_window_days or 7, 1)
+    since = timezone.now() - timedelta(days=days)
+    qs = OnCallIncident.objects.filter(date_created__gte=since).exclude(status="Archived")
+    if settings_obj.show_closed_in_report:
+        return qs.order_by('-date_created')
+    else:
+        return qs.filter(status="Open").order_by('-date_created')
+    
 class Command(BaseCommand):
     help = "Render the on-call report and send it via email (HTML)."
     logger.info("On-call daily email cron started.")
@@ -42,7 +52,8 @@ class Command(BaseCommand):
                 if emails_qs.exists():
                     providers_with_emails.append((provider, emails_qs))
 
-        incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
+        # incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
+        incidents = incidents = _incidents_for_report(settings_obj)
         certs     = CertExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_cert_expiry else CertExpiry.objects.none()
         advisories= CiscoAdvisory.objects.filter(status='Open').order_by('date')     if settings_obj.show_field_advisories else CiscoAdvisory.objects.none()
         svc_acts  = SvcActExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_svcacct_expiry else SvcActExpiry.objects.none()

@@ -10,6 +10,7 @@ COLLECTORS = {
     "asa_vpn_stats": "collect_asa_vpn_stats",
     "process_emails": "process_emails",
     "send_oncall_email": "send_oncall_email",
+    "archive_oncall_closed": "archive_oncall_closed",
 }
 
 def _job_comment(key: str) -> str:
@@ -34,7 +35,7 @@ def ensure_minutely_cron(key: str, user: Optional[str] = None) -> None:
              key, os_user, getpass.getuser(), crontab_bin, cmd)
 
     try:
-        cron = CronTab(user=os_user)  # None = current process user
+        cron = CronTab(user=os_user)
         jobs = [j for j in cron if j.comment == comment]
         if jobs:
             for j in jobs:
@@ -46,7 +47,6 @@ def ensure_minutely_cron(key: str, user: Optional[str] = None) -> None:
             job.setall("* * * * *")
             cron.write()
 
-        # Dump resulting crontab to logs
         current = [f"{j.slices} {j.command}  # {j.comment}" for j in cron]
         log.info("CRON ensure done. Entries for user=%s:\n%s",
                  os_user or getpass.getuser(), "\n".join(current) or "(empty)")
@@ -55,7 +55,7 @@ def ensure_minutely_cron(key: str, user: Optional[str] = None) -> None:
         log.exception("CRON ensure failed for user=%s: %s", os_user, e)
         raise
 
-def ensure_daily_cron(key: str, hhmm: str) -> None:
+def ensure_daily_cron(key: str, hhmm: str, user: Optional[str] = None) -> None:
     """Ensure one daily cron at HH:MM (24h)."""
     if key not in COLLECTORS:
         raise ValueError(f"Unknown collector key: {key}")
@@ -67,7 +67,8 @@ def ensure_daily_cron(key: str, hhmm: str) -> None:
         raise ValueError(f"Invalid time '{hhmm}', expected 'HH:MM'")
     comment = _job_comment(key)
     cmd = _job_command(COLLECTORS[key])
-    cron = CronTab(user=True)
+    os_user = _target_user(user)
+    cron = CronTab(user=os_user)
     jobs = [j for j in cron if j.comment == comment]
     if jobs:
         for j in jobs:
@@ -78,6 +79,24 @@ def ensure_daily_cron(key: str, hhmm: str) -> None:
     job = cron.new(command=cmd, comment=comment)
     job.setall(f"{m} {h} * * *")
     cron.write()
+
+def ensure_weekly_cron(key: str, hhmm: str, weekday: int, user: Optional[str] = None) -> None:
+    """Install/normalize a once-per-week cron at HH:MM on weekday(0=Sun..6=Sat)."""
+    if key not in COLLECTORS:
+        raise ValueError(f"Unknown key: {key}")
+    h, m = map(int, hhmm.split(":"))
+    d = int(weekday) % 7  # safety
+    os_user = _target_user(user)
+    cron = CronTab(user=os_user)
+    comment = _job_comment(key)
+    cmd = _job_command(COLLECTORS[key])
+    cron.remove_all(comment=comment)
+    job = cron.new(command=cmd, comment=comment)
+    # crontab uses 0=Sun..6=Sat; our default uses 0=Mon..6=Sun → remap:
+    crontab_dow = (d + 1) % 7
+    job.setall(f"{m} {h} * * {crontab_dow}")
+    cron.write()
+    log.info("Installed weekly cron %s at %02d:%02d weekday=%d", key, h, m, d)
     
 def remove_cron(key: str, user: Optional[str] = None) -> None:
     if key not in COLLECTORS:

@@ -11,11 +11,7 @@ from bigrest.bigip import BIGIP
 logger = logging.getLogger('network_ops_dashboard.f5lb')
 
 
-def LoadF5LBConfigListsOptions(deviceList, reqUser, theme, creds, creds2):
-    try:
-        backLink = SiteSecrets.objects.filter(varname='backLink_f5lb_vipcertrenew')[0].varvalue
-    except:
-        backLink = '#'
+def LoadF5LBConfigListsOptions(deviceList, reqUser, theme):
     # Build StreamingHTTPresponse page
     yield "<html><head><title>F5 LB Loading Config Options into DB</title>\n"
     yield "<link rel='stylesheet' href='/static/css/base.css'>\n"
@@ -39,12 +35,12 @@ def LoadF5LBConfigListsOptions(deviceList, reqUser, theme, creds, creds2):
             try:
                 f5lb_temp_devicecheck = json.loads(SiteSecrets.objects.filter(varname='f5lb_temp_devicecheck')[0].varvalue)
                 if any(check in targetDevice.device.name for check in f5lb_temp_devicecheck):
-                    device = BIGIP(targetDevice.device.name, creds2[0].username, creds2[0].password, session_verify=False)
+                    device = BIGIP(targetDevice.device.name, targetDevice.device.creds_rest.username, targetDevice.device.creds_rest.password, session_verify=False)
                 else:
-                    device = BIGIP(targetDevice.device.name, creds[0].username, creds[0].password, session_verify=False)
+                    device = BIGIP(targetDevice.device.name, targetDevice.device.creds_rest.username, targetDevice.device.creds_rest.password, session_verify=False)
             except:
                 # Maybe f5lb_temp_devicecheck is empty so continue with normal creds
-                device = BIGIP(targetDevice.device.name, creds[0].username, creds[0].password, session_verify=False)
+                device = BIGIP(targetDevice.device.name, targetDevice.device.creds_rest.username, targetDevice.device.creds_rest.password, session_verify=False)
                 continue
             virtuals = []
             profiles = []
@@ -67,9 +63,9 @@ def LoadF5LBConfigListsOptions(deviceList, reqUser, theme, creds, creds2):
     except Exception as e:
         yield "LoadF5LBConfigListsOptions: Exception connecting to load balancer(s): %s<br>" % (targetDevice.device.name)
         yield "Exception: %s<br>" % (e)
-        yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+        yield "<a href='../../'>Back to MOP Page</a><br>\n"
         yield "</div></body></html>\n"
         logger.exception('LoadF5LBConfigListsOptions: Exception connecting to load balancer(s): %s' % (e))
         raise
-    yield "<a href='%s'>Back to MOP Page</a><br>\n" % backLink
+    yield "<a href='../../'>Back to MOP Page</a><br>\n"
     yield "</div></body></html>\n"
