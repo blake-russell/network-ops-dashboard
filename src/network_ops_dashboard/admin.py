@@ -12,6 +12,7 @@ from network_ops_dashboard.notices.svcactexpiry.models import *
 from network_ops_dashboard.inventory.models import *
 from network_ops_dashboard.apic.models import *
 from network_ops_dashboard.oncall.models import *
+from network_ops_dashboard.sdwan.vmanage.models import *
 
 admin.site.register(Site)
 admin.site.register(Platform)
@@ -39,6 +40,8 @@ admin.site.register(CircuitTag)
 admin.site.register(Circuit)
 admin.site.register(CircuitMtcEmail)
 admin.site.register(DashboardPrefs)
+admin.site.register(SdwanSettings)
+admin.site.register(SdwanPathStat)
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):

@@ -1,0 +1,23 @@
+<div class="col-md-4 mb-4 dashboard-card" data-card-id="asa_vpn_stats">
+    <div class="card h-100">
+      <div class="card-header text-center"><strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong></div>
+      <div class="card-body">
+        <table class="table table-borderless mb-0">
+          <tbody>
+            <tr>
+              <td>Device</b></td>
+              <td class="text-right"><small class="text-muted">Users</small></td>
+              <td class="text-right"><small class="text-muted">Load</small></td>
+            </tr>
+            {% for asa in card_asa_vpn_stats %}
+            <tr>
+              <td>{{ asa.name }}</b></td>
+              <td class="text-right"><small class="text-muted">{{ asa.connected }}</small></td>
+              <td class="text-right"><small class="text-muted">{{ asa.load }}</small></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table><br>
+      </div>
+    </div>
+  </div>

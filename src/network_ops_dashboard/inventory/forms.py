@@ -8,10 +8,11 @@ from network_ops_dashboard.inventory.models import *
 class InventoryForm(forms.ModelForm):
     class Meta:
         model = Inventory
-        fields = ('name', 'site', 'platform', 'serial_number', 'ipaddress_mgmt', \
-            'ipaddress_rest', 'ipaddress_gmni', 'port_rest', 'port_netc', 'port_gnmi', \
-            'device_tag', 'priority_interfaces', 'creds_ssh', 'creds_rest')
+        fields = ('name', 'name_lookup', 'site', 'platform', 'serial_number', \
+            'ipaddress_mgmt', 'ipaddress_rest', 'ipaddress_gmni', 'port_rest', 'port_netc', \
+            'port_gnmi', 'device_tag', 'priority_interfaces', 'creds_ssh', 'creds_rest')
     name = forms.CharField(label="Device Name:", help_text="<br>Enter name that is resolved from mgmt IP excluding<br>the domain/subdomain.", required=True)
+    name_lookup = forms.CharField(label="Name Lookup:", help_text="<br>ie: devicename.companyname.com", required=False)
     site = forms.ModelChoiceField(label="Site:", queryset=Site.objects.all(), required=False)
     platform = forms.ModelChoiceField(label="Platform:", queryset=Platform.objects.all(), required=False)
     serial_number = forms.CharField(label="Serial Number:", required=False)
