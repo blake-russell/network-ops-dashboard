@@ -25,4 +25,5 @@ urlpatterns = [
     re_path(r'^findanddiscouser$', views.asavpn_findanddiscouser, name='asavpn_findanddiscouser'),
     re_path(r'^findanddiscouser_log$', views.asavpn_findanddiscouser_log, name='asavpn_findanddiscouser_log'),
     re_path(r'^findanddiscouser_log_all$', views.asavpn_findanddiscouser_log_all, name='asavpn_findanddiscouser_log_all'),
+    re_path(r'^card_htmx/$', views.asavpn_card_partial_htmx, name='asavpn_card_partial_htmx'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -1,0 +1,22 @@
+        {% if sdwan_top_sites %}
+          <table class="table table-borderless mb-0">
+            <tbody>
+              <tr>
+                <td>Site</td>
+                <td class="text-right">Latency</td>
+                <td class="text-right">Jitter</td>
+                <td class="text-right">Loss</td>
+              </tr>
+              {% for row in sdwan_top_sites %}
+              <tr>
+                <td>{{ row.site }}</td>
+                <td class="text-right">{{ row.avg_latency_ms }}</td>
+                <td class="text-right">{{ row.avg_jitter_ms }}</td>
+                <td class="text-right">{{ row.avg_loss_pct }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="text-muted">No recent samples.</div>
+        {% endif %}

@@ -11,6 +11,7 @@ COLLECTORS = {
     "process_emails": "process_emails",
     "send_oncall_email": "send_oncall_email",
     "archive_oncall_closed": "archive_oncall_closed",
+    "sdwan_vmanage_stats": "collect_sdwan_stats",
 }
 
 def _job_comment(key: str) -> str:
@@ -59,7 +60,7 @@ def ensure_daily_cron(key: str, hhmm: str, user: Optional[str] = None) -> None:
     """Ensure one daily cron at HH:MM (24h)."""
     if key not in COLLECTORS:
         raise ValueError(f"Unknown collector key: {key}")
-
+    
     try:
         h, m = map(int, hhmm.split(":"))
         assert 0 <= h <= 23 and 0 <= m <= 59

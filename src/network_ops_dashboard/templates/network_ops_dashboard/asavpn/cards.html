@@ -1,0 +1,20 @@
+      {% if card_asa_vpn_stats %}
+        <table class="table table-borderless mb-0">
+          <tbody>
+            <tr>
+              <td>Device</td>
+              <td class="text-right">Users</td>
+              <td class="text-right">Load</td>
+            </tr>
+            {% for asa in card_asa_vpn_stats %}
+            <tr>
+              <td>{{ asa.name }}</td>
+              <td class="text-right">{{ asa.connected }}</td>
+              <td class="text-right">{{ asa.load }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="text-muted">No recent samples.</div>
+      {% endif %}

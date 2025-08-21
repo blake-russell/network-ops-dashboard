@@ -43,6 +43,7 @@ class Inventory(models.Model):
     class Meta:
         ordering = ['name']
     name = models.CharField(max_length=100)
+    name_lookup = models.URLField(blank=True, default="")
     site = models.ForeignKey(Site, null=True, on_delete=models.SET_NULL, blank=True)
     platform = models.ForeignKey(Platform, null=True, on_delete=models.SET_NULL, blank=True)
     serial_number = models.CharField(max_length=50)
