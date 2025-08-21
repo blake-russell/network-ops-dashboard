@@ -17,6 +17,9 @@ from network_ops_dashboard.asavpn.models import AsaVpnConnectedUsers
 from network_ops_dashboard.notices.svcactexpiry.models import SvcActExpiry
 from network_ops_dashboard.notices.ciscoadvisory.models import CiscoAdvisory
 from network_ops_dashboard.notices.certexpiry.models import CertExpiry
+from network_ops_dashboard.sdwan.vmanage.models import SdwanSettings
+from network_ops_dashboard.sdwan.vmanage.forms import SDWANSettingsForm
+from network_ops_dashboard.sdwan.vmanage.scripts.services import top_sites_by_latency
 from network_ops_dashboard.forms import * # noqa: F403
 from .scripts.changelog_parser import parse_changelog
 from .scripts.cron import ensure_minutely_cron, ensure_daily_cron, remove_cron # noqa: F403
@@ -85,7 +88,8 @@ def protected_media(request, path, document_root=None, show_indexes=False):
 @login_required(login_url='/accounts/login/')
 def dashboard(request):
     flags = FeatureFlags.load()
-
+    sdwan_cfg = SdwanSettings.load()
+    
     site_settings = SiteSettings.objects.first()
     timecutoff = timezone.now() - timedelta(days=7)
 
@@ -95,15 +99,17 @@ def dashboard(request):
     changelog = parse_changelog()
 
     # ASA stats only if globally enabled
-    card_asa_vpn_stats = []
     if flags.enable_asa_vpn_stats:
         asa_stats = AsaVpnConnectedUsers.objects.all().order_by('name')
         card_asa_vpn_stats = [{"name": a.name, "connected": a.connected, "load": a.load} for a in asa_stats]
+    else:
+        card_asa_vpn_stats = []
 
     all_cards = [
         {"id": "changelog", "title": "Recent Site Changes", "required": False},
         {"id": "notifications", "title": "Notifications", "required": False},
-        {"id": "asa_vpn_stats", "title": f"VPN Stats ({flags.asa_vpn_interval_minutes}m interval)", "required": False, "requires_feature": "enable_asa_vpn_stats"},
+        {"id": "asa_vpn_stats", "title": f"ASA: VPN Stats (Last {flags.asa_vpn_interval_minutes}m)", "required": False, "requires_feature": "enable_asa_vpn_stats"},
+        {"id": "enable_sdwan_cards", "title": f"vManage: Site Stats (Highest Average Last {sdwan_cfg.last_n}m)", "required": False, "requires_feature": "enable_sdwan_cards"},
     ]
 
     for c in all_cards:
@@ -159,6 +165,9 @@ def dashboard(request):
         "hidden_ids": hidden,
         "feature_flags": flags,
         "card_asa_vpn_stats": card_asa_vpn_stats,
+        "sdwan_cfg": sdwan_cfg,
+        "sdwan_top_sites": top_sites_by_latency(sdwan_cfg.top_n, sdwan_cfg.last_n) if flags.enable_sdwan_cards and sdwan_cfg.card_enabled and sdwan_cfg.host else [],
+        "sdwan_settings_form": SDWANSettingsForm(instance=SdwanSettings.load())
     })
 
 @login_required(login_url='/accounts/login/')
@@ -174,6 +183,7 @@ def dashboard_save_prefs(request):
         {"id": "notifications", "required": False},
         {"id": "changelog", "required": False},
         {"id": "asa_vpn_stats", "required": False, "requires_feature": "enable_asa_vpn_stats"},
+        {"id": "enable_sdwan_cards", "required": False, "requires_feature": "enable_sdwan_cards"},
     ]
     default_order = [c["id"] for c in all_cards]
     required_ids = {c["id"] for c in all_cards if c.get("required")}
@@ -203,7 +213,7 @@ def dashboard_toggle_asa_vpn_stats(request):
     flags.enable_asa_vpn_stats = on
     flags.updated_by = request.user
     flags.save()
-    if on:
+    if flags.enable_asa_vpn_stats:
         # Ensure cronjob exists.
         ensure_minutely_cron("asa_vpn_stats")
     else:
@@ -255,3 +265,47 @@ def dashboard_set_email_time(request):
     if flags.enable_email_processing:
         ensure_daily_cron(key, hhmm)
     return JsonResponse({"ok": True, "time": hhmm})
+
+@staff_member_required
+@require_POST
+def dashboard_sdwan_settings_save(request):
+    flags = FeatureFlags.load()
+    enabled = request.POST.get("enabled_sdwan") in ("true", "on", "1", "yes")
+    sdwan_interval = request.POST.get("sdwan_interval")
+
+    # feature toggle
+    flags.enable_sdwan_cards = enabled
+    flags.sdwan_interval_minutes = sdwan_interval
+    flags.save(update_fields=["enable_sdwan_cards", "sdwan_interval_minutes"])
+
+    # SdwanSettings
+    settings_obj = SdwanSettings.load()
+    form = SDWANSettingsForm(request.POST, instance=settings_obj)
+
+    top_n_raw = request.POST.get("top_n")
+    if top_n_raw:
+        try:
+            settings_obj.top_n = max(int(top_n_raw), 1)
+        except Exception:
+            return JsonResponse({"ok": False, "error": "Invalid top_n"}, status=400)
+
+    last_n_raw = request.POST.get("last_n")
+    if last_n_raw:
+        try:
+            settings_obj.top_n = max(int(last_n_raw), 1)
+        except Exception:
+            return JsonResponse({"ok": False, "error": "Invalid last_n"}, status=400)
+
+    if form.is_valid():
+        s = form.save(commit=False)
+        s.card_enabled = enabled
+        s.save()
+        # cronjob
+        if settings_obj.card_enabled:
+            ensure_minutely_cron("sdwan_vmanage_stats")
+        else:
+            # remove_cron()
+            pass
+        return JsonResponse({"ok": True})
+    else:
+        return JsonResponse({"ok": False, "errors": form.errors}, status=400)

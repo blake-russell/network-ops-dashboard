@@ -28,5 +28,5 @@ class Command(BaseCommand):
         showVPNconnected()
 
         flags.asa_vpn_last_run = now
-        flags.save(update_fields=["asa_vpn_last_run", "updated_at"])
+        flags.save(update_fields=["asa_vpn_last_run"])
         logger.info("ASA VPN stats collection completed.")

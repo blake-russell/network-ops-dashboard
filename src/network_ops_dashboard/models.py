@@ -68,6 +68,9 @@ class FeatureFlags(models.Model):
     enable_oncall_email = models.BooleanField(default=False)
     oncall_email_to = models.TextField(blank=True, default="")
     oncall_email_time = models.TimeField(null=True, blank=True)
+    enable_sdwan_cards = models.BooleanField(default=False)
+    sdwan_interval_minutes = models.PositiveIntegerField(default=5)
+    sdwan_stats_last_run = models.DateTimeField(null=True, blank=True)
 
     # Add new feature settings or features to enable
 
