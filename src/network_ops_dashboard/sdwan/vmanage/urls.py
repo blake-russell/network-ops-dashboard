@@ -20,5 +20,6 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-
+re_path(r'^card_json/$', views.sdwan_card_partial_json, name='sdwan_card_partial_json'),
+re_path(r'^card_htmx/$', views.sdwan_card_partial_htmx, name='sdwan_card_partial_htmx'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

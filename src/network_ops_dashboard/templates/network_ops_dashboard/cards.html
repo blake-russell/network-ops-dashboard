@@ -1,0 +1,46 @@
+<div class="col-md-4 mb-4 dashboard-card" data-card-id="notifications">
+    <div class="card h-100">
+      <div class="card-header text-center"><strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong></div>
+      <div class="card-body">
+        {% if new_svcacts %}
+        <table class="table table-borderless mb-0">
+          <strong>Service Account Password Expiry</strong>
+        <tbody>
+          {% for svc_act in new_svcacts %}
+          <tr>
+            <td><b>{{ svc_act.svc_act }}</b></td>
+            <td class="text-right"><small class="text-muted">{{ svc_act.expire_date }}</small></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table><br>
+        {% endif %}
+        {% if new_certalerts %}
+        <table class="table table-borderless mb-0">
+          <strong>Certificate Expiry</strong>
+        <tbody>
+          {% for certs in new_certalerts %}
+          <tr>
+            <td><b>{{ certs.common_name }}</b></td>
+            <td class="text-right"><small class="text-muted">{{ certs.expire_date }}</small></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table><br>
+        {% endif %}
+        {% if new_ciscoadvisory %}
+        <table class="table table-borderless mb-0">
+          <strong>Cisco Field Advisory</strong>
+        <tbody>
+          {% for advisory in new_ciscoadvisory %}
+          <tr>
+            <td><a href="{{ advisory.url }}" target="_new"><b>{{ advisory.title_short }}</a></b></td>
+            <td class="text-right"><small class="text-muted">{{ advisory.impact_rating }}</small></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table><br>
+        {% endif %}
+      </div>
+    </div>
+  </div>

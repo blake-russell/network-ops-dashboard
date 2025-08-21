@@ -1,7 +1,9 @@
 # Changelog
 
 ## v0.2.3 - 08-21-2025
-- 🆕 Dashboard: Added SD-WAN/vManage Statistics Card
+- 🆕 Dashboard: Added SD-WAN/vManage Statistics Card.
+- ⚙️ Dashboard: Dynamic card data refreshes automatically.
+- 🖥️ Dashboard/UX: Compacted configuration modal settings for dashboard cards.
 
 ## v0.2.2 - 08-15-2025
 - ⚙️ On-call: Added ability to auto-archive incidents that are "Closed" daily or weekly at a provided time.

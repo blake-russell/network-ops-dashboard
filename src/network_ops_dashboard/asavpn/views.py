@@ -1,9 +1,7 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import login, authenticate, get_user_model, update_session_auth_hash
-from django.db.models import Q
+from django.template.loader import render_to_string
 import logging
-from network_ops_dashboard import settings
 from network_ops_dashboard.decorators import *
 from network_ops_dashboard.asavpn.models import *
 from network_ops_dashboard.asavpn.forms import *
@@ -55,3 +53,14 @@ def asavpn_findanddiscouser_log_all(request):
             }
         detaillist.append(detaildict)
     return render(request, 'network_ops_dashboard/asavpn/findanddiscouser_log_all.html', {'detaillist': detaillist})
+
+@login_required(login_url='/accounts/login/')
+def asavpn_card_partial_htmx(request):
+    flags = FeatureFlags.load()
+    if flags.enable_asa_vpn_stats:
+        asa_stats = AsaVpnConnectedUsers.objects.all().order_by('name')
+        card_asa_vpn_stats = [{"name": a.name, "connected": a.connected, "load": a.load} for a in asa_stats]
+    html = render_to_string(
+        "network_ops_dashboard/asavpn/cards.html",
+        {"card_asa_vpn_stats": card_asa_vpn_stats}, request=request)
+    return HttpResponse(html)

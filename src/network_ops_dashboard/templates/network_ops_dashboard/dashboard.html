@@ -1,6 +1,10 @@
 {% extends 'network_ops_dashboard/base.html' %}
 {% block content %}
 
+<style>
+  .accordion-button { padding-top:.4rem; padding-bottom:.4rem; }
+</style>
+
 <div class="d-flex align-items-center">
   <h3 class="me-auto">
     {% if site_settings %}{{ site_settings.teamname }} Team Dashboard{% else %}Team Dashboard{% endif %}
@@ -13,78 +17,53 @@
 <div class="container-fluid mt-4">
   <div id="card-grid" class="row" data-order='{{ visible_ids|json_script:"vis-ids" }}'>
     {% for cid in visible_ids %}
-      {% if cid == "notifications" %}
-        <div class="col-md-4 mb-4 dashboard-card" data-card-id="notifications">
+      {% if cid == "changelog" %}
+      <div class="col-md-4 mb-4 dashboard-card" data-card-id="changelog">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong>
+            <div>
+              <button class="btn btn-sm btn-outline-secondary" id="chg-prev" disabled>&larr;</button>
+              <button class="btn btn-sm btn-outline-secondary" id="chg-next">&rarr;</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="changelog-container">{{ changelog_entries|json_script:"changelog-data" }}</div>
+          </div>
+        </div>
+      </div>
+      {% elif cid == "notifications" %}
+        {% include 'network_ops_dashboard/cards.html' %}
+      {% elif cid == "asa_vpn_stats" %}
+        <div class="col-md-4 mb-4 dashboard-card" data-card-id="asa_vpn_stats">
           <div class="card h-100">
             <div class="card-header text-center"><strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong></div>
-            <div class="card-body">
-              {% if new_svcacts %}
-              <table class="table table-borderless mb-0">
-                <strong>Service Account Password Expiry</strong>
-              <tbody>
-                {% for svc_act in new_svcacts %}
-                <tr>
-                  <td><b>{{ svc_act.svc_act }}</b></td>
-                  <td class="text-right"><small class="text-muted">{{ svc_act.expire_date }}</small></td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table><br>
-              {% endif %}
-              {% if new_certalerts %}
-              <table class="table table-borderless mb-0">
-                <strong>Certificate Expiry</strong>
-              <tbody>
-                {% for certs in new_certalerts %}
-                <tr>
-                  <td><b>{{ certs.common_name }}</b></td>
-                  <td class="text-right"><small class="text-muted">{{ certs.expire_date }}</small></td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table><br>
-              {% endif %}
-              {% if new_ciscoadvisory %}
-              <table class="table table-borderless mb-0">
-                <strong>Cisco Field Advisory</strong>
-              <tbody>
-                {% for advisory in new_ciscoadvisory %}
-                <tr>
-                  <td><a href="{{ advisory.url }}" target="_new"><b>{{ advisory.title_short }}</a></b></td>
-                  <td class="text-right"><small class="text-muted">{{ advisory.impact_rating }}</small></td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table><br>
-              {% endif %}
+            <div class="card-body"
+            hx-get="{% url 'asavpn_card_partial_htmx' %}" 
+            hx-trigger="load, every 75s" 
+            hx-swap="innerHTML">
+              {% include 'network_ops_dashboard/asavpn/cards.html' with card_asa_vpn_stats=card_asa_vpn_stats %}
             </div>
           </div>
         </div>
-      {% elif cid == "changelog" %}
-        <div class="col-md-4 mb-4 dashboard-card" data-card-id="changelog">
-          <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong>
-              <div>
-                <button class="btn btn-sm btn-outline-secondary" id="chg-prev" disabled>&larr;</button>
-                <button class="btn btn-sm btn-outline-secondary" id="chg-next">&rarr;</button>
-              </div>
-            </div>
-            <div class="card-body">
-              <div id="changelog-container">{{ changelog_entries|json_script:"changelog-data" }}</div>
-            </div>
-          </div>
-        </div>
-      {% elif cid == "asa_vpn_stats" %}
-       {% include 'network_ops_dashboard/asavpn/cards.html' %}
       {% elif cid == "enable_sdwan_cards" %}
         {% if feature_flags.enable_sdwan_cards %}
-          {% include 'network_ops_dashboard/sdwan/vmanage/cards.html' %}
+          <div class="col-md-4 mb-4 dashboard-card" data-card-id="enable_sdwan_cards">
+            <div class="card h-100">
+              <div class="card-header text-center"><strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong></div>
+                <div class="card-body"
+                hx-get="{% url 'sdwan_card_partial_htmx' %}" 
+                hx-trigger="load, every 75s" 
+                hx-swap="innerHTML">
+                  {% include 'network_ops_dashboard/sdwan/vmanage/cards.html' with sdwan_top_sites=sdwan_top_sites %}
+                </div>
+            </div>
+          </div>
         {% endif %}
       {% endif %}
     {% endfor %}
   </div>
-</div>
+</div> 
 
 <!-- Customize modal -->
 <div class="modal fade" id="customizeModal" tabindex="-1" aria-hidden="true">
@@ -125,62 +104,118 @@
 
         {% if request.user.is_staff %}
         <hr>
-
-        <h6 class="mb-2">ASA VPN Stats</h6>
-        <div class="row g-2 align-items-center">
-          <div class="col-auto">
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="ff-asa"
-                     {% if feature_flags.enable_asa_vpn_stats %}checked{% endif %}>
-              <label class="form-check-label" for="ff-asa">Enable</label>
+        
+        <div class="accordion accordion-flush" id="cfgAccordion">
+        
+          <!-- ASA VPN Stats -->
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="asaHeading">
+              <button class="accordion-button collapsed py-2" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#asaCollapse"
+                      aria-expanded="false" aria-controls="asaCollapse">
+                <strong>ASA VPN Stats</strong>
+              </button>
+            </h2>
+            <div id="asaCollapse" class="accordion-collapse collapse"
+                 aria-labelledby="asaHeading" data-bs-parent="#cfgAccordion">
+              <div class="accordion-body">
+                <div class="row g-2 align-items-center">
+                  <div class="col-auto">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="ff-asa"
+                             {% if feature_flags.enable_asa_vpn_stats %}checked{% endif %}>
+                      <label class="form-check-label" for="ff-asa">Enable</label>
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <input type="number" class="form-control" id="ff-asa-interval" min="1" max="60"
+                           value="{{ feature_flags.asa_vpn_interval_minutes }}">
+                  </div>
+                  <div class="col-auto">
+                    <label for="ff-asa-interval" class="col-form-label">Interval (minutes)</label>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="col-auto">
-            <input type="number" class="form-control" id="ff-asa-interval" min="1" max="60"
-                   value="{{ feature_flags.asa_vpn_interval_minutes }}">
+        
+          <!-- Cisco SD-WAN Stats -->
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="sdwanHeading">
+              <button class="accordion-button collapsed py-2" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#sdwanCollapse"
+                      aria-expanded="false" aria-controls="sdwanCollapse">
+                <strong>Cisco SD-WAN Stats</strong>
+              </button>
+            </h2>
+            <div id="sdwanCollapse" class="accordion-collapse collapse"
+                 aria-labelledby="sdwanHeading" data-bs-parent="#cfgAccordion">
+              <div class="accordion-body">
+                <div class="row g-2 align-items-center">
+                  <div class="col-auto">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="ff-sdwan"
+                             {% if feature_flags.enable_sdwan_cards %}checked{% endif %}>
+                      <label class="form-check-label" for="ff-sdwan">Enable</label>
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <input type="number" class="form-control" id="ff-sdwan-interval" min="1" max="60"
+                           value="{{ feature_flags.sdwan_interval_minutes }}">
+                  </div>
+                  <div class="col-auto">
+                    <label for="ff-sdwan-interval" class="col-form-label">Interval (minutes)</label>
+                  </div>
+                </div>
+        
+                <div class="row g-3 mt-2">
+                  <div class="col-md-6">
+                    <label class="form-label">{{ sdwan_settings_form.host.label }}</label>
+                    {{ sdwan_settings_form.host }}
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">{{ sdwan_settings_form.purge_path_stats.label }}</label>
+                    {{ sdwan_settings_form.purge_path_stats }}
+                  </div>
+                </div>
+        
+                <div class="row g-3 mt-1">
+                  <div class="col-md-6">
+                    <label class="form-label">{{ sdwan_settings_form.top_n.label }}</label>
+                    {{ sdwan_settings_form.top_n }}
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">{{ sdwan_settings_form.last_n.label }}</label>
+                    {{ sdwan_settings_form.last_n }}
+                  </div>
+                </div>
+        
+                <div class="row g-3 mt-1">
+                  <div class="col-md-6">
+                    <label class="form-label">{{ sdwan_settings_form.verify_ssl.label }}</label>
+                    {{ sdwan_settings_form.verify_ssl }}
+                  </div>
+                  <div class="col-md-6"><!-- spare slot --></div>
+                </div>
+        
+              </div>
+            </div>
           </div>
-          <div class="col-auto">
-            <label for="ff-asa-interval" class="col-form-label">Interval (minutes)</label>
-          </div>
+        
         </div>
-
-        <h6 class="mb-2">Cisco SD-WAN Stats</h6>
-        <div class="form-check form-switch mb-3">
-          <input class="form-check-input" type="checkbox" id="ff-sdwan"
-                 {% if feature_flags.enable_sdwan_cards %}checked{% endif %}>
-          <label class="form-check-label" for="ff-sdwan">Enable</label>
-        </div>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">{{ sdwan_settings_form.host.label }}</label>
-            {{ sdwan_settings_form.host }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">{{ sdwan_settings_form.top_n.label }}</label>
-            {{ sdwan_settings_form.top_n }}
-          </div>
-        </div>
-        <div class="row g-3 mt-1">
-          <div class="col-md-6">
-            <label class="form-label">{{ sdwan_settings_form.latency_threshold.label }}</label>
-            {{ sdwan_settings_form.latency_threshold }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">{{ sdwan_settings_form.loss_threshold.label }}</label>
-            {{ sdwan_settings_form.loss_threshold }}
-          </div>
-        </div>
-
         {% endif %}
-      </div>
+        
 
-      <div class="modal-footer">
-        <button class="btn btn-primary" type="submit">Save</button>
+        <div class="modal-footer">
+          <button class="btn btn-primary" type="submit">Save</button>
+        </div>
       </div>
     </form>
   </div>
 </div>
+<!-- End of Customize Modal -->
 
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
   // Drag in modal
@@ -222,21 +257,25 @@
 
     // SD-WAN toggles
       const fdSdwan = new FormData();
-      const enabled = document.getElementById('ff-sdwan')?.checked;
+      const enabled_sdwan = document.getElementById('ff-sdwan')?.checked;
+      const sdwan_interval = document.getElementById('ff-sdwan-interval');
 
       // toggles FeatureFlags.enable_sdwan_cards and SdwanSettings.card_enabled
-      fdSdwan.append('enabled', enabled ? 'true' : 'false');
+      fdSdwan.append('enabled_sdwan', enabled_sdwan ? 'true' : 'false');
+      fdSdwan.append('sdwan_interval', sdwan_interval.value);
       fdSdwan.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
       // Pull values from the rendered form fields by name
       const hostSel = document.querySelector('select[name="host"]');
       if (hostSel && hostSel.value) fdSdwan.append('host', hostSel.value);
+      const purgePath = document.querySelector('input[name="purge_path_stats"]');
+      if (purgePath && purgePath.value) fdSdwan.append('purge_path_stats', purgePath.value);
       const topNEl = document.querySelector('input[name="top_n"]');
       if (topNEl && topNEl.value) fdSdwan.append('top_n', topNEl.value);
-      const latEl = document.querySelector('input[name="latency_threshold"]');
-      if (latEl && latEl.value) fdSdwan.append('latency_threshold', latEl.value);
-      const lossEl = document.querySelector('input[name="loss_threshold"]');
-      if (lossEl && lossEl.value) fdSdwan.append('loss_threshold', lossEl.value);
+      const lastNEl = document.querySelector('input[name="last_n"]');
+      if (lastNEl && lastNEl.value) fdSdwan.append('last_n', lastNEl.value);
+      const verifySel = document.querySelector('input[name="verify_ssl"]');
+      if (verifySel && verifySel.checked) fdSdwan.append('verify_ssl', 'on');
       await fetch("{% url 'dashboard_sdwan_settings_save' %}", { method: 'POST', body: fdSdwan });
 
     {% endif %}

@@ -99,15 +99,11 @@ def dashboard(request):
     changelog = parse_changelog()
 
     # ASA stats only if globally enabled
-    card_asa_vpn_stats = []
     if flags.enable_asa_vpn_stats:
         asa_stats = AsaVpnConnectedUsers.objects.all().order_by('name')
         card_asa_vpn_stats = [{"name": a.name, "connected": a.connected, "load": a.load} for a in asa_stats]
-
-    # SDWAN Stats
-    sdwan_top_sites = []
-    if flags.enable_sdwan_cards and sdwan_cfg.card_enabled and sdwan_cfg.host:
-        sdwan_top_sites = top_sites_by_latency(sdwan_cfg.top_n, sdwan_cfg.last_n)
+    else:
+        card_asa_vpn_stats = []
 
     all_cards = [
         {"id": "changelog", "title": "Recent Site Changes", "required": False},
@@ -170,7 +166,7 @@ def dashboard(request):
         "feature_flags": flags,
         "card_asa_vpn_stats": card_asa_vpn_stats,
         "sdwan_cfg": sdwan_cfg,
-        "sdwan_top_sites": sdwan_top_sites,
+        "sdwan_top_sites": top_sites_by_latency(sdwan_cfg.top_n, sdwan_cfg.last_n) if flags.enable_sdwan_cards and sdwan_cfg.card_enabled and sdwan_cfg.host else [],
         "sdwan_settings_form": SDWANSettingsForm(instance=SdwanSettings.load())
     })
 
@@ -274,11 +270,13 @@ def dashboard_set_email_time(request):
 @require_POST
 def dashboard_sdwan_settings_save(request):
     flags = FeatureFlags.load()
-    enabled = request.POST.get("enabled") in ("true", "on", "1", "yes")
+    enabled = request.POST.get("enabled_sdwan") in ("true", "on", "1", "yes")
+    sdwan_interval = request.POST.get("sdwan_interval")
 
     # feature toggle
     flags.enable_sdwan_cards = enabled
-    flags.save(update_fields=["enable_sdwan_cards"])
+    flags.sdwan_interval_minutes = sdwan_interval
+    flags.save(update_fields=["enable_sdwan_cards", "sdwan_interval_minutes"])
 
     # SdwanSettings
     settings_obj = SdwanSettings.load()
@@ -290,6 +288,13 @@ def dashboard_sdwan_settings_save(request):
             settings_obj.top_n = max(int(top_n_raw), 1)
         except Exception:
             return JsonResponse({"ok": False, "error": "Invalid top_n"}, status=400)
+
+    last_n_raw = request.POST.get("last_n")
+    if last_n_raw:
+        try:
+            settings_obj.top_n = max(int(last_n_raw), 1)
+        except Exception:
+            return JsonResponse({"ok": False, "error": "Invalid last_n"}, status=400)
 
     if form.is_valid():
         s = form.save(commit=False)

@@ -11,9 +11,9 @@ class SdwanSettings(models.Model):
     verify_ssl = models.BooleanField(default=False)
     top_n = models.PositiveIntegerField(default=10, help_text="Show top N sites.")
     last_n = models.PositiveIntegerField(default=15, help_text="Show last N minutes.") # minutes
-    enable_latency_jitter = models.BooleanField(default=True)
-    latency_threshold = models.IntegerField(default=120) # ms
-    loss_threshold = models.DecimalField(max_digits=5, decimal_places=2, default=1.00) # %
+    enable_latency_jitter = models.BooleanField(default=True) # (not currently in use)
+    latency_threshold = models.IntegerField(default=120) # ms (not currently in use)
+    loss_threshold = models.DecimalField(max_digits=5, decimal_places=2, default=1.00) # % (not currently in use)
     purge_path_stats = models.PositiveIntegerField(default=6, help_text="Purge SdwanPathStat entries older than x hours.")
     updated_at = models.DateTimeField(auto_now=True)
 

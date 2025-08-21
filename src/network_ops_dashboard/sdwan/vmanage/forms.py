@@ -9,26 +9,28 @@ class SDWANSettingsForm(forms.ModelForm):
     class Meta:
         model = SdwanSettings
         fields = [
-            "host",
             "card_enabled",
+            "host",
+            "purge_path_stats",
             "top_n",
-            "latency_threshold",
-            "loss_threshold",
+            "last_n",
+            "verify_ssl",
         ]
         labels = {
             "host": "vManage Host (Inventory)",
+            "purge_path_stats": "Purge older than (N) Hours",
             "top_n": "Show (N) Sites",
-            "latency_threshold": "Latency threshold (ms)",
-            "loss_threshold": "Loss threshold (%)",
+            "last_n": "Show Last (N) Minutes",
+            "verify_ssl": "Verify SSL",
         }
         widgets = {
-            "host": forms.Select(attrs={"class": "form-select"}),
             "card_enabled": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "host": forms.Select(attrs={"class": "form-select"}),      
+            "purge_path_stats": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
             "top_n": forms.NumberInput(attrs={"class": "form-control", "min": 1, "step": 1}),
-            "latency_threshold": forms.NumberInput(attrs={"class": "form-control", "min": 0}),
-            "loss_threshold": forms.NumberInput(attrs={"class": "form-control", "min": 0, "step": "0.1"}),
+            "last_n": forms.NumberInput(attrs={"class": "form-control", "min": 1, "step": 1}),
+            "verify_ssl": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
-
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -40,18 +42,8 @@ class SDWANSettingsForm(forms.ModelForm):
 
         # Sensible defaults if instance is new
         if not self.instance.pk:
-            self.initial.setdefault("card_enabled", True)
-            self.initial.setdefault("latency_threshold", 120)
-            self.initial.setdefault("loss_threshold", 1.0)
-
-    def clean_latency_threshold(self):
-        v = self.cleaned_data["latency_threshold"]
-        if v is None or v < 0:
-            raise ValidationError("Latency threshold must be ≥ 0.")
-        return v
-
-    def clean_loss_threshold(self):
-        v = self.cleaned_data["loss_threshold"]
-        if v is None or v < 0:
-            raise ValidationError("Loss threshold must be ≥ 0.")
-        return v
+            self.initial.setdefault("card_enabled", False)
+            self.initial.setdefault("purge_path_stats", 4)
+            self.initial.setdefault("top_n", 10)
+            self.initial.setdefault("last_n", 30)
+            self.initial.setdefault("verify_ssl", False)

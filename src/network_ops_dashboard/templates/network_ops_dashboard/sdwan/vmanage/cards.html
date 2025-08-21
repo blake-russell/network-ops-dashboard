@@ -1,34 +1,22 @@
-<div class="row">
-  <!-- Top Sites by Latency/Jitter -->
-  <div class="col-md-4 mb-4 dashboard-card" data-card-id="enable_sdwan_cards">
-    <div class="card h-100">
-      <div class="card-header text-center"><strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong></div>
-      <div class="card-body">
         {% if sdwan_top_sites %}
           <table class="table table-borderless mb-0">
-            <thead>
-              <tr>
-                <th>Site</th>
-                <th class="text-end">Avg Lat (ms)</th>
-                <th class="text-end">Avg Jit (ms)</th>
-                <th class="text-end">Avg Loss (%)</th>
-              </tr>
-            </thead>
             <tbody>
+              <tr>
+                <td>Site</td>
+                <td class="text-right">Latency</td>
+                <td class="text-right">Jitter</td>
+                <td class="text-right">Loss</td>
+              </tr>
               {% for row in sdwan_top_sites %}
-                <tr>
-                  <td>{{ row.site }}</td>
-                  <td class="text-end">{{ row.avg_latency_ms }}</td>
-                  <td class="text-end">{{ row.avg_jitter_ms }}</td>
-                  <td class="text-end">{{ row.avg_loss_pct }}</td>
-                </tr>
+              <tr>
+                <td>{{ row.site }}</td>
+                <td class="text-right">{{ row.avg_latency_ms }}</td>
+                <td class="text-right">{{ row.avg_jitter_ms }}</td>
+                <td class="text-right">{{ row.avg_loss_pct }}</td>
+              </tr>
               {% endfor %}
             </tbody>
           </table>
         {% else %}
           <div class="text-muted">No recent samples.</div>
         {% endif %}
-      </div>
-    </div>
-  </div>
-</div>
