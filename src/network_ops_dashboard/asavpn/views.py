@@ -2,6 +2,8 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.template.loader import render_to_string
 import logging
+from django.db.models import Q, IntegerField, Value, Case, When
+from django.db.models.functions import Cast
 from network_ops_dashboard.decorators import *
 from network_ops_dashboard.asavpn.models import *
 from network_ops_dashboard.asavpn.forms import *
@@ -21,8 +23,12 @@ def asavpn_findanddiscouser(request):
             targetUser = request.POST['targetUser']
             username1 = request.POST['username1']
             password1 = request.POST['password1']
-            targetAction = request.POST['targetAction']
-            output = findVPNuser(targetUser, username1, password1, targetAction)
+            targetAction = form.cleaned_data['targetAction']
+            targetDeviceTag = form.cleaned_data['targetDeviceTag']
+            verifySSL = form.cleaned_data['verifySSL']
+            assert isinstance(verifySSL, bool)
+            assert isinstance(targetAction, bool)
+            output = findVPNuser(targetUser, targetAction, targetDeviceTag.name, verifySSL, username1, password1)
             return render(request, 'network_ops_dashboard/asavpn/findanddiscouser_exec.html', {'output': output})
     else:
         form = AsaVpnFindAndDiscoForm()
@@ -57,9 +63,22 @@ def asavpn_findanddiscouser_log_all(request):
 @login_required(login_url='/accounts/login/')
 def asavpn_card_partial_htmx(request):
     flags = FeatureFlags.load()
+    asa_settings = AsaVpnSettings.load()
     if flags.enable_asa_vpn_stats:
-        asa_stats = AsaVpnConnectedUsers.objects.all().order_by('name')
+        n = max(int(asa_settings.top_n or 10), 1)
+        asa_stats = (
+            AsaVpnConnectedUsers.objects
+            .annotate(conn_int=Case(
+                When(connected__regex=r'^\d+$', then=Cast('connected', IntegerField())),
+                default=Value(0),
+                output_field=IntegerField(),
+                )
+            )
+            .order_by('-conn_int', 'name')[:n]
+        )
         card_asa_vpn_stats = [{"name": a.name, "connected": a.connected, "load": a.load} for a in asa_stats]
+    else:
+        card_asa_vpn_stats = []
     html = render_to_string(
         "network_ops_dashboard/asavpn/cards.html",
         {"card_asa_vpn_stats": card_asa_vpn_stats}, request=request)

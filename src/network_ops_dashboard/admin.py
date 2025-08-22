@@ -42,6 +42,7 @@ admin.site.register(CircuitMtcEmail)
 admin.site.register(DashboardPrefs)
 admin.site.register(SdwanSettings)
 admin.site.register(SdwanPathStat)
+admin.site.register(AsaVpnSettings)
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
