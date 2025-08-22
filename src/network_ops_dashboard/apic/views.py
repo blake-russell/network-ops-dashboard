@@ -24,53 +24,53 @@ logger = logging.getLogger('network_ops_dashboard.apic')
 def apic_createinterface(request):
     # Instead of sending entire objects.all do filtering here in view then display entire dict in template.
     if request.user.groups.filter(name='site-admin').exists():
-        apic_mops_all = APICMopCreateInterface.objects.filter(Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') | Q(status='Running')).order_by('status')
+        apic_playbooks_all = APICMopCreateInterface.objects.filter(Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') | Q(status='Running')).order_by('status')
     else:
-        apic_mops_all = APICMopCreateInterface.objects.filter(Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') | Q(status='Running'), Q(user=request.user)).order_by('status')
+        apic_playbooks_all = APICMopCreateInterface.objects.filter(Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') | Q(status='Running'), Q(user=request.user)).order_by('status')
     detaillist = []
-    for mop in apic_mops_all:
+    for playbook in apic_playbooks_all:
         detaildict = {
-            'pk' : mop.pk,
-            'name' : mop.name,
-            'status' : mop.status,
-            'device' : mop.device,
-            'interfaces' : mop.interfaces,
+            'pk' : playbook.pk,
+            'name' : playbook.name,
+            'status' : playbook.status,
+            'device' : playbook.device,
+            'interfaces' : playbook.interfaces,
             }
         detaillist.append(detaildict)
-    return render(request, 'network_ops_dashboard/apic/mop_createinterface.html', {'detaillist': detaillist})
+    return render(request, 'network_ops_dashboard/apic/playbook_createinterface.html', {'detaillist': detaillist})
 
 @login_required(login_url='/accounts/login/')
 def apic_createinterface_edit(request, pk):
-    apic_mop = get_object_or_404(APICMopCreateInterface, pk=pk)
+    apic_playbook = get_object_or_404(APICMopCreateInterface, pk=pk)
     if request.method == 'POST':
-        form = APICMopCreateInterfaceEditForm(request.POST, user=request.user, instance=apic_mop)
+        form = APICMopCreateInterfaceEditForm(request.POST, user=request.user, instance=apic_playbook)
         if form.is_valid():
-            apic_mop = form.save(commit=True)
-            apic_mop.save()
+            apic_playbook = form.save(commit=True)
+            apic_playbook.save()
             return redirect('apic_createinterface')
     else:
-        form = APICMopCreateInterfaceEditForm(instance=apic_mop, user=request.user)
-    return render(request, 'network_ops_dashboard/apic/mop_createinterface_edit.html', {'form': form})
+        form = APICMopCreateInterfaceEditForm(instance=apic_playbook, user=request.user)
+    return render(request, 'network_ops_dashboard/apic/playbook_createinterface_edit.html', {'form': form})
 
 @login_required(login_url='/accounts/login/')
 def apic_createinterface_add(request):
     if request.method == 'POST':
         form = APICMopCreateInterfaceAddForm(request.POST)
         if form.is_valid():
-            apic_mop = form.save(commit=False)
-            apic_mop.user = request.user
-            apic_mop.save()
+            apic_playbook = form.save(commit=False)
+            apic_playbook.user = request.user
+            apic_playbook.save()
             return redirect('apic_createinterface')
     else:
         form = APICMopCreateInterfaceAddForm()
-    return render(request, 'network_ops_dashboard/apic/mop_createinterface_add.html', {'form': form})
+    return render(request, 'network_ops_dashboard/apic/playbook_createinterface_add.html', {'form': form})
 
 @login_required(login_url='/accounts/login/')
 def apic_createinterface_archive(request, pk):
-    mop_entry = get_object_or_404(APICMopCreateInterface, pk=pk)
-    mop_entry.interfaces.all().delete()
-    mop_entry.status = 'Closed'
-    mop_entry.save()
+    playbook_entry = get_object_or_404(APICMopCreateInterface, pk=pk)
+    playbook_entry.interfaces.all().delete()
+    playbook_entry.status = 'Closed'
+    playbook_entry.save()
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 @login_required(login_url='/accounts/login/')
@@ -92,22 +92,22 @@ def apic_createinterface_intf(request):
             'intftoport' : intf.intftoport,
             }
         detaillist.append(detaildict)
-    return render(request, 'network_ops_dashboard/apic/mop_createinterface_intf.html', {'detaillist': detaillist})
+    return render(request, 'network_ops_dashboard/apic/playbook_createinterface_intf.html', {'detaillist': detaillist})
 
 @login_required(login_url='/accounts/login/')
 def apic_createinterface_addintf(request, pk):
-    apic_mop = get_object_or_404(APICMopCreateInterface, pk=pk)
+    apic_playbook = get_object_or_404(APICMopCreateInterface, pk=pk)
     if request.method == 'POST':
         form = APICMopInterfaceForm(request.POST)
         if form.is_valid():
             apic_intf = form.save(commit=False)
             apic_intf.user = request.user
             apic_intf.save()
-            apic_mop.interfaces.add(apic_intf)
+            apic_playbook.interfaces.add(apic_intf)
             return redirect('apic_createinterface')
     else:
-        form = APICMopInterfaceForm(initial={'device': apic_mop.device}, readonly_device=True)
-    return render(request, 'network_ops_dashboard/apic/mop_createinterface_addintf.html', {'form': form})
+        form = APICMopInterfaceForm(initial={'device': apic_playbook.device}, readonly_device=True)
+    return render(request, 'network_ops_dashboard/apic/playbook_createinterface_addintf.html', {'form': form})
 
 @login_required(login_url='/accounts/login/')
 def apic_createinterface_editintf(request, pk):
@@ -120,7 +120,7 @@ def apic_createinterface_editintf(request, pk):
             return redirect('apic_createinterface_intf')
     else:
         form = APICMopInterfaceForm(instance=apic_intf, readonly_device=True)
-    return render(request, 'network_ops_dashboard/apic/mop_createinterface_editintf.html', {'form': form})
+    return render(request, 'network_ops_dashboard/apic/playbook_createinterface_editintf.html', {'form': form})
 
 @login_required(login_url='/accounts/login/')
 def apic_createinterface_delintf(request, pk):
@@ -131,13 +131,13 @@ def apic_createinterface_delintf(request, pk):
 @login_required(login_url='/accounts/login/')
 def apic_createinterface_run(request, pk):
     APICMopCreateInterface.objects.filter(pk=pk).update(status='Running')
-    mop = APICMopCreateInterface.objects.filter(pk=pk)
+    playbook = APICMopCreateInterface.objects.filter(pk=pk)
     reqUser = User.objects.get(username=request.user)
     if User.objects.filter(pk=reqUser.pk, groups__name='themelight').exists():
         theme = 'themelight'
     else:
         theme = 'themedark'
-    response = StreamingHttpResponse(APICMopCreateInterfaceRun(mop, reqUser.username, theme), content_type='text/html')
+    response = StreamingHttpResponse(APICMopCreateInterfaceRun(playbook, reqUser.username, theme), content_type='text/html')
     response['X-Accel-Buffering'] = 'no'  # Disable buffering in nginx
     response['Cache-Control'] = 'no-cache'  # Ensure clients don't cache the data
     response['Transfer-Encoding'] = 'chunked'
@@ -155,8 +155,8 @@ def apic_loadconfigoptions(request, device_id):
     else:
         theme = 'themedark'
     response = StreamingHttpResponse(LoadAPICConfigListOptions(deviceList, reqUser.username, theme), content_type='text/html')
-    response['X-Accel-Buffering'] = 'no'  # Disable buffering in nginx
-    response['Cache-Control'] = 'no-cache'  # Ensure clients don't cache the data
+    response['X-Accel-Buffering'] = 'no'
+    response['Cache-Control'] = 'no-cache'
     response['Transfer-Encoding'] = 'chunked'
     return response
 

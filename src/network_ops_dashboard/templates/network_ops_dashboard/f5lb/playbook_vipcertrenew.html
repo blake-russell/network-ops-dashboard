@@ -1,0 +1,48 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% load app_tags %}
+{% block content %}
+{% load static %}
+<body data-media-url="{% get_media_prefix %}"></body>
+
+<h3>F5 LB VIP Certificate Renew Playbooks</h3>
+
+<a href="{% url 'f5lb_vipcertrenew_add' %}" class="btn btn-sm btn-outline-primary">Create Playbook</a><br>
+<!-- Here was the link to run loadconfigoptions against all load balancers :
+&nbsp; <a href="{% url 'f5lb_loadconfigoptions' load_all %}" onclick="return confirm('Runs against all load balancers. Please Confirm.')">Reload Config Options</a>
+ -->
+<table class="table table-hover">
+ <tr>
+  <th>Name</th>
+  <th>Status</th>
+  <th>Device</th>
+  <th>Virtual Server</th>
+  <th>Cert Name</th>
+  <th colspan=2>Actions</th>
+ </tr>
+
+{% for playbook in detaillist %}
+ {% if playbook.status != 'Closed' %}
+  <tr class="table-light">
+    <td>{{ playbook.name }}</td>
+    <td>{{ playbook.status }}</td>
+    <td><a href="https://{{ playbook.device }}" target="_blank" rel="noopener noreferrer">{{ playbook.device }}</a></td>
+    <td>{{ playbook.virtual_server }}</td>
+    <td><a href="{% get_media_prefix %}{{ playbook.cert_file }}">{{ playbook.cert_name }}</a></td>
+    <td>
+      {% if playbook.status == 'Planned' %}
+        <a href="{% url 'f5lb_vipcertrenew_run' playbook.pk %}" class="btn btn-sm btn-outline-primary" onclick="return confirm('Are you sure you are ready to run this playbook now?')">Run Playbook</a>
+      {% elif playbook.status == 'Running' %}
+        <b>Playbook Running</b>
+      {% else %}
+        <a href="{% url 'f5lb_vipcertrenew_archive' playbook.pk %}" class="btn btn-sm btn-outline-primary" onclick="return confirm('Are you sure you want to archive this?')">Close Playbook</a>
+      {% endif %}
+    </td>
+    <td>
+      <a href="{% url 'f5lb_vipcertrenew_edit' playbook.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+    </td>
+  </tr>
+  {% endif %}
+{% endfor %}
+</table>
+
+{% endblock %}

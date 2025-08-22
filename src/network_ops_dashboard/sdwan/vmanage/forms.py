@@ -17,11 +17,14 @@ class SDWANSettingsForm(forms.ModelForm):
             "verify_ssl",
         ]
         labels = {
-            "host": "vManage Host (Inventory)",
+            "host": "vManage Host",
             "purge_path_stats": "Purge older than (N) Hours",
             "top_n": "Show (N) Sites",
             "last_n": "Show Last (N) Minutes",
             "verify_ssl": "Verify SSL",
+        }
+        help_texts = {
+            "host": "Filters for devicetag='vManage'",
         }
         widgets = {
             "card_enabled": forms.CheckboxInput(attrs={"class": "form-check-input"}),
@@ -36,7 +39,7 @@ class SDWANSettingsForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         try:
-            self.fields["host"].queryset = Inventory.objects.all().order_by("name")
+            self.fields["host"].queryset = Inventory.objects.filter(device_tag__name="vManage").order_by("name")
         except Exception:
             pass
 

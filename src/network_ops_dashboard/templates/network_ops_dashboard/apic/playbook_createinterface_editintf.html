@@ -2,8 +2,9 @@
 {% load app_tags %}
 {% load widget_tweaks %}
 {% block content %}
+{{ form.media }}
 
-<h3>F5 LB VIP Certificate Renew MOP Add</h3>
+<h3>APIC Create Interface Playbook Edit Interface</h3>
 
 <div style="display: flex; align-items: flex-start; gap: 20px;">
 <font align="left">
@@ -41,6 +42,7 @@
             </div><div class="col-md-6">
           {% endif %}
         {% endfor %}
+        
         <button type="submit" class="btn btn-primary">Submit</button>
       </div>
     </div>
@@ -55,18 +57,18 @@
     const deviceId = $(this).val();
     if (!deviceId) return;
 
-    $.getJSON(`/f5lb/get_config_options/${deviceId}/`, function(data) {
-      const vsField = $('#id_virtual_server');
-      const sslField = $('#id_ssl_policy');
+    $.getJSON(`/apic/get_config_options/${deviceId}/`, function(data) {
+      const ipfField = $('#id_intfprofile');
+      const ipgField = $('#id_intfipg');
 
-      vsField.empty();
-      sslField.empty();
+      ipfField.empty();
+      ipgField.empty();
 
-      data.virtual_servers.forEach(function(item) {
-        vsField.append($('<option>', { value: item, text: item }));
+      data.interface_profiles.forEach(function(item) {
+        ipfField.append($('<option>', { value: item, text: item }));
       });
-      data.ssl_policies.forEach(function(item) {
-        sslField.append($('<option>', { value: item, text: item }));
+      data.interface_policy_groups.forEach(function(item) {
+        ipgField.append($('<option>', { value: item, text: item }));
       });
     });
   });
@@ -86,7 +88,7 @@ $(document).ready(function () {
         $('#load-config-status').text("🔄 Loading...").css('color', 'gray');
 
         $.ajax({
-            url: `/f5lb/loadconfigoptions/${deviceId}/`,
+            url: `/apic/loadconfigoptions/${deviceId}/`,
             method: 'GET',
             success: function (response) {
                 $('#load-config-status').text("✅ Loaded successfully").css('color', 'green');
@@ -103,5 +105,24 @@ $(document).ready(function () {
 });
 </script>
 
-{% endblock %}
+<script>
+  // Prevent changing device field value if class 'readonly-device' is set
+  $(document).ready(function() {
+    const $deviceField = $('#id_device.readonly-device');
 
+    // Prevent manual change
+    $deviceField.on('mousedown', function(e) {
+      e.preventDefault();
+      this.blur();
+    });
+
+    // Keep triggering your change handler if needed
+    $deviceField.trigger('change');  // Optional: auto-trigger to load config on load
+
+    // Trigger change on page load
+    $('#id_device').trigger('change');
+
+  });
+</script>
+
+{% endblock %}

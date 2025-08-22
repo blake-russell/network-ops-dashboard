@@ -107,7 +107,7 @@ def dashboard(request):
 
     all_cards = [
         {"id": "changelog", "title": "Recent Site Changes", "required": False},
-        {"id": "notifications", "title": "Notifications", "required": False},
+        {"id": "notifications", "title": "Notifications & Alarms", "required": False},
         {"id": "asa_vpn_stats", "title": f"ASA: VPN Stats (Last {flags.asa_vpn_interval_minutes}m)", "required": False, "requires_feature": "enable_asa_vpn_stats"},
         {"id": "enable_sdwan_cards", "title": f"vManage: Site Stats (Highest Average Last {sdwan_cfg.last_n}m)", "required": False, "requires_feature": "enable_sdwan_cards"},
     ]
