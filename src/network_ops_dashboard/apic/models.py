@@ -23,7 +23,7 @@ class APICMopInterface(models.Model):
 class APICMopCreateInterface(models.Model):
     class Meta:
         ordering = ['name']
-    APIC_MOP_CHOICES = (
+    APIC_PLAYBOOK_CHOICES = (
     ("Planned", "Planned"),
     ("Completed", "Completed"),
     ("Cancelled", "Cancelled"),
@@ -32,7 +32,7 @@ class APICMopCreateInterface(models.Model):
     )
     name = models.CharField(max_length=100, unique=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
-    status = models.CharField(choices=APIC_MOP_CHOICES, default="Planned", max_length=100)
+    status = models.CharField(choices=APIC_PLAYBOOK_CHOICES, default="Planned", max_length=100)
     device = models.ForeignKey(Inventory, null=True, on_delete=models.SET_NULL, blank=True)
     interfaces = models.ManyToManyField(APICMopInterface)
     def __str__(self):

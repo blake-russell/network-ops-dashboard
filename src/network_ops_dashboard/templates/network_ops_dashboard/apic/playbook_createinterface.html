@@ -3,9 +3,9 @@
 {% block content %}
 {% load static %}
 
-<h3>APIC Create Interface MOPs</h3>
+<h3>APIC Create Interface Runbooks</h3>
 
-<a href="{% url 'apic_createinterface_add' %}" class="btn btn-sm btn-outline-primary">Create MOP</a>
+<a href="{% url 'apic_createinterface_add' %}" class="btn btn-sm btn-outline-primary">Create Playbook</a>
 <a href="{% url 'apic_createinterface_intf' %}" class="btn btn-sm btn-outline-secondary">Interface List</a><br>
 
 <table class="table table-hover">
@@ -31,11 +31,11 @@
     </td>
     <td>
       {% if mop.status == 'Planned' %}
-        <a href="{% url 'apic_createinterface_run' mop.pk %}" class="btn btn-sm btn-outline-primary" onclick="return confirm('Are you sure you are ready to run this mop now?')">Run MOP</a>
+        <a href="{% url 'apic_createinterface_run' mop.pk %}" class="btn btn-sm btn-outline-primary" onclick="return confirm('Are you sure you are ready to run this playbook now?')">Run Playbook</a>
       {% elif mop.status == 'Running' %}
         <b>MOP Running</b>
       {% else %}
-        <a href="{% url 'apic_createinterface_archive' mop.pk %}" class="btn btn-sm btn-outline-primary" onclick="return confirm('Are you sure you want to archive this?')">Close MOP</a>
+        <a href="{% url 'apic_createinterface_archive' mop.pk %}" class="btn btn-sm btn-outline-primary" onclick="return confirm('Are you sure you want to archive this?')">Close Playbook</a>
       {% endif %}
     </td>
     <td>
