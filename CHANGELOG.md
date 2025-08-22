@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.2.4 - 08-22-2025
+- 🆕 Dashboard: Added ASAVPN Stats Configuration.
+
 ## v0.2.3 - 08-21-2025
 - 🆕 Dashboard: Added SD-WAN/vManage Statistics Card.
 - ⚙️ Dashboard: Dynamic card data refreshes automatically.
