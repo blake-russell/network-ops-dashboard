@@ -4,26 +4,26 @@ import requests
 import logging
 from requests.auth import HTTPBasicAuth
 from network_ops_dashboard.models import *
-from network_ops_dashboard.inventory.models import *
-from network_ops_dashboard.asavpn.models import *
+from network_ops_dashboard.inventory.models import Inventory
+from network_ops_dashboard.asavpn.models import AsaVpnSettings
 
 logger = logging.getLogger('network_ops_dashboard.asavpn')
 
-def findVPNuser(targetUser, username1, password1, targetAction):
+def findVPNuser(targetUser, targetAction, targetDeviceTag, verifySSL, username1, password1):
     #urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     logger.info(f"findVPNuser Running.")
     headers = {'User-Agent': 'ASDM'}
     baseStr = '/admin/exec/show%20vpn-sessiondb%20anyconnect%20%7C%20i%20'
-    asaInv = Inventory.objects.filter(device_tag__name__exact='ASAVPN')
+    asaInv = Inventory.objects.filter(device_tag__name__exact=targetDeviceTag)
     for TargetDevice in asaInv:
         try:
             auth = HTTPBasicAuth(TargetDevice.creds_rest.username, TargetDevice.creds_rest.password)
-            r1 = requests.get('https://' + str(TargetDevice) + baseStr + targetUser.upper(), headers=headers, auth=auth, verify=False)
-            r2 = requests.get('https://' + str(TargetDevice) + baseStr + targetUser.lower(), headers=headers, auth=auth, verify=False)
+            r1 = requests.get('https://' + str(TargetDevice) + baseStr + targetUser.upper(), headers=headers, auth=auth, verify=verifySSL)
+            r2 = requests.get('https://' + str(TargetDevice) + baseStr + targetUser.lower(), headers=headers, auth=auth, verify=verifySSL)
             targetUsers = r1.text or r2.text
             if targetUsers != '':
                 targetUserGrep = targetUsers.split(':')[1].strip().split(' ')[0]
-                if targetAction == 'True':
+                if targetAction == True:
                     target = {
                         'device_type': str(TargetDevice.platform.netmiko_namespace),
 	                    'ip': str(TargetDevice),

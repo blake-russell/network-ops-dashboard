@@ -119,7 +119,7 @@
             <div id="asaCollapse" class="accordion-collapse collapse"
                  aria-labelledby="asaHeading" data-bs-parent="#cfgAccordion">
               <div class="accordion-body">
-                <div class="row g-2 align-items-center">
+                <div class="row g-2 align-items-center mb-2">
                   <div class="col-auto">
                     <div class="form-check form-switch">
                       <input class="form-check-input" type="checkbox" id="ff-asa"
@@ -135,6 +135,23 @@
                     <label for="ff-asa-interval" class="col-form-label">Interval (minutes)</label>
                   </div>
                 </div>
+                
+                <div class="row g-3">
+                  <div class="col-md-5">
+                    <label class="form-label">{{ asa_settings_form.device_tag.label }}</label>
+                    {{ asa_settings_form.device_tag }}
+                    <div class="form-text">{{ asa_settings_form.device_tag.help_text }}</div>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">{{ asa_settings_form.top_n.label }}</label>
+                    {{ asa_settings_form.top_n }}
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">{{ asa_settings_form.verify_ssl.label }}</label><br>
+                    {{ asa_settings_form.verify_ssl }}
+                  </div>
+                </div>
+                
               </div>
             </div>
           </div>
@@ -221,7 +238,6 @@
 <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
-  // Drag in modal
   const listEl = document.getElementById('card-list');
   new Sortable(listEl, { handle: '.handle', animation: 150 });
 
@@ -239,52 +255,57 @@
       body: JSON.stringify({ order, hidden })
     });
 
-    // 2) Staff-only global settings
     {% if request.user.is_staff %}
-    // ASA toggles
-      const ffAsa = document.getElementById('ff-asa');
-      const intervalEl = document.getElementById('ff-asa-interval');
-      if (intervalEl) {
-        const minutes = Math.max(parseInt(intervalEl.value || '5', 10), 1);
-        const fd1 = new FormData();
-        fd1.append('minutes', minutes.toString());
-        fd1.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-        await fetch("{% url 'dashboard_set_asa_vpn_interval' %}", { method: 'POST', body: fd1 });
-      }
-      if (ffAsa) {
-        const fd2 = new FormData();
-        fd2.append('enabled', ffAsa.checked ? 'true' : 'false');
-        fd2.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-        await fetch("{% url 'dashboard_toggle_asa_vpn_stats' %}", { method: 'POST', body: fd2 });
-      }
+    // === ASA ===
+    {
+      const fdAsa = new FormData();
+      fdAsa.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
-    // SD-WAN toggles
+      // feature toggle + interval
+      fdAsa.append('enable_asavpn_stats', document.getElementById('ff-asa')?.checked ? 'true' : 'false');
+      const intAsa = document.getElementById('ff-asa-interval');
+      fdAsa.append('asavpn_interval', intAsa && intAsa.value ? intAsa.value : '');
+
+      // collect all ASA form fields (prefixed)
+      const asaSection = document.getElementById('asaCollapse');
+      asaSection.querySelectorAll('[name^="asa-"]').forEach(el => {
+        if (el.type === 'checkbox') {
+          // always send explicit value for checkbox
+          fdAsa.append(el.name, el.checked ? 'on' : '');
+        } else {
+          fdAsa.append(el.name, el.value ?? '');
+        }
+      });
+
+      await fetch("{% url 'dashboard_asa_vpn_settings_save' %}", { method: 'POST', body: fdAsa });
+    }
+
+    // === SD-WAN ===
+    {
       const fdSdwan = new FormData();
-      const enabled_sdwan = document.getElementById('ff-sdwan')?.checked;
-      const sdwan_interval = document.getElementById('ff-sdwan-interval');
-
-      // toggles FeatureFlags.enable_sdwan_cards and SdwanSettings.card_enabled
-      fdSdwan.append('enabled_sdwan', enabled_sdwan ? 'true' : 'false');
-      fdSdwan.append('sdwan_interval', sdwan_interval.value);
       fdSdwan.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
-      // Pull values from the rendered form fields by name
-      const hostSel = document.querySelector('select[name="host"]');
-      if (hostSel && hostSel.value) fdSdwan.append('host', hostSel.value);
-      const purgePath = document.querySelector('input[name="purge_path_stats"]');
-      if (purgePath && purgePath.value) fdSdwan.append('purge_path_stats', purgePath.value);
-      const topNEl = document.querySelector('input[name="top_n"]');
-      if (topNEl && topNEl.value) fdSdwan.append('top_n', topNEl.value);
-      const lastNEl = document.querySelector('input[name="last_n"]');
-      if (lastNEl && lastNEl.value) fdSdwan.append('last_n', lastNEl.value);
-      const verifySel = document.querySelector('input[name="verify_ssl"]');
-      if (verifySel && verifySel.checked) fdSdwan.append('verify_ssl', 'on');
-      await fetch("{% url 'dashboard_sdwan_settings_save' %}", { method: 'POST', body: fdSdwan });
+      // feature toggle + interval
+      fdSdwan.append('enabled_sdwan', document.getElementById('ff-sdwan')?.checked ? 'true' : 'false');
+      const intSd = document.getElementById('ff-sdwan-interval');
+      fdSdwan.append('sdwan_interval', intSd && intSd.value ? intSd.value : '');
 
+      // collect all SD-WAN form fields (prefixed)
+      const sdSection = document.getElementById('sdwanCollapse');
+      sdSection.querySelectorAll('[name^="sdwan-"]').forEach(el => {
+        if (el.type === 'checkbox') {
+          fdSdwan.append(el.name, el.checked ? 'on' : '');
+        } else {
+          fdSdwan.append(el.name, el.value ?? '');
+        }
+      });
+
+      await fetch("{% url 'dashboard_sdwan_settings_save' %}", { method: 'POST', body: fdSdwan });
+    }
     {% endif %}
 
-  window.location.reload();
-});
+    window.location.reload();
+  });
 
   (function(){
     const dataTag = document.getElementById('changelog-data');

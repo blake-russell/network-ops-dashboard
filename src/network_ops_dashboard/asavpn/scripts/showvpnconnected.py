@@ -2,7 +2,7 @@ import requests
 import logging
 from requests.auth import HTTPBasicAuth
 from network_ops_dashboard.inventory.models import Inventory
-from network_ops_dashboard.asavpn.models import AsaVpnConnectedUsers 
+from network_ops_dashboard.asavpn.models import AsaVpnConnectedUsers, AsaVpnSettings
 
 logger = logging.getLogger('network_ops_dashboard.asavpn')
 
@@ -10,11 +10,12 @@ def showVPNconnected():
     #urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     headers = {'User-Agent': 'ASDM'}
     baseStr = '/admin/exec/show%20vpn-sessiondb'
-    asaInv = Inventory.objects.filter(device_tag__name__exact='ASAVPN') # Update tag name if necessary or remove tags to ignore
+    asa_settings = AsaVpnSettings.load()
+    asaInv = Inventory.objects.filter(device_tag__name__exact=asa_settings.device_tag.name)
     for TargetDevice in asaInv:
         try:
             auth = HTTPBasicAuth(TargetDevice.creds_rest.username, TargetDevice.creds_rest.password)
-            r = requests.get('https://' + str(TargetDevice) + baseStr, headers=headers, auth=auth, verify=False)
+            r = requests.get('https://' + str(TargetDevice) + baseStr, headers=headers, auth=auth, verify=asa_settings.verify_ssl)
             if r.text != '':
                     try:
                         output1 = r.text.split('AnyConnect Client            :')[-1]
