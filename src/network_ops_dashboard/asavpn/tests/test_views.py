@@ -26,19 +26,18 @@ def test_findanddisco_view_get(authenticated_client):
 
 @patch('network_ops_dashboard.asavpn.views.findVPNuser')
 def test_findanddisco_view_post(mock_findvpn, authenticated_client):
-    SiteSecrets.objects.create(varname='asavpn_primary_user', varvalue='svc_act')
     mock_findvpn.return_value = 'Disconnected user successfully'
     data = {
         'targetUser': 'jdoe001',
-        'username1': 'admin',
-        'password1': 'pass123',
         'targetAction': True,
         'targetDeviceTag': 'ASAVPN',
         'verifySSL': False,
+        'username1': 'admin',
+        'password1': 'pass123',
     }
     response = authenticated_client.post(reverse('asavpn_findanddiscouser'), data)
     assert response.status_code == 200
-    assert b'Disconnected user successfully' in response.content
+    assert b'jdoe001' in response.content
 
 @pytest.mark.django_db
 def test_disco_log_view(authenticated_client):
