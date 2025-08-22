@@ -279,12 +279,12 @@
       <strong class="hide-on-print">Created By: {{ incident.user_created.first_name }} {{ incident.user_created.last_name }}</strong><br>
       <strong class="hide-on-print"><b>Modified By:</b> {{ incident.user_modified.first_name }} {{ incident.user_modified.last_name }}</strong> <br>
       <strong style="color:red;">Issue Date:</strong> <strong> {{ incident.date_created }} </strong><br>
-      <strong style="color:red;">Issue Title:</strong> <strong> {{ incident.headline }} </strong>
+      <strong style="color:red;">Issue Title:</strong>
       <strong class="headline-view"> {{ incident.headline }} </strong>
-        <input type="text"
-        class="form-control form-control-sm edit-title hide-on-print"
-        style="display:none; max-width: 600px;"
-        value="{{ incident.headline }}">
+      <input type="text"
+       class="form-control form-control-sm edit-title hide-on-print"
+       style="display:none; max-width: 600px;"
+       value="{{ incident.headline }}">
       <br>
       <strong style="color:red;">Status:</strong> <strong> {{ incident.status }} </strong><br>
       <div class="log-content">
