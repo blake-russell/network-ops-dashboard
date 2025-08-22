@@ -32,7 +32,9 @@ def test_findanddisco_view_post(mock_findvpn, authenticated_client):
         'targetUser': 'jdoe001',
         'username1': 'admin',
         'password1': 'pass123',
-        'targetAction': 'True'
+        'targetAction': True,
+        'targetDeviceTag': 'ASAVPN',
+        'verifySSL': False,
     }
     response = authenticated_client.post(reverse('asavpn_findanddiscouser'), data)
     assert response.status_code == 200
