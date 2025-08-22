@@ -22,7 +22,7 @@ class F5LBMopVipCertRenewForm(forms.ModelForm):
     )
 	name = forms.CharField(label="Name:", help_text="CRQ# (If Applicable) + a given name for PLAYBOOK/VIP/Change. (No Spaces!).", required=True)
 	status = forms.ChoiceField(label="Status:", choices=F5LB_PLAYBOOK_CHOICES, required=True)
-	device = forms.ModelChoiceField(label="Device:", queryset=Inventory.objects.filter(device_tag__name__exact='F5LB'), required=True)
+	device = forms.ModelChoiceField(label="Device:", help_text="Filters for devicetag='F5LB'", queryset=Inventory.objects.filter(device_tag__name__exact='F5LB'), required=True)
 	virtual_server = forms.ChoiceField(
 		label="Virtual Server Name:",
 		choices=[],

@@ -7,7 +7,7 @@ from network_ops_dashboard.asavpn.models import *
 
 class AsaVpnFindAndDiscoForm(forms.Form):
 	TARGET_ACTION_CHOICES = ((False, 'No'), (True, 'Yes'))
-	targetUser = forms.CharField(label="Target User ID:", required=True)
+	targetUser = forms.CharField(label="Target User ID:", help_text="Searches devices with devicetag='ASAVPN'", required=True)
 	targetAction = forms.ChoiceField(label="Disconnect User?", choices=TARGET_ACTION_CHOICES)
 	username1 = forms.CharField(label="Enter your admin username:", help_text="Only required if you want to disconnect target.", required=False)
 	password1 = forms.CharField(label="Enter your admin password:", help_text="Only required if you want to disconnect target.", widget=forms.PasswordInput,  required=False)

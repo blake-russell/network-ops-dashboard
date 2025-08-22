@@ -19,7 +19,7 @@ class APICMopCreateInterfaceAddForm(forms.ModelForm):
     )
 	name = forms.CharField(label="Name:", help_text="CRQ# (If Applicable) + a given name for Playbook/VIP/Change. (No Spaces!).", required=True)
 	status = forms.ChoiceField(label="Status:", choices=APIC_PLAYBOOK_CHOICES, required=True)
-	device = forms.ModelChoiceField(label="Device:", queryset=Inventory.objects.filter(device_tag__name__exact='APIC'), required=True)
+	device = forms.ModelChoiceField(label="Device:", help_text="Filters for devicetag='APIC'", queryset=Inventory.objects.filter(device_tag__name__exact='APIC'), required=True)
 	def clean_name(self):
 		return self.cleaned_data.get('name', '').strip()
 	
