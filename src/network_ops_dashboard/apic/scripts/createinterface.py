@@ -13,9 +13,9 @@ logger = logging.getLogger('network_ops_dashboard.apic')
 # Inputs from apic_createinterface_run view
 
 # Create Interface (standard) - requires already configured Interface Profile, Selector, & IPG
-def APICMopCreateInterfaceRun(mop, reqUser, theme):
+def APICMopCreateInterfaceRun(playbook, reqUser, theme):
     # Build StreamingHTTPresponse page
-    yield "<html><head><title>APIC Create Interface MOP</title>\n"
+    yield "<html><head><title>APIC Create Interface Playbook</title>\n"
     yield "<link rel='stylesheet' href='/static/css/base.css'>\n"
     yield "<link rel='stylesheet' href='/static/css/style.css'>\n"
     if theme == 'themelight':
@@ -24,20 +24,20 @@ def APICMopCreateInterfaceRun(mop, reqUser, theme):
         yield "<link rel='stylesheet' href='https://bootswatch.com/5/cyborg/bootstrap.css'></head>\n"
     yield "<script src='https://bootswatch.com/_vendor/jquery/dist/jquery.min.js'></script>\n"
     yield "<script src='https://bootswatch.com/_vendor/bootstrap/dist/js/bootstrap.bundle.min.js'></script>\n"
-    yield "Attempting to execute APIC Create Interface MOP {0}.\n".format(mop[0].name)
+    yield "Attempting to execute APIC Create Interface Playbook {0}.\n".format(playbook[0].name)
     yield "<hr>"
     yield '<div id="out" style="overflow:auto;">'
     # Testing javascript scrolling
     yield '<script>var out = document.getElementById("out");out.scrollTop = out.scrollHeight - out.clientHeight;</script>'
     # Log Event
-    logger.info('APIC Create Interface MOP execution {0} initialized by {1}'.format(str(time.strftime("%m/%d/%y:%H:%M:%S:")),mop[0].name, reqUser))
+    logger.info('APIC Create Interface Playbook execution {0} initialized by {1}'.format(str(time.strftime("%m/%d/%y:%H:%M:%S:")),playbook[0].name, reqUser))
     # Start of Script Logic
-    yield "Starting MOP Script<br>\n"
+    yield "Starting Playbook Script<br>\n"
     yield " " * 1024  # Encourage browser to render incrementally
     try:
-        for intf in mop[0].interfaces.all():
-            # aci_token = apicCookie(mop[0].device.ipaddress_mgmt, creds[0].username, creds[0].password)
-            aci_token = apicCookie(mop[0].device.ipaddress_mgmt, mop[0].device.creds_rest.username, mop[0].device.creds_rest.password)
+        for intf in playbook[0].interfaces.all():
+            # aci_token = apicCookie(playbook[0].device.ipaddress_mgmt, creds[0].username, creds[0].password)
+            aci_token = apicCookie(playbook[0].device.ipaddress_mgmt, playbook[0].device.creds_rest.username, playbook[0].device.creds_rest.password)
             headers = {'Content-Type': 'application/json', 'Cookie': f'APIC-Cookie='+aci_token}
             try:
                 payload = {
@@ -75,23 +75,23 @@ def APICMopCreateInterfaceRun(mop, reqUser, theme):
                         ]
                     }
                 }
-                requests.post(f'https://{mop[0].device.ipaddress_mgmt}/api/node/mo/uni/infra/accportprof-{intf.intfprofile}/hports-{intf.intfselector}-typ-range.json', headers=headers, data=json.dumps(payload), verify=False)
+                requests.post(f'https://{playbook[0].device.ipaddress_mgmt}/api/node/mo/uni/infra/accportprof-{intf.intfprofile}/hports-{intf.intfselector}-typ-range.json', headers=headers, data=json.dumps(payload), verify=False)
                 yield f'{intf.intfdesc} Successfully Created.<br>'
             except Exception as e:
                 yield f'Exception creating {intf.intfdesc}. ({e})<br>'
-                logger.error('Exception creating {0} APIC interface: {1} (MOP: {2})'.format(intf.intfdesc, e, mop[0].name))
-                APICMopCreateInterface.objects.filter(pk=mop[0].pk).update(status='Planned')
-                yield "<a href='../../'>Back to MOP Page</a><br>\n"
+                logger.error('Exception creating {0} APIC interface: {1} (Playbook: {2})'.format(intf.intfdesc, e, playbook[0].name))
+                APICMopCreateInterface.objects.filter(pk=playbook[0].pk).update(status='Planned')
+                yield "<a href='../../'>Back to Playbook Page</a><br>\n"
                 raise
-        yield "Successfully Completed APIC interface MOP: %s <br>\n" % (mop[0].name)
-        logger.info('Successfully Completed APIC interface MOP: {0})'.format(mop[0].name))
-        APICMopCreateInterface.objects.filter(pk=mop[0].pk).update(status='Completed')
-        yield "<a href='../../'>Back to MOP Page</a><br>\n"
+        yield "Successfully Completed APIC interface Playbook: %s <br>\n" % (playbook[0].name)
+        logger.info('Successfully Completed APIC interface Playbook: {0})'.format(playbook[0].name))
+        APICMopCreateInterface.objects.filter(pk=playbook[0].pk).update(status='Completed')
+        yield "<a href='../../'>Back to Playbook Page</a><br>\n"
     except Exception as e:
-        yield "Exception running APIC Create Interface MOP: %s (MOP: %s)<br>\n" % (e, mop[0].name)
-        logger.error('Exception APIC interface MOP: {0} (MOP: {1})'.format(e, mop[0].name))
-        APICMopCreateInterface.objects.filter(pk=mop[0].pk).update(status='Planned')
-        yield "<a href='../../'>Back to MOP Page</a><br>\n"
+        yield "Exception running APIC Create Interface Playbook: %s (Playbook: %s)<br>\n" % (e, playbook[0].name)
+        logger.error('Exception APIC interface Playbook: {0} (Playbook: {1})'.format(e, playbook[0].name))
+        APICMopCreateInterface.objects.filter(pk=playbook[0].pk).update(status='Planned')
+        yield "<a href='../../'>Back to Playbook Page</a><br>\n"
         raise
     yield "</div></body></html>\n"
         

@@ -10,15 +10,15 @@ class APICMopCreateInterfaceAddForm(forms.ModelForm):
 	class Meta:
 		model = APICMopCreateInterface
 		fields = ('name', 'status', 'device')
-	APIC_MOP_CHOICES = (
+	APIC_PLAYBOOK_CHOICES = (
     ("Planned", "Planned"),
     ("Completed", "Completed"),
     ("Cancelled", "Cancelled"),
     ("Running", "Running"),
     ("Closed", "Closed"),
     )
-	name = forms.CharField(label="Name:", help_text="CRQ# (If Applicable) + a given name for MOP/VIP/Change. (No Spaces!).", required=True)
-	status = forms.ChoiceField(label="Status:", choices=APIC_MOP_CHOICES, required=True)
+	name = forms.CharField(label="Name:", help_text="CRQ# (If Applicable) + a given name for Playbook/VIP/Change. (No Spaces!).", required=True)
+	status = forms.ChoiceField(label="Status:", choices=APIC_PLAYBOOK_CHOICES, required=True)
 	device = forms.ModelChoiceField(label="Device:", queryset=Inventory.objects.filter(device_tag__name__exact='APIC'), required=True)
 	def clean_name(self):
 		return self.cleaned_data.get('name', '').strip()
@@ -27,15 +27,15 @@ class APICMopCreateInterfaceEditForm(forms.ModelForm):
 	class Meta:
 		model = APICMopCreateInterface
 		fields = ('name', 'status', 'device', 'interfaces')
-	APIC_MOP_CHOICES = (
+	APIC_PLAYBOOK_CHOICES = (
     ("Planned", "Planned"),
     ("Completed", "Completed"),
     ("Cancelled", "Cancelled"),
     ("Running", "Running"),
     ("Closed", "Closed"),
     )
-	name = forms.CharField(label="Name:", help_text="CRQ# (If Applicable) + a given name for MOP/VIP/Change. (No Spaces!).", required=True)
-	status = forms.ChoiceField(label="Status:", choices=APIC_MOP_CHOICES, required=True)
+	name = forms.CharField(label="Name:", help_text="CRQ# (If Applicable) + a given name for Playbook/VIP/Change. (No Spaces!).", required=True)
+	status = forms.ChoiceField(label="Status:", choices=APIC_PLAYBOOK_CHOICES, required=True)
 	device = forms.ModelChoiceField(label="Device:", queryset=Inventory.objects.filter(device_tag__name__exact='APIC'), required=True)
 	interfaces = forms.ModelMultipleChoiceField(label="Interfaces:", queryset=APICMopInterface.objects.none(), widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': '10'}), required=False)
 	def __init__(self, *args, **kwargs):

@@ -13,15 +13,15 @@ class F5LBMopVipCertRenewForm(forms.ModelForm):
 		model = F5LBMopVipCertRenew
 		fields = ('name', 'status', 'device', 'virtual_server', 'ssl_policy', \
             'cert_name', 'cert_key_name', 'cert_key_pass', 'cert_file', 'cert_key_file')
-	F5LB_MOP_CHOICES = (
+	F5LB_PLAYBOOK_CHOICES = (
     ("Planned", "Planned"),
     ("Completed", "Completed"),
     ("Cancelled", "Cancelled"),
     ("Running", "Running"),
     ("Closed", "Closed"),
     )
-	name = forms.CharField(label="Name:", help_text="CRQ# (If Applicable) + a given name for MOP/VIP/Change. (No Spaces!).", required=True)
-	status = forms.ChoiceField(label="Status:", choices=F5LB_MOP_CHOICES, required=True)
+	name = forms.CharField(label="Name:", help_text="CRQ# (If Applicable) + a given name for PLAYBOOK/VIP/Change. (No Spaces!).", required=True)
+	status = forms.ChoiceField(label="Status:", choices=F5LB_PLAYBOOK_CHOICES, required=True)
 	device = forms.ModelChoiceField(label="Device:", queryset=Inventory.objects.filter(device_tag__name__exact='F5LB'), required=True)
 	virtual_server = forms.ChoiceField(
 		label="Virtual Server Name:",

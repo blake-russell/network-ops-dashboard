@@ -12,7 +12,7 @@ logger = logging.getLogger('network_ops_dashboard.apic')
 
 # Inputs from apic_loadconfigoptions view
 
-# Load interface profiles and interface group policies into local database for create interface mop
+# Load interface profiles and interface group policies into local database for create interface playbook
 def LoadAPICConfigListOptions(deviceList, reqUser, theme):
     # Build StreamingHTTPresponse page
     yield "<html><head><title>APIC Loading Config Options into DB</title>\n"
@@ -54,7 +54,7 @@ def LoadAPICConfigListOptions(deviceList, reqUser, theme):
             except Exception as e:
                 yield f'LoadAPICConfigListOptions (Exception) fetching configs on {targetDevice.device.name}. ({e})<br>'
                 logger.error('LoadAPICConfigListOptions (Exception) fetching configs on {0}. {1}'.format(targetDevice.device.name, e))
-                yield "<a href='../../'>Back to MOP Page</a><br>\n"
+                yield "<a href='../../'>Back to Playbook Page</a><br>\n"
                 continue
             # Get the Interface Policy Groups
             try:
@@ -74,11 +74,11 @@ def LoadAPICConfigListOptions(deviceList, reqUser, theme):
             except Exception as e:
                 yield f'LoadAPICConfigListOptions (Exception) fetching configs on {targetDevice.device.name}. ({e})<br>'
                 logger.error('LoadAPICConfigListOptions (Exception) fetching configs on {0}. {1}'.format(targetDevice.device.name, e))
-                yield "<a href='../../'>Back to MOP Page</a><br>\n"
+                yield "<a href='../../'>Back to Playbook Page</a><br>\n"
                 continue
     except Exception as e:
         yield f'LoadAPICConfigListOptions (Exception) fetching configs on {targetDevice.device.name} (outer). ({e})<br>'
         logger.error('LoadAPICConfigListOptions (Exception) fetching configs on {0} (outer). {1}'.format(targetDevice.device.name, e))
-        yield "<a href='../../'>Back to MOP Page</a><br>\n"
+        yield "<a href='../../'>Back to Playbook Page</a><br>\n"
         raise
     yield "</div></body></html>\n"

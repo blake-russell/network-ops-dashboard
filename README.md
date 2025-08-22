@@ -7,9 +7,9 @@ This project is a Network Operations Dashboard designed to centralize and stream
     • Device Inventory
         ○ Create a source-of-truth repository of network devices, platforms, locations, credentials.
     • Cisco ACI Interface Configuration
-        ○ Automates large-scale interface configurations.
+        ○ Create Playbooks to automate large-scale interface configurations.
     • F5 LTM Certificate Management
-        ○ Simplifies SSL/TLS certificate renewals and profile updates.
+        ○ Create Playbooks to simplify SSL/TLS certificate renewals and profile updates.
     • ASA VPN Tools
         ○ Identifies VPN headend connections and enables user disconnect for security events.
 

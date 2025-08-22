@@ -14,12 +14,12 @@ class F5LBMopVipCertRenew(models.Model):
     class Meta:
         ordering = ['name']
     def cert_file_path(instance, filename):
-        # file will be uploaded to MEDIA_ROOT/f5lb/f5lb_mop_vipcertrenew/<name>/<filename>
-        return f'f5lb/mop_vipcertrenew/{instance.name}/{filename}'
+        # file will be uploaded to MEDIA_ROOT/f5lb/f5lb_playbook_vipcertrenew/<name>/<filename>
+        return f'f5lb/playbook_vipcertrenew/{instance.name}/{filename}'
     def cert_key_file_path(instance, filename):
-        # file will be uploaded to PROTECTED_MEDIA_ROOT/f5lb/f5lb_mop_vipcertrenew/<name>/<filename>
-        return f'f5lb/mop_vipcertrenew/{instance.name}/{filename}'
-    F5LB_MOP_CHOICES = (
+        # file will be uploaded to PROTECTED_MEDIA_ROOT/f5lb/f5lb_playbook_vipcertrenew/<name>/<filename>
+        return f'f5lb/playbook_vipcertrenew/{instance.name}/{filename}'
+    F5LB_PLAYBOOK_CHOICES = (
     ("Planned", "Planned"),
     ("Completed", "Completed"),
     ("Cancelled", "Cancelled"),
@@ -27,7 +27,7 @@ class F5LBMopVipCertRenew(models.Model):
     ("Closed", "Closed"),
     )
     name = models.CharField(max_length=100, unique=True)
-    status = models.CharField(choices=F5LB_MOP_CHOICES, default="Planned", max_length=100)
+    status = models.CharField(choices=F5LB_PLAYBOOK_CHOICES, default="Planned", max_length=100)
     device = models.ForeignKey(Inventory, null=True, on_delete=models.SET_NULL, blank=True)
     virtual_server = models.CharField(max_length=100, blank=True)
     ssl_policy = models.CharField(max_length=100, blank=True)

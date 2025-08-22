@@ -21,67 +21,67 @@ logger = logging.getLogger('network_ops_dashboard.f5lb')
 
 @login_required(login_url='/accounts/login/')
 def f5lb_vipcertrenew(request):
-    f5lb_mops_all = F5LBMopVipCertRenew.objects.filter(Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') | Q(status='Running')).order_by('status')
+    f5lb_playbook_all = F5LBMopVipCertRenew.objects.filter(Q(status='Planned') | Q(status='Completed') | Q(status='Cancelled') | Q(status='Running')).order_by('status')
     detaillist = []
     load_all = '4096' ### Used as a arbitrary value to send to f5lb_loadconfigoptions in order to run against F5LBConfigOptions.objects.all()
-    for mop in f5lb_mops_all:
+    for playbook in f5lb_playbook_all:
         detaildict = {
-            'pk' : mop.pk,
-            'name' : mop.name,
-            'status' : mop.status,
-            'device' : mop.device,
-            'virtual_server' : mop.virtual_server,
-            'ssl_policy' : mop.ssl_policy,
-            'cert_name' : mop.cert_name,
-            'cert_key_name' : mop.cert_key_name,
-            'cert_file' : mop.cert_file,
+            'pk' : playbook.pk,
+            'name' : playbook.name,
+            'status' : playbook.status,
+            'device' : playbook.device,
+            'virtual_server' : playbook.virtual_server,
+            'ssl_policy' : playbook.ssl_policy,
+            'cert_name' : playbook.cert_name,
+            'cert_key_name' : playbook.cert_key_name,
+            'cert_file' : playbook.cert_file,
             }
         detaillist.append(detaildict)
-    return render(request, 'network_ops_dashboard/f5lb/mop_vipcertrenew.html', {'detaillist': detaillist, 'load_all': load_all})
+    return render(request, 'network_ops_dashboard/f5lb/playbook_vipcertrenew.html', {'detaillist': detaillist, 'load_all': load_all})
 
 @login_required(login_url='/accounts/login/')
 def f5lb_vipcertrenew_edit(request, pk):
-    f5lb_mop = get_object_or_404(F5LBMopVipCertRenew, pk=pk)
+    f5lb_playbook = get_object_or_404(F5LBMopVipCertRenew, pk=pk)
     if request.method == 'POST':
-        form = F5LBMopVipCertRenewForm(request.POST, request.FILES, instance=f5lb_mop)
+        form = F5LBMopVipCertRenewForm(request.POST, request.FILES, instance=f5lb_playbook)
         if form.is_valid():
-            f5lb_mop = form.save(commit=True)
-            f5lb_mop.save()
+            f5lb_playbook = form.save(commit=True)
+            f5lb_playbook.save()
             return redirect('f5lb_vipcertrenew')
     else:
-        form = F5LBMopVipCertRenewForm(instance=f5lb_mop)
-    return render(request, 'network_ops_dashboard/f5lb/mop_vipcertrenew_edit.html', {'form': form})
+        form = F5LBMopVipCertRenewForm(instance=f5lb_playbook)
+    return render(request, 'network_ops_dashboard/f5lb/playbook_vipcertrenew_edit.html', {'form': form})
 
 @login_required(login_url='/accounts/login/')
 def f5lb_vipcertrenew_add(request):
     if request.method == 'POST':
         form = F5LBMopVipCertRenewForm(request.POST, request.FILES)
         if form.is_valid():
-            f5lb_mop = form.save(commit=False)
-            f5lb_mop.save()
+            f5lb_playbook = form.save(commit=False)
+            f5lb_playbook.save()
             return redirect('f5lb_vipcertrenew')
     else:
         form = F5LBMopVipCertRenewForm()
-    return render(request, 'network_ops_dashboard/f5lb/mop_vipcertrenew_add.html', {'form': form})
+    return render(request, 'network_ops_dashboard/f5lb/playbook_vipcertrenew_add.html', {'form': form})
 
 @login_required(login_url='/accounts/login/')
 def f5lb_vipcertrenew_archive(request, pk):
-    mop_entry = get_object_or_404(F5LBMopVipCertRenew, pk=pk)
-    mop_entry.cert_key_file.delete()
-    mop_entry.status = 'Closed'
-    mop_entry.save()
+    playbook_entry = get_object_or_404(F5LBMopVipCertRenew, pk=pk)
+    playbook_entry.cert_key_file.delete()
+    playbook_entry.status = 'Closed'
+    playbook_entry.save()
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 @login_required(login_url='/accounts/login/')
 def f5lb_vipcertrenew_run(request, pk):
     F5LBMopVipCertRenew.objects.filter(pk=pk).update(status='Running')
-    mop = F5LBMopVipCertRenew.objects.filter(pk=pk)
+    playbook = F5LBMopVipCertRenew.objects.filter(pk=pk)
     reqUser = User.objects.get(username=request.user)
     if User.objects.filter(pk=reqUser.pk, groups__name='themelight').exists():
         theme = 'themelight'
     else:
         theme = 'themedark'
-    response = StreamingHttpResponse(RunF5LBMopVipCertRenew(mop, reqUser.username, theme), content_type='text/html')
+    response = StreamingHttpResponse(RunF5LBMopVipCertRenew(playbook, reqUser.username, theme), content_type='text/html')
     response['X-Accel-Buffering'] = 'no'  # Disable buffering in nginx
     response['Cache-Control'] = 'no-cache'  # Ensure clients don't cache the data
     response['Transfer-Encoding'] = 'chunked'
@@ -99,8 +99,8 @@ def f5lb_loadconfigoptions(request, device_id):
     else:
         theme = 'themedark'
     response = StreamingHttpResponse(LoadF5LBConfigListsOptions(deviceList, reqUser.username, theme), content_type='text/html')
-    response['X-Accel-Buffering'] = 'no'  # Disable buffering in nginx
-    response['Cache-Control'] = 'no-cache'  # Ensure clients don't cache the data
+    response['X-Accel-Buffering'] = 'no'
+    response['Cache-Control'] = 'no-cache'
     response['Transfer-Encoding'] = 'chunked'
     return response
 

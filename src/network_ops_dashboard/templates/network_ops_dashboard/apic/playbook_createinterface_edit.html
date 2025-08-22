@@ -3,7 +3,7 @@
 {% load widget_tweaks %}
 {% block content %}
 
-<h3>APIC Create Interface MOP Add</h3>
+<h3>APIC Create Interface Playbook Edit</h3>
 
 <table>
 <tr>
@@ -29,19 +29,22 @@
       {% else %}
         {% render_field field class="form-control" %}
       {% endif %}
-
       {% if field.help_text %}
         <small class="form-text text-muted">{{ field.help_text }}</small>
       {% endif %}
     </div>
   {% endfor %}
-
+  {% if form.device.field.disabled %}
+    <div class="alert alert-warning">
+      Device cannot be changed because interfaces are already associated <br>with this Playbook. To change the device, remove all interfaces or cancel<br>this Playbook and create a new Playbook.
+    </div>
+  {% endif %}
   <button type="submit" class="btn btn-primary">Submit</button>
 </form>
 </font>
 </td>
 <td></td>
 </tr>	
-</table>
+</table>	
 
 {% endblock %}

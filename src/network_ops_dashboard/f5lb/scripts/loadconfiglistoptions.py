@@ -54,9 +54,9 @@ def LoadF5LBConfigListsOptions(deviceList, reqUser, theme):
     except Exception as e:
         yield "LoadF5LBConfigListsOptions: Exception connecting to load balancer(s): %s<br>" % (targetDevice.device.name)
         yield "Exception: %s<br>" % (e)
-        yield "<a href='../../'>Back to MOP Page</a><br>\n"
+        yield "<a href='../../'>Back to Playbook Page</a><br>\n"
         yield "</div></body></html>\n"
         logger.exception('LoadF5LBConfigListsOptions: Exception connecting to load balancer(s): %s' % (e))
         raise
-    yield "<a href='../../'>Back to MOP Page</a><br>\n"
+    yield "<a href='../../'>Back to Playbook Page</a><br>\n"
     yield "</div></body></html>\n"
