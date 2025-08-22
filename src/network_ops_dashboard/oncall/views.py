@@ -55,7 +55,6 @@ def oncall(request):
 
     providers_with_emails = build_providers_with_emails(settings_obj) if settings_obj.show_scheduled_maintenance else []
     incidents = _incidents_for_report(settings_obj)
-    #incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
 
     certs     = CertExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_cert_expiry else CertExpiry.objects.none()
     advisories= CiscoAdvisory.objects.filter(status='Open').order_by('date')     if settings_obj.show_field_advisories else CiscoAdvisory.objects.none()
@@ -82,7 +81,6 @@ def oncall_incident_log(request):
 def oncall_incident_print(request):
     settings_obj = OnCallSettings.load()
     providers_with_emails = build_providers_with_emails(settings_obj) if settings_obj.show_scheduled_maintenance else []
-    #incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
     incidents = _incidents_for_report(settings_obj)
     certs = CertExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_cert_expiry else CertExpiry.objects.none()
     advisories = CiscoAdvisory.objects.filter(status='Open').order_by('date')     if settings_obj.show_field_advisories else CiscoAdvisory.objects.none()
@@ -101,7 +99,6 @@ def oncall_incident_print(request):
 def oncall_incident_email(request):
     settings_obj = OnCallSettings.load()
     providers_with_emails = build_providers_with_emails(settings_obj) if settings_obj.show_scheduled_maintenance else []
-    #incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
     incidents = _incidents_for_report(settings_obj)
     certs = CertExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_cert_expiry else CertExpiry.objects.none()
     advisories = CiscoAdvisory.objects.filter(status='Open').order_by('date')     if settings_obj.show_field_advisories else CiscoAdvisory.objects.none()
@@ -120,10 +117,30 @@ def oncall_incident_email(request):
 @login_required(login_url='/accounts/login/')
 def oncall_update_incident_log(request, pk):
     incident = get_object_or_404(OnCallIncident, pk=pk)
-    incident.log = request.POST.get('log', incident.log)
-    incident.user_modified = request.user
-    incident.save()
-    return JsonResponse({'success': True})
+    new_headline = request.POST.get('headline', '').strip()
+    new_log = request.POST.get('log', None)
+    changed = False
+
+    if new_headline:
+        if hasattr(incident._meta.get_field('headline'), 'max_length'):
+            maxlen = incident._meta.get_field('headline').max_length or 255
+            new_headline = new_headline[:maxlen]
+        if new_headline != (incident.headline or ''):
+            incident.headline = new_headline
+            changed = True
+
+    if new_log is not None and new_log != incident.log:
+        incident.log = new_log
+        changed = True
+
+    if changed:
+        incident.user_modified = request.user
+        incident.save()
+
+    return JsonResponse({
+        'success': True,
+        'headline': incident.headline,
+    })
 
 @login_required(login_url='/accounts/login/')
 def oncall_close_incident(request, incident_id):
