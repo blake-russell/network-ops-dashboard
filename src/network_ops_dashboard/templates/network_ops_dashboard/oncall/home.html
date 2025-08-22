@@ -279,7 +279,13 @@
       <strong class="hide-on-print">Created By: {{ incident.user_created.first_name }} {{ incident.user_created.last_name }}</strong><br>
       <strong class="hide-on-print"><b>Modified By:</b> {{ incident.user_modified.first_name }} {{ incident.user_modified.last_name }}</strong> <br>
       <strong style="color:red;">Issue Date:</strong> <strong> {{ incident.date_created }} </strong><br>
-      <strong style="color:red;">Issue Title:</strong> <strong> {{ incident.headline }} </strong><br>
+      <strong style="color:red;">Issue Title:</strong> <strong> {{ incident.headline }} </strong>
+      <strong class="headline-view"> {{ incident.headline }} </strong>
+        <input type="text"
+        class="form-control form-control-sm edit-title hide-on-print"
+        style="display:none; max-width: 600px;"
+        value="{{ incident.headline }}">
+      <br>
       <strong style="color:red;">Status:</strong> <strong> {{ incident.status }} </strong><br>
       <div class="log-content">
         <pre>{{ incident.log }}</pre>
@@ -390,32 +396,47 @@
 </div>
 
 <script>
-$(document).ready(function() {
-  $('.edit-button').click(function() {
-    let container = $(this).closest('.incident');
-    container.find('pre').hide();
-    container.find('.edit-log').show();
-    $(this).hide();
-    container.find('.save-button').show();
-    container.find('.close-button').hide();
-  });
-
-  $('.save-button').click(function() {
-    let container = $(this).closest('.incident');
-    let id = container.data('id');
-    let log = container.find('.edit-log').val();
-    $.post(`/oncall/update/${id}/`, {log: log, csrfmiddlewaretoken: '{{ csrf_token }}'}, function(response) {
-      if (response.success) {
-        container.find('pre').text(log).show();
-        container.find('.edit-log').hide();
-        container.find('.save-button').hide();
-        container.find('.edit-button').show();
-        container.find('.close-button').show();
-      }
+  $(document).ready(function() {
+    $('.edit-button').click(function() {
+      let container = $(this).closest('.incident');
+      // Toggle text -> inputs
+      container.find('.headline-view').hide();
+      container.find('.edit-title').show().focus();
+  
+      container.find('pre').hide();
+      container.find('.edit-log').show();
+  
+      $(this).hide();
+      container.find('.save-button').show();
+      container.find('.close-button').hide();
+    });
+  
+    $('.save-button').click(function() {
+      let container = $(this).closest('.incident');
+      let id = container.data('id');
+  
+      let headline = container.find('.edit-title').val() || '';
+      let log = container.find('.edit-log').val();
+  
+      $.post(`/oncall/update/${id}/`,
+        { headline: headline, log: log, csrfmiddlewaretoken: '{{ csrf_token }}' },
+        function(response) {
+          if (response.success) {
+            // Update UI with saved values
+            container.find('.headline-view').text(response.headline).show();
+            container.find('.edit-title').hide();
+            container.find('pre').text(log).show();
+            container.find('.edit-log').hide();
+            container.find('.save-button').hide();
+            container.find('.edit-button').show();
+            container.find('.close-button').show();
+          }
+        }
+      );
     });
   });
-});
-</script>
+  </script>
+  
 
 {% if site_settings %}
   <script>

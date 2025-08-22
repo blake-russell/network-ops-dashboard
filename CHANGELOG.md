@@ -2,6 +2,7 @@
 
 ## v0.2.4 - 08-22-2025
 - 🆕 Dashboard: Added ASAVPN Stats Configuration.
+- 🖥️ On-call: Enable modification of incident titles.
 
 ## v0.2.3 - 08-21-2025
 - 🆕 Dashboard: Added SD-WAN/vManage Statistics Card.
