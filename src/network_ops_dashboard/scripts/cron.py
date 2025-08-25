@@ -1,4 +1,3 @@
-# network_ops_dashboard/scripts/cron.py
 from crontab import CronTab
 from django.conf import settings
 from typing import Optional
@@ -12,6 +11,7 @@ COLLECTORS = {
     "send_oncall_email": "send_oncall_email",
     "archive_oncall_closed": "archive_oncall_closed",
     "sdwan_vmanage_stats": "collect_sdwan_stats",
+    "pagerduty_incidents": "collect_pd_incidents",
 }
 
 def _job_comment(key: str) -> str:

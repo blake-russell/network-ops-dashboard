@@ -58,7 +58,24 @@ class DeviceTagForm(forms.ModelForm):
 class NetworkCredentialForm(forms.ModelForm):
     class Meta:
         model = NetworkCredential
-        fields = ('username_search_field', 'username', 'password')
-    username_search_field = forms.CharField(label="Username Title:", max_length=100, required=True)
-    username = forms.CharField(label="Username:", max_length=100, required=True)
-    password = forms.CharField(label="Password:", max_length=100, widget=forms.PasswordInput(render_value = True), required=True)
+        fields = ('username_search_field', 'username', 'password', 'api_key')
+
+    username_search_field = forms.CharField(label="Credential Name:", max_length=100, required=True)
+    username = forms.CharField(label="Username:", max_length=100, required=False)
+    password = forms.CharField(label="Password:", max_length=100,widget=forms.PasswordInput(render_value=True),required=False)
+    api_key = forms.CharField(label="API Key:", help_text="Enter API Key or User/Pass Combo.", max_length=300, required=False)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        username = cleaned_data.get("username")
+        password = cleaned_data.get("password")
+        api_key = cleaned_data.get("api_key")
+
+        if not api_key:
+            # API key not provided → require username & password
+            if not username:
+                self.add_error("username", "Username is required if no API key is provided.")
+            if not password:
+                self.add_error("password", "Password is required if no API key is provided.")
+
+        return cleaned_data

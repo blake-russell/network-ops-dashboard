@@ -24,7 +24,7 @@ class Command(BaseCommand):
         from network_ops_dashboard.reports.changes.scripts.processchangesemail import ProcessChangesEmails
 
         flags = FeatureFlags.load()
-        if not flags.enable_email_processing and not opts["force"]:
+        if not flags.enable_email_processing:
             logger.info("Email processing disabled. Exiting.")
             return
         
@@ -68,8 +68,5 @@ class Command(BaseCommand):
         # Process Changes Emails
         logger.info(f"Cronjob: Process Changes Emails")
         ProcessChangesEmails()
-        
-        flags.email_processing_last_run = timezone.now()
-        flags.save(update_fields=["email_processing_last_run", "updated_at"])
 
         logger.info("Email processing completed.")

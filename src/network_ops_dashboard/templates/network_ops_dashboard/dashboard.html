@@ -40,7 +40,7 @@
             <div class="card-header text-center"><strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong></div>
             <div class="card-body"
             hx-get="{% url 'asavpn_card_partial_htmx' %}" 
-            hx-trigger="load, every 75s" 
+            hx-trigger="every {{ feature_flags.asa_vpn_interval_minutes|default:5 }}m" 
             hx-swap="innerHTML">
               {% include 'network_ops_dashboard/asavpn/cards.html' with card_asa_vpn_stats=card_asa_vpn_stats %}
             </div>
@@ -53,9 +53,25 @@
               <div class="card-header text-center"><strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong></div>
                 <div class="card-body"
                 hx-get="{% url 'sdwan_card_partial_htmx' %}" 
-                hx-trigger="load, every 75s" 
+                hx-trigger="every {{ feature_flags.sdwan_interval_minutes|default:5 }}m" 
                 hx-swap="innerHTML">
                   {% include 'network_ops_dashboard/sdwan/vmanage/cards.html' with sdwan_top_sites=sdwan_top_sites %}
+                </div>
+            </div>
+          </div>
+        {% endif %}
+      {% elif cid == "pagerduty_incidents" %}
+        {% if feature_flags.enable_pd_alarms %}
+          <div class="col-md-4 mb-4 dashboard-card" data-card-id="pagerduty">
+            <div class="card h-100">
+              <div class="card-header text-center"><strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong></div>
+                <div class="card-body p-2"
+                  id="pagerduty-card"
+                  hx-get="{% url 'pagerduty_card_partial_htmx' %}"
+                  hx-trigger="every {{ pd_cfg.min_interval_minutes|default:5 }}m"
+                  hx-target="#pagerduty-card"
+                  hx-swap="innerHTML">
+                    {% include 'network_ops_dashboard/notices/pagerduty/cards.html' with rows=pagerduty_incidents %}
                 </div>
             </div>
           </div>
@@ -222,6 +238,62 @@
             </div>
           </div>
         
+					<!-- PagerDuty Incidents -->
+					<div class="accordion-item">
+            <h2 class="accordion-header" id="pdHeading">
+              <button class="accordion-button collapsed py-2" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#pdCollapse"
+                  aria-expanded="false" aria-controls="pdCollapse">
+              <strong>PagerDuty Incidents</strong>
+              </button>
+            </h2>
+            <div id="pdCollapse" class="accordion-collapse collapse"
+              aria-labelledby="pdHeading" data-bs-parent="#cfgAccordion">
+              <div class="accordion-body">
+              <div class="row g-2 align-items-center mb-2">
+                <div class="col-auto">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="ff-pd"
+                    {% if feature_flags.enable_pd_alarms %}checked{% endif %}>
+                  <label class="form-check-label" for="ff-pd">Enable</label>
+                </div>
+                </div>
+                <div class="col-auto">
+                  <label class="form-label">{{ pagerduty_form.min_interval_minutes.label }}</label>
+                  {{ pagerduty_form.min_interval_minutes }}
+                </div>
+              </div>
+            
+              <div class="row g-3">
+                <div class="col-md-6">
+                <label class="form-label">{{ pagerduty_form.credential.label }}</label>
+                {{ pagerduty_form.credential }}
+                </div>
+                <div class="col-md-6">
+                <label class="form-label">{{ pagerduty_form.service_ids_csv.label }}</label>
+                {{ pagerduty_form.service_ids_csv }}
+                <div class="form-text">{{ pagerduty_form.service_ids_csv.help_text }}</div>
+                </div>
+              </div>
+            
+              <div class="row g-3 mt-1">
+                <div class="col-md-4">
+                <label class="form-label">{{ pagerduty_form.urgency_filter.label }}</label>
+                {{ pagerduty_form.urgency_filter }}
+                </div>
+                <div class="col-md-4">
+                <label class="form-label">{{ pagerduty_form.top_n.label }}</label>
+                {{ pagerduty_form.top_n }}
+                </div>
+                <div class="col-md-4">
+                <label class="form-label">{{ pagerduty_form.verify_ssl.label }}</label><br>
+                {{ pagerduty_form.verify_ssl }}
+                </div>
+              </div>
+              </div>
+            </div>
+          </div>
+
         </div>
         {% endif %}
         
@@ -302,6 +374,28 @@
 
       await fetch("{% url 'dashboard_sdwan_settings_save' %}", { method: 'POST', body: fdSdwan });
     }
+
+		// == PagerDuty ==
+		const fdPd = new FormData();
+		fdPd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+		
+		// feature toggle + interval
+    fdPd.append('enabled_pagerduty', document.getElementById('ff-pd')?.checked ? 'true' : 'false');
+    const intPd = document.getElementById('ff-pd-interval');
+    fdPd.append('pagerduty_interval', intPd && intPd.value ? intPd.value : '');
+		
+    // collect all PagerDuty form fields (prefixed)
+    const pdSection = document.getElementById('pdCollapse');
+    pdSection.querySelectorAll('[name^="pagerduty-"]').forEach(el => {
+      if (el.type === 'checkbox') {
+        fdPd.append(el.name, el.checked ? 'on' : '');
+      } else {
+        fdPd.append(el.name, el.value ?? '');
+      }
+    });
+		
+		await fetch("{% url 'dashboard_pagerduty_settings_save' %}", { method: 'POST', body: fdPd });
+
     {% endif %}
 
     window.location.reload();
