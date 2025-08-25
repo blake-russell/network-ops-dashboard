@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.2.5 - 08-25-2025
+- 🆕 Dashboard: Added PagerDuty Incident Card Integration.
+
 ## v0.2.4 - 08-22-2025
 - 🆕 Dashboard: Added ASAVPN Stats Configuration.
 - 🖥️ On-call: Enable modification of incident titles.

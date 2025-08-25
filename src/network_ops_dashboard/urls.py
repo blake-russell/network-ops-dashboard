@@ -37,6 +37,7 @@ urlpatterns = [
     re_path(r'^dashboard/set/email_time/$', views.dashboard_set_email_time, name='dashboard_set_email_time'),
     re_path(r'^dashboard/asavpn/save/$', views.dashboard_asa_vpn_settings_save, name='dashboard_asa_vpn_settings_save'),
     re_path(r'^dashboard/sdwan/save/$', views.dashboard_sdwan_settings_save, name='dashboard_sdwan_settings_save'),
+    re_path(r'^dashboard/pagerduty/save/$', views.dashboard_pagerduty_settings_save, name='dashboard_pagerduty_settings_save'),
     re_path(r'^public_scripts/$', views.public_scripts, name='public_scripts'),
     re_path(r'^protected_media/(?P<path>.*)', views.protected_media, name='protected_media'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
@@ -54,4 +55,5 @@ urlpatterns += [
     re_path(r'^notices/certexpiry/', include('network_ops_dashboard.notices.certexpiry.urls')),
     re_path(r'^notices/ciscoadvisory/', include('network_ops_dashboard.notices.ciscoadvisory.urls')),
     re_path(r'^notices/svcactexpiry/', include('network_ops_dashboard.notices.svcactexpiry.urls')),
+    re_path(r'^notices/pagerduty/', include('network_ops_dashboard.notices.pagerduty.urls')),
 ]
