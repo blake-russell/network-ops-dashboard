@@ -14,6 +14,7 @@ class NetworkCredential(models.Model):
     password = encrypt(models.CharField(max_length=100))
     username_lookup = models.CharField(max_length=100, blank=True)
     username_search_field = models.CharField(max_length=100, blank=False, unique=True)
+    api_key = models.CharField(max_length=300, blank=True)
     def save(self, *args, **kwargs):
         self.username_lookup = self.username
         super().save(*args, **kwargs)
@@ -71,6 +72,7 @@ class FeatureFlags(models.Model):
     enable_sdwan_cards = models.BooleanField(default=False)
     sdwan_interval_minutes = models.PositiveIntegerField(default=5)
     sdwan_stats_last_run = models.DateTimeField(null=True, blank=True)
+    enable_pd_alarms = models.BooleanField(default=False)
 
     # Add new feature settings or features to enable
 

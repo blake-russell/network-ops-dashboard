@@ -15,7 +15,7 @@ class Command(BaseCommand):
 
         s = SdwanSettings.load()
         flags = FeatureFlags.load()
-        if not s.card_enabled and flags.enable_sdwan_cards:
+        if not s.card_enabled or not flags.enable_sdwan_cards:
             logger.info("SD-WAN: disabled; skipping.")
             return
         if not s.host:

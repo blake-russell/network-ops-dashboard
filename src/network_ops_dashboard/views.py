@@ -19,6 +19,8 @@ from network_ops_dashboard.asavpn.models import AsaVpnSettings
 from network_ops_dashboard.notices.svcactexpiry.models import SvcActExpiry
 from network_ops_dashboard.notices.ciscoadvisory.models import CiscoAdvisory
 from network_ops_dashboard.notices.certexpiry.models import CertExpiry
+from network_ops_dashboard.notices.pagerduty.models import PagerDutySettings, PagerDutyIncident
+from network_ops_dashboard.notices.pagerduty.forms import PagerDutySettingsForm
 from network_ops_dashboard.sdwan.vmanage.models import SdwanSettings
 from network_ops_dashboard.sdwan.vmanage.forms import SDWANSettingsForm
 from network_ops_dashboard.asavpn.forms import AsaVpnSettingsForm
@@ -93,6 +95,7 @@ def dashboard(request):
     flags = FeatureFlags.load()
     sdwan_settings = SdwanSettings.load()
     asa_settings = AsaVpnSettings.load()
+    pd_cfg = PagerDutySettings.load()
     
     site_settings = SiteSettings.objects.first()
     timecutoff = timezone.now() - timedelta(days=7)
@@ -102,7 +105,19 @@ def dashboard(request):
     new_ciscoadvisory = CiscoAdvisory.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
     changelog = parse_changelog()
 
-    # ASA stats only if globally enabled
+    # PagerDuty Incidents
+    if flags.enable_pd_alarms:
+        qs = PagerDutyIncident.objects.filter(active=True)
+        service_ids = [s.strip() for s in (pd_cfg.service_ids_csv or "").split(",") if s.strip()]
+        if service_ids:
+            qs = qs.filter(service_id__in=service_ids)
+        if pd_cfg.urgency_filter in ("high", "low"):
+            qs = qs.filter(urgency__iexact=pd_cfg.urgency_filter)
+        pagerduty_incidents = qs.order_by("-last_status_at")[:pd_cfg.top_n]
+    else:
+        pagerduty_incidents = []
+
+    # ASA stats
     if flags.enable_asa_vpn_stats:
         n = max(int(asa_settings.top_n or 10), 1)
         asa_stats = (
@@ -121,9 +136,10 @@ def dashboard(request):
 
     all_cards = [
         {"id": "changelog", "title": "Recent Site Changes", "required": False},
-        {"id": "notifications", "title": "Notifications & Alarms", "required": False},
+        {"id": "notifications", "title": "Notifications", "required": False},
         {"id": "asa_vpn_stats", "title": f"ASA: VPN Stats (Last {flags.asa_vpn_interval_minutes}m)", "required": False, "requires_feature": "enable_asa_vpn_stats"},
         {"id": "enable_sdwan_cards", "title": f"vManage: Site Stats (Highest Average Last {sdwan_settings.last_n}m)", "required": False, "requires_feature": "enable_sdwan_cards"},
+        {"id": "pagerduty_incidents", "title": f"Pagerduty Incidents", "required": False, "requires_feature": "enable_pd_alarms"},
     ]
 
     for c in all_cards:
@@ -183,7 +199,10 @@ def dashboard(request):
         "asa_settings_form": AsaVpnSettingsForm(prefix="asa", instance=asa_settings),
         "sdwan_top_sites": top_sites_by_latency(sdwan_settings.top_n, sdwan_settings.last_n) if flags.enable_sdwan_cards and sdwan_settings.card_enabled and sdwan_settings.host else [],
         "sdwan_cfg": sdwan_settings,
-        "sdwan_settings_form": SDWANSettingsForm(prefix="sdwan", instance=sdwan_settings)
+        "sdwan_settings_form": SDWANSettingsForm(prefix="sdwan", instance=sdwan_settings),
+        "pagerduty_incidents": pagerduty_incidents,
+        "pagerduty_form": PagerDutySettingsForm(instance=pd_cfg, prefix="pagerduty"),
+        "pd_cfg": pd_cfg,
     })
 
 @login_required(login_url='/accounts/login/')
@@ -200,6 +219,7 @@ def dashboard_save_prefs(request):
         {"id": "changelog", "required": False},
         {"id": "asa_vpn_stats", "required": False, "requires_feature": "enable_asa_vpn_stats"},
         {"id": "enable_sdwan_cards", "required": False, "requires_feature": "enable_sdwan_cards"},
+        {"id": "pagerduty_incidents", "title": "Pagerduty Incidents", "required": False, "requires_feature": "enable_pd_alarms"},
     ]
     default_order = [c["id"] for c in all_cards]
     required_ids = {c["id"] for c in all_cards if c.get("required")}
@@ -302,6 +322,7 @@ def dashboard_asa_vpn_settings_save(request):
 @require_POST
 def dashboard_sdwan_settings_save(request):
     flags = FeatureFlags.load()
+    settings_obj = SdwanSettings.load()
     enabled = request.POST.get("enabled_sdwan") in ("true", "on", "1", "yes")
     interval_raw = (request.POST.get("sdwan_interval") or "").strip()
     try:
@@ -309,22 +330,45 @@ def dashboard_sdwan_settings_save(request):
     except ValueError:
         return JsonResponse({"ok": False, "error": "Invalid interval"}, status=400)
 
-    flags.enable_sdwan_cards = enabled
-    flags.sdwan_interval_minutes = interval
+    flags.enable_sdwan_cards, flags.sdwan_interval_minutes = enabled, interval
     flags.save(update_fields=["enable_sdwan_cards", "sdwan_interval_minutes"])
-    settings_obj = SdwanSettings.load()
     form = SDWANSettingsForm(request.POST, prefix="sdwan", instance=settings_obj)
     if not form.is_valid():
         return JsonResponse({"ok": False, "errors": form.errors}, status=400)
 
-    s = form.save(commit=False)
-    s.card_enabled = enabled
-    s.save()
+    form.save().card_enabled = enabled
+    form.save()
 
-    if s.card_enabled:
+    if settings_obj.card_enabled:
         ensure_minutely_cron("sdwan_vmanage_stats")
     else:
         #try: remove_cron("sdwan_vmanage_stats")
+        #except Exception: pass
+        pass
+
+    return JsonResponse({"ok": True})
+
+@staff_member_required
+@require_POST
+def dashboard_pagerduty_settings_save(request):
+    flags = FeatureFlags.load()
+    settings_obj = PagerDutySettings.load()
+    enabled = request.POST.get("enabled_pagerduty") in ("true", "on", "1", "yes")
+
+    flags.enable_pd_alarms = enabled
+    flags.save(update_fields=["enable_pd_alarms"])
+    form = PagerDutySettingsForm(request.POST, prefix="pagerduty", instance=settings_obj)
+
+    if not form.is_valid():
+        return JsonResponse({"ok": False, "errors": form.errors}, status=400)
+
+    form.save().enabled = enabled
+    form.save()
+
+    if settings_obj.enabled:
+        ensure_minutely_cron("pagerduty_incidents")
+    else:
+        #try: remove_cron("pagerduty_incidents")
         #except Exception: pass
         pass
 
