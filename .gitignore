@@ -24,6 +24,7 @@ src/network_ops_dashboard/migrations
 
 # Ignore temporary files created by editors
 __pycache__/
+.vscode
 
 # Ignore one-off personal script(s)
 src/network_ops_dashboard/scripts/processchangesemails.py
