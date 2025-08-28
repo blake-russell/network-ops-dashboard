@@ -1,0 +1,33 @@
+{% if rows %}
+  <table class="table table-borderless mb-0">
+    <thead>
+      <tr>
+        <th>Device</th>
+        <th>Type</th>
+        <th>Detail</th>
+        <th class="text-end">Last Seen</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for a in rows %}
+      <tr>
+        <td>{{ a.device.name }}</td>
+        <td>
+          {% if a.alert_type == "DEVICE_DOWN" %}Device Down
+          {% elif a.alert_type == "IF_DOWN" %}Interface Down
+          {% elif a.alert_type == "IF_ERRORS" %}High Errors
+          {% else %}{{ a.alert_type }}{% endif %}
+        </td>
+        <td>
+          {% if a.interface_name %}<code>{{ a.interface_name }}</code>{% endif %}
+          {% if a.metric_value %} &middot; {{ a.metric_value }}% errors{% endif %}
+          {% if a.note %}<br><small class="text-muted">{{ a.note }}</small>{% endif %}
+        </td>
+        <td class="text-end"><small class="text-muted">{{ a.last_seen_at|date:"m-d-Y H:i" }}</small></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <div class="text-muted">No active Statseeker alerts.</div>
+{% endif %}

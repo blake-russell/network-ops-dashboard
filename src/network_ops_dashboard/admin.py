@@ -10,6 +10,7 @@ from network_ops_dashboard.notices.certexpiry.models import *
 from network_ops_dashboard.notices.ciscoadvisory.models import *
 from network_ops_dashboard.notices.svcactexpiry.models import *
 from network_ops_dashboard.notices.pagerduty.models import *
+from network_ops_dashboard.notices.statseeker.models import *
 from network_ops_dashboard.inventory.models import *
 from network_ops_dashboard.apic.models import *
 from network_ops_dashboard.oncall.models import *
@@ -46,6 +47,8 @@ admin.site.register(SdwanPathStat)
 admin.site.register(AsaVpnSettings)
 admin.site.register(PagerDutySettings)
 admin.site.register(PagerDutyIncident)
+admin.site.register(StatseekerSettings)
+admin.site.register(StatseekerAlert)
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):

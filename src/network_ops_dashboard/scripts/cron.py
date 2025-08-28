@@ -12,6 +12,7 @@ COLLECTORS = {
     "archive_oncall_closed": "archive_oncall_closed",
     "sdwan_vmanage_stats": "collect_sdwan_stats",
     "pagerduty_incidents": "collect_pd_incidents",
+    "statseeker_alarms": "collect_statseeker_alarms",
 }
 
 def _job_comment(key: str) -> str:
