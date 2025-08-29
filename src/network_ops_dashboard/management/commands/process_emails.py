@@ -69,4 +69,4 @@ class Command(BaseCommand):
         logger.info(f"Cronjob: Process Changes Emails")
         ProcessChangesEmails()
 
-        logger.info("Email processing completed.")
+        logger.info("Cronjob: Email processing completed.")

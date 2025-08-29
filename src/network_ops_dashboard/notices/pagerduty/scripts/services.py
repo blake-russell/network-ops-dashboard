@@ -1,10 +1,11 @@
 import requests
+import logging
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
-from django.core.cache import cache
 from network_ops_dashboard.notices.pagerduty.models import PagerDutySettings, PagerDutyIncident 
 
 PD_BASE = "https://api.pagerduty.com"
+logger = logging.getLogger('network_ops_dashboard.pagerduty')
 
 def _dt_or_now(s):
     dt = parse_datetime(s) if isinstance(s, str) else s

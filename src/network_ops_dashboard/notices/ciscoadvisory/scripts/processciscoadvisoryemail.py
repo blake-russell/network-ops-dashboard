@@ -1,123 +1,184 @@
 import os
 import base64
+import re
 import logging
-from datetime import datetime
+from django.utils import timezone
+from datetime import datetime, date
+from typing import Optional, List, Dict
 from email import policy
 from email.parser import BytesParser
 from bs4 import BeautifulSoup
+from typing import Tuple
+from email.message import Message
 from network_ops_dashboard.models import *
 from network_ops_dashboard.notices.ciscoadvisory.models import *
 
 logger = logging.getLogger('network_ops_dashboard.ciscoadvisory')
 
-def decode_email(encoded_content):
-    for part in encoded_content.walk():
-        content_type = part.get_content_type()
-        # content_disposition = part.get("Content-Disposition", "")
-        content_transfer_encoding = part.get("Content-Transfer-Encoding", "").lower()
-        # Look for text parts that are base64 encoded
-        if content_type in ["text/plain", "text/html"] and content_transfer_encoding == "base64":
-            payload = part.get_payload()  # this will still be base64 encoded
-            decoded_bytes = base64.b64decode(payload)
-            try:
-                decoded_content = decoded_bytes.decode(part.get_content_charset() or 'utf-8', errors='replace')
-                return decoded_content
-            except Exception as e:
-                logger.exception(f"ProcessCiscoAdvisoryEmails: Failed to decode email: {e}")
-                raise
+def _clean_text(s):
+    if not s:
+        return ""
+    s = s.replace('\xa0', ' ').replace('Â', ' ')
+    return re.sub(r'\s+', ' ', s).strip()
 
-def clean_text(text):
-    return ' '.join(text.replace('\xa0', ' ').split())
+def _norm_label(s):
+    s = _clean_text(s).rstrip(':')
+    return s.lower()
+
+def _parse_date(s):
+    s = _clean_text(s)
+    for fmt in ("%d-%b-%Y", "%Y-%m-%d", "%b %d, %Y"):
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            pass
+    return timezone.now().date()
+
+def _first_href_in(el):
+    a = el.find("a")
+    if a and a.has_attr("href"):
+        return a["href"]
+    return None
+
+def read_html_from_message(fp):
+    msg = BytesParser(policy=policy.default).parse(fp)
+    best = None
+    for part in msg.walk():
+        ctype = part.get_content_type()
+        if ctype == "text/html":
+            best = part
+            break
+        if ctype == "text/plain" and best is None:
+            best = part
+    if not best:
+        return None
+    try:
+        return best.get_content()
+    except Exception as e:
+        logger.exception("ProcessCiscoAdvisoryEmails: Failed to extract content: %s", e)
+        return None
+
+def extract_advisory_blocks(html):
+    soup = BeautifulSoup(html, "html.parser")
+    blocks = []
+
+    h3s = soup.find_all("h3")
+    if not h3s:
+        for tab in soup.find_all("table"):
+            block = _parse_advisory_table(None, tab)
+            if block:
+                blocks.append(block)
+        return blocks
+
+    for h3 in h3s:
+        short_title = _clean_text(h3.get_text())
+        table = h3.find_next("table")
+        if not table:
+            continue
+        block = _parse_advisory_table(short_title, table)
+        if block:
+            blocks.append(block)
+
+    return blocks
+
+def _parse_advisory_table(short_title, table):
+    rows = table.find_all("tr")
+    data = {
+        "short_title": short_title or "",
+        "long_title": "",
+        "long_title_url": None,
+        "impact_rating": "Unknown",
+        "description": "",
+        "date": timezone.now().date(),
+    }
+
+    for r in rows:
+        tds = r.find_all("td")
+        if len(tds) < 2:
+            continue
+        label = _norm_label(tds[0].get_text())
+        value_td = tds[1]
+
+        if label.startswith("title"):
+            a = value_td.find("a")
+            data["long_title"] = _clean_text(a.get_text()) if a else _clean_text(value_td.get_text())
+            if a and a.has_attr("href"):
+                data["long_title_url"] = a["href"]
+            if not data["short_title"]:
+                data["short_title"] = data["long_title"][:100]
+        elif label.startswith("impact"):
+            data["impact_rating"] = _clean_text(value_td.get_text())
+        elif label.startswith("description"):
+            data["description"] = _clean_text(' '.join(value_td.stripped_strings))
+            if not data["long_title_url"]:
+                href = None
+                for a in value_td.find_all("a", href=True):
+                    if "CiscoSecurityAdvisory" in a["href"]:
+                        href = a["href"]
+                        break
+                data["long_title_url"] = href or _first_href_in(value_td)
+        elif label.startswith("date"):
+            data["date"] = _parse_date(value_td.get_text())
+
+    if not data["short_title"] and not data["long_title"]:
+        return None
+    return data
+
+def save_blocks(blocks):
+    created = 0
+    for b in blocks:
+        title_short = b.get("short_title") or (b.get("long_title") or "")[:100]
+        dt = b.get("date") or timezone.now().date()
+        defaults = dict(
+            title=b.get("long_title") or title_short,
+            impact_rating=b.get("impact_rating") or "Unknown",
+            description=b.get("description") or "",
+            url=b.get("long_title_url") or "",
+            date=dt,
+            status="Open",
+        )
+        obj, made = CiscoAdvisory.objects.get_or_create(
+            title_short=title_short,
+            date=dt,
+            defaults=defaults,
+        )
+        if not made:
+            changed = False
+            for f, v in defaults.items():
+                if v and getattr(obj, f) != v:
+                    setattr(obj, f, v)
+                    changed = True
+            if changed:
+                obj.save()
+        else:
+            created += 1
+            logger.info("ProcessCiscoAdvisoryEmails: Created %s (%s)", title_short, dt)
+    return created
+
 
 def ProcessCiscoAdvisoryEmails():
-    logger.info(f"ProcessCiscoAdvisoryEmails Running.")
+    logger.info("ProcessCiscoAdvisoryEmails running.")
     try:
         folder_path = SiteSecrets.objects.filter(varname='ciscoadvisory_folder')[0].varvalue
     except Exception as e:
         logger.exception(f"ProcessCiscoAdvisoryEmails: No 'ciscoadvisory_folder' set in SiteSecrets.objects(): {e}")
         raise
+
     for filename in os.listdir(folder_path):
-        file_path = os.path.join(folder_path, filename)
-        if os.path.isfile(file_path) and filename.endswith('.msg'):
-            try:
-                with open(file_path, 'rb') as email:
-                    logger.info(f"ProcessCiscoAdvisoryEmails: Processing CiscoAdvisory Email {filename}.")
-                    #split the email
-                    encoded_content = BytesParser(policy=policy.default).parse(email)
-
-                    for part in encoded_content.walk():
-                        content_type = part.get_content_type()
-                        # content_disposition = part.get("Content-Disposition", "")
-                        content_transfer_encoding = part.get("Content-Transfer-Encoding", "").lower()
-                        # Look for text parts that are base64 encoded
-                        if content_type in ["text/plain", "text/html"] and content_transfer_encoding == "base64":
-                            payload = part.get_payload()  # this will still be base64 encoded
-                            decoded_bytes = base64.b64decode(payload)
-                            try:
-                                decoded_content = decoded_bytes.decode(part.get_content_charset() or 'utf-8', errors='replace')
-                            except Exception as e:
-                                logger.exception(f"ProcessCiscoAdvisoryEmails: Failed to decode email {filename}: {e}")
-                                raise
-                    
-                    # soup = BeautifulSoup(decode_email(encoded_content), 'html.parser')
-                    soup = BeautifulSoup(decoded_content, 'html.parser')
-                    data_blocks = []
-
-                    for h3 in soup.find_all('h3'):
-                        content = {}
-                        content['short_title'] = h3.get_text(strip=True).replace('\xa0', ' ')
-                        table = h3.find_next("table")
-                        rows = table.find_all("tr")
-
-                        for row in rows:
-                            cells = row.find_all("td")
-                            if len(cells) < 2:
-                                continue
-
-                            label = clean_text(cells[0].get_text())
-                            value_td = cells[1]
-
-                            if "Title:" in label:
-                                link = value_td.find("a")
-                                content["long_title"] = clean_text(link.get_text()) if link else clean_text(value_td.get_text())
-                                content["long_title_url"] = link['href'] if link and link.has_attr('href') else None
-                            elif "Impact Rating:" in label:
-                                content["impact_rating"] = value_td.get_text(strip=True).replace('\xa0', ' ')
-                            elif "Description:" in label:
-                                full_text = ' '.join(value_td.stripped_strings)
-                                content["description"] = clean_text(full_text)
-                            elif "Date:" in label:
-                                date_str = clean_text(value_td.get_text())
-                                try:
-                                    content["date"] = datetime.strptime(date_str, "%d-%b-%Y").date()
-                                except ValueError:
-                                    content["date"] = datetime.today()
-
-                        data_blocks.append(content)
-
-                    for block in data_blocks:
-                        exists = CiscoAdvisory.objects.filter(
-                            title_short = block["short_title"],
-                            date = block["date"]
-                        ).exists()
-                        try:
-                            if not exists:
-                                CiscoAdvisory.objects.create(
-                                    title_short = block["short_title"],
-                                    title = block.get("long_title"),
-                                    url = block.get("long_title_url"),
-                                    impact_rating = block.get("impact_rating"),
-                                    description = block.get("description"),
-                                    date = block["date"]
-                                )
-                                logger.info(f"ProcessCiscoAdvisoryEmails: CiscoAdvisory object created: {block['short_title']}")
-                            else:
-                                logger.info(f"ProcessCiscoAdvisoryEmails: CiscoAdvisory object already exists: {block['short_title']}")
-                        except Exception as e:
-                            logger.exception(f"ProcessCiscoAdvisoryEmails: CiscoAdvisory object already exists for: {block['short_title']}. {e}")
-
-            except Exception as e:
-                logger.exception(f"ProcessCiscoAdvisoryEmails: Exception Processing CiscoAdvisory Email {filename}. {e}")
+        path = os.path.join(folder_path, filename)
+        if not (os.path.isfile(path) and filename.lower().endswith(('.eml', '.msg'))):
+            continue
+        try:
+            with open(path, 'rb') as fp:
+                html = read_html_from_message(fp)
+            if not html:
+                logger.warning("ProcessCiscoAdvisoryEmails: No HTML body found in %s; skipping.", filename)
                 continue
-        os.remove(file_path)
-    return None
+            blocks = extract_advisory_blocks(html)
+            if not blocks:
+                logger.warning("ProcessCiscoAdvisoryEmails: No advisory tables found in %s.", filename)
+                continue
+            n = save_blocks(blocks)
+            logger.info("ProcessCiscoAdvisoryEmails: %s: parsed %d blocks, created %d.", filename, len(blocks), n)
+        except Exception as e:
+            logger.exception("ProcessCiscoAdvisoryEmails: Failed processing %s: %s", filename, e)

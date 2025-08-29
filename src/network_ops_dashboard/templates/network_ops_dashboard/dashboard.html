@@ -39,8 +39,10 @@
           <div class="card h-100">
             <div class="card-header text-center"><strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong></div>
             <div class="card-body"
+            id="asavpn-card"
             hx-get="{% url 'asavpn_card_partial_htmx' %}" 
-            hx-trigger="every {{ feature_flags.asa_vpn_interval_minutes|default:5 }}m" 
+            hx-trigger="load, every {{ feature_flags.asa_vpn_interval_minutes|default:5 }}m"
+            hx-target="#asavpn-card"
             hx-swap="innerHTML">
               {% include 'network_ops_dashboard/asavpn/cards.html' with card_asa_vpn_stats=card_asa_vpn_stats %}
             </div>
@@ -52,8 +54,10 @@
             <div class="card h-100">
               <div class="card-header text-center"><strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong></div>
                 <div class="card-body"
+                id="sdwan-card"
                 hx-get="{% url 'sdwan_card_partial_htmx' %}" 
-                hx-trigger="every {{ feature_flags.sdwan_interval_minutes|default:5 }}m" 
+                hx-trigger="load, every {{ feature_flags.sdwan_interval_minutes|default:5 }}m"
+                hx-target="#sdwan-card"
                 hx-swap="innerHTML">
                   {% include 'network_ops_dashboard/sdwan/vmanage/cards.html' with sdwan_top_sites=sdwan_top_sites %}
                 </div>
@@ -68,10 +72,26 @@
                 <div class="card-body p-2"
                   id="pagerduty-card"
                   hx-get="{% url 'pagerduty_card_partial_htmx' %}"
-                  hx-trigger="every {{ pd_cfg.min_interval_minutes|default:5 }}m"
+                  hx-trigger="load, every {{ pd_cfg.min_interval_minutes|default:5 }}m"
                   hx-target="#pagerduty-card"
                   hx-swap="innerHTML">
                     {% include 'network_ops_dashboard/notices/pagerduty/cards.html' with rows=pagerduty_incidents %}
+                </div>
+            </div>
+          </div>
+        {% endif %}
+      {% elif cid == "statseeker_alarms" %}
+        {% if feature_flags.enable_statseeker_alarms %}
+          <div class="col-md-4 mb-4 dashboard-card" data-card-id="statseeker_alarms">
+            <div class="card h-100">
+              <div class="card-header text-center"><strong>{% for t in all_cards %}{% if t.id == cid %}{{ t.title }}{% endif %}{% endfor %}</strong></div>
+                <div class="card-body p-2"
+                  id="statseeker-card"
+                  hx-get="{% url 'statseeker_card_partial_htmx' %}"
+                  hx-trigger="load, every {{ ss_cfg.min_interval_minutes|default:5 }}m"
+                  hx-target="#statseeker-card"
+                  hx-swap="innerHTML">
+                    {% include 'network_ops_dashboard/notices/statseeker/cards.html' with rows=statseeker_rows %}
                 </div>
             </div>
           </div>
@@ -84,225 +104,306 @@
 <!-- Customize modal -->
 <div class="modal fade" id="customizeModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
-    <form class="modal-content" id="prefs-form">
-      <div class="modal-header">
-        <h5 class="modal-title">Customize dashboard</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
+    <div class="modal-content">
+      <form id="prefs-form">
+        <div class="modal-header">
+          <h5 class="modal-title">Customize dashboard</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
 
-      <div class="modal-body">
-        <p class="text-muted small mb-2">Drag to reorder. Uncheck to hide.</p>
-
-        <ul id="card-list" class="list-group">
+        <div class="modal-body">
+          <p class="text-muted small mb-2">Drag to reorder. Uncheck to hide.</p>
+      
+          <ul id="card-list" class="list-group">
           {% for c in all_cards %}
           <li class="list-group-item d-flex justify-content-between align-items-center"
-              data-card-id="{{ c.id }}"
-              {% if c.feature_off %}style="opacity:.5;"{% endif %}>
+            data-card-id="{{ c.id }}"
+            {% if c.feature_off %}style="opacity:.5;"{% endif %}>
             <span class="handle me-2">⠿</span>
             <span class="flex-grow-1">
-              {{ c.title }}
-              {% if c.required %}
-                <span class="badge bg-secondary ms-2">required</span>
-              {% endif %}
-              {% if c.feature_off %}
-                <span class="badge bg-warning text-dark ms-2">feature disabled</span>
-              {% endif %}
+            {{ c.title }}
+            {% if c.required %}
+              <span class="badge bg-secondary ms-2">required</span>
+            {% endif %}
+            {% if c.feature_off %}
+              <span class="badge bg-warning text-dark ms-2">feature disabled</span>
+            {% endif %}
             </span>
             <div class="form-check form-switch">
-              <input class="form-check-input card-toggle"
-                     type="checkbox"
-                     {% if c.id not in hidden_ids %}checked{% endif %}
-                     {% if c.required or c.feature_off %}disabled{% endif %}>
+            <input class="form-check-input card-toggle"
+                type="checkbox"
+                {% if c.id not in hidden_ids %}checked{% endif %}
+                {% if c.required or c.feature_off %}disabled{% endif %}>
             </div>
           </li>
           {% endfor %}
-        </ul>
-
-        {% if request.user.is_staff %}
-        <hr>
-        
-        <div class="accordion accordion-flush" id="cfgAccordion">
-        
-          <!-- ASA VPN Stats -->
-          <div class="accordion-item">
-            <h2 class="accordion-header" id="asaHeading">
+          </ul>
+      
+          {% if request.user.is_staff %}
+          <hr>
+          
+          <div class="accordion accordion-flush" id="cfgAccordion">
+			
+            <!-- ASA VPN Stats -->
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="asaHeading">
               <button class="accordion-button collapsed py-2" type="button"
-                      data-bs-toggle="collapse" data-bs-target="#asaCollapse"
-                      aria-expanded="false" aria-controls="asaCollapse">
-                <strong>ASA VPN Stats</strong>
+                data-bs-toggle="collapse" data-bs-target="#asaCollapse"
+                aria-expanded="false" aria-controls="asaCollapse">
+              <strong>ASA VPN Stats</strong>
               </button>
-            </h2>
-            <div id="asaCollapse" class="accordion-collapse collapse"
-                 aria-labelledby="asaHeading" data-bs-parent="#cfgAccordion">
-              <div class="accordion-body">
-                <div class="row g-2 align-items-center mb-2">
-                  <div class="col-auto">
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="ff-asa"
-                             {% if feature_flags.enable_asa_vpn_stats %}checked{% endif %}>
-                      <label class="form-check-label" for="ff-asa">Enable</label>
-                    </div>
-                  </div>
-                  <div class="col-auto">
-                    <input type="number" class="form-control" id="ff-asa-interval" min="1" max="60"
-                           value="{{ feature_flags.asa_vpn_interval_minutes }}">
-                  </div>
-                  <div class="col-auto">
-                    <label for="ff-asa-interval" class="col-form-label">Interval (minutes)</label>
-                  </div>
-                </div>
-                
-                <div class="row g-3">
-                  <div class="col-md-5">
-                    <label class="form-label">{{ asa_settings_form.device_tag.label }}</label>
-                    {{ asa_settings_form.device_tag }}
-                    <div class="form-text">{{ asa_settings_form.device_tag.help_text }}</div>
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label">{{ asa_settings_form.top_n.label }}</label>
-                    {{ asa_settings_form.top_n }}
-                  </div>
-                  <div class="col-md-3">
-                    <label class="form-label">{{ asa_settings_form.verify_ssl.label }}</label><br>
-                    {{ asa_settings_form.verify_ssl }}
-                  </div>
-                </div>
-                
-              </div>
-            </div>
-          </div>
-        
-          <!-- Cisco SD-WAN Stats -->
-          <div class="accordion-item">
-            <h2 class="accordion-header" id="sdwanHeading">
-              <button class="accordion-button collapsed py-2" type="button"
-                      data-bs-toggle="collapse" data-bs-target="#sdwanCollapse"
-                      aria-expanded="false" aria-controls="sdwanCollapse">
-                <strong>Cisco SD-WAN Stats</strong>
-              </button>
-            </h2>
-            <div id="sdwanCollapse" class="accordion-collapse collapse"
-                 aria-labelledby="sdwanHeading" data-bs-parent="#cfgAccordion">
-              <div class="accordion-body">
-                <div class="row g-2 align-items-center">
-                  <div class="col-auto">
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="ff-sdwan"
-                             {% if feature_flags.enable_sdwan_cards %}checked{% endif %}>
-                      <label class="form-check-label" for="ff-sdwan">Enable</label>
-                    </div>
-                  </div>
-                  <div class="col-auto">
-                    <input type="number" class="form-control" id="ff-sdwan-interval" min="1" max="60"
-                           value="{{ feature_flags.sdwan_interval_minutes }}">
-                  </div>
-                  <div class="col-auto">
-                    <label for="ff-sdwan-interval" class="col-form-label">Interval (minutes)</label>
-                  </div>
-                </div>
-        
-                <div class="row g-3 mt-2">
-                  <div class="col-md-6">
-                    <label class="form-label">{{ sdwan_settings_form.host.label }}</label>
-                    {{ sdwan_settings_form.host }}
-                    <div class="form-text text-muted">
-                      {{ sdwan_settings_form.host.help_text }}
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label">{{ sdwan_settings_form.purge_path_stats.label }}</label>
-                    {{ sdwan_settings_form.purge_path_stats }}
-                  </div>
-                </div>
-        
-                <div class="row g-3 mt-1">
-                  <div class="col-md-6">
-                    <label class="form-label">{{ sdwan_settings_form.top_n.label }}</label>
-                    {{ sdwan_settings_form.top_n }}
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label">{{ sdwan_settings_form.last_n.label }}</label>
-                    {{ sdwan_settings_form.last_n }}
-                  </div>
-                </div>
-        
-                <div class="row g-3 mt-1">
-                  <div class="col-md-6">
-                    <label class="form-label">{{ sdwan_settings_form.verify_ssl.label }}</label>
-                    {{ sdwan_settings_form.verify_ssl }}
-                  </div>
-                  <div class="col-md-6"><!-- spare slot --></div>
-                </div>
-        
-              </div>
-            </div>
-          </div>
-        
-					<!-- PagerDuty Incidents -->
-					<div class="accordion-item">
-            <h2 class="accordion-header" id="pdHeading">
-              <button class="accordion-button collapsed py-2" type="button"
-                  data-bs-toggle="collapse" data-bs-target="#pdCollapse"
-                  aria-expanded="false" aria-controls="pdCollapse">
-              <strong>PagerDuty Incidents</strong>
-              </button>
-            </h2>
-            <div id="pdCollapse" class="accordion-collapse collapse"
-              aria-labelledby="pdHeading" data-bs-parent="#cfgAccordion">
+              </h2>
+              <div id="asaCollapse" class="accordion-collapse collapse"
+              aria-labelledby="asaHeading" data-bs-parent="#cfgAccordion">
               <div class="accordion-body">
               <div class="row g-2 align-items-center mb-2">
-                <div class="col-auto">
+              <div class="col-auto">
                 <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" id="ff-pd"
-                    {% if feature_flags.enable_pd_alarms %}checked{% endif %}>
-                  <label class="form-check-label" for="ff-pd">Enable</label>
-                </div>
-                </div>
-                <div class="col-auto">
-                  <label class="form-label">{{ pagerduty_form.min_interval_minutes.label }}</label>
-                  {{ pagerduty_form.min_interval_minutes }}
+                <input class="form-check-input" type="checkbox" id="ff-asa"
+                  {% if feature_flags.enable_asa_vpn_stats %}checked{% endif %}>
+                <label class="form-check-label" for="ff-asa">Enable</label>
                 </div>
               </div>
-            
+              <div class="col-auto">
+                <input type="number" class="form-control" id="ff-asa-interval" min="1" max="60"
+                value="{{ feature_flags.asa_vpn_interval_minutes }}">
+              </div>
+              <div class="col-auto">
+                <label for="ff-asa-interval" class="col-form-label">Interval (minutes)</label>
+              </div>
+              </div>
+              
               <div class="row g-3">
-                <div class="col-md-6">
-                <label class="form-label">{{ pagerduty_form.credential.label }}</label>
-                {{ pagerduty_form.credential }}
+              <div class="col-md-5">
+                <label class="form-label">{{ asa_settings_form.device_tag.label }}</label>
+                {{ asa_settings_form.device_tag }}
+                <div class="form-text">{{ asa_settings_form.device_tag.help_text }}</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ asa_settings_form.top_n.label }}</label>
+                {{ asa_settings_form.top_n }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">{{ asa_settings_form.verify_ssl.label }}</label><br>
+                {{ asa_settings_form.verify_ssl }}
+              </div>
+              </div>
+              
+              </div>
+              </div>
+            </div>
+            
+            <!-- Cisco SD-WAN Stats -->
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="sdwanHeading">
+              <button class="accordion-button collapsed py-2" type="button"
+                data-bs-toggle="collapse" data-bs-target="#sdwanCollapse"
+                aria-expanded="false" aria-controls="sdwanCollapse">
+              <strong>Cisco SD-WAN Stats</strong>
+              </button>
+              </h2>
+              <div id="sdwanCollapse" class="accordion-collapse collapse"
+              aria-labelledby="sdwanHeading" data-bs-parent="#cfgAccordion">
+              <div class="accordion-body">
+              <div class="row g-2 align-items-center">
+              <div class="col-auto">
+                <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="ff-sdwan"
+                  {% if feature_flags.enable_sdwan_cards %}checked{% endif %}>
+                <label class="form-check-label" for="ff-sdwan">Enable</label>
                 </div>
-                <div class="col-md-6">
-                <label class="form-label">{{ pagerduty_form.service_ids_csv.label }}</label>
-                {{ pagerduty_form.service_ids_csv }}
-                <div class="form-text">{{ pagerduty_form.service_ids_csv.help_text }}</div>
+              </div>
+              <div class="col-auto">
+                <input type="number" class="form-control" id="ff-sdwan-interval" min="1" max="60"
+                value="{{ feature_flags.sdwan_interval_minutes }}">
+              </div>
+              <div class="col-auto">
+                <label for="ff-sdwan-interval" class="col-form-label">Interval (minutes)</label>
+              </div>
+              </div>
+            
+              <div class="row g-3 mt-2">
+              <div class="col-md-6">
+                <label class="form-label">{{ sdwan_settings_form.host.label }}</label>
+                {{ sdwan_settings_form.host }}
+                <div class="form-text text-muted">
+                {{ sdwan_settings_form.host.help_text }}
                 </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ sdwan_settings_form.purge_path_stats.label }}</label>
+                {{ sdwan_settings_form.purge_path_stats }}
+              </div>
               </div>
             
               <div class="row g-3 mt-1">
-                <div class="col-md-4">
-                <label class="form-label">{{ pagerduty_form.urgency_filter.label }}</label>
-                {{ pagerduty_form.urgency_filter }}
-                </div>
-                <div class="col-md-4">
-                <label class="form-label">{{ pagerduty_form.top_n.label }}</label>
-                {{ pagerduty_form.top_n }}
-                </div>
-                <div class="col-md-4">
-                <label class="form-label">{{ pagerduty_form.verify_ssl.label }}</label><br>
-                {{ pagerduty_form.verify_ssl }}
-                </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ sdwan_settings_form.top_n.label }}</label>
+                {{ sdwan_settings_form.top_n }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ sdwan_settings_form.last_n.label }}</label>
+                {{ sdwan_settings_form.last_n }}
+              </div>
+              </div>
+            
+              <div class="row g-3 mt-1">
+              <div class="col-md-6">
+                <label class="form-label">{{ sdwan_settings_form.verify_ssl.label }}</label>
+                {{ sdwan_settings_form.verify_ssl }}
+              </div>
+              <div class="col-md-6"><!-- spare slot --></div>
+              </div>
+            
               </div>
               </div>
             </div>
-          </div>
+            
+            <!-- PagerDuty Incidents -->
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="pdHeading">
+              <button class="accordion-button collapsed py-2" type="button"
+              data-bs-toggle="collapse" data-bs-target="#pdCollapse"
+              aria-expanded="false" aria-controls="pdCollapse">
+              <strong>PagerDuty Incidents</strong>
+              </button>
+              </h2>
+              <div id="pdCollapse" class="accordion-collapse collapse"
+              aria-labelledby="pdHeading" data-bs-parent="#cfgAccordion">
+              <div class="accordion-body">
+              <div class="row g-2 align-items-center mb-2">
+              <div class="col-auto">
+              <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="ff-pd"
+                {% if feature_flags.enable_pd_alarms %}checked{% endif %}>
+              <label class="form-check-label" for="ff-pd">Enable</label>
+              </div>
+              </div>
 
-        </div>
-        {% endif %}
+              <div class="col-auto">
+                <label class="form-label">{{ pagerduty_form.min_interval_minutes.label }}</label>
+                {{ pagerduty_form.min_interval_minutes }}
+                </div>
+
+              </div>
+              
+              <div class="row g-3">
+              <div class="col-md-6">
+              <label class="form-label">{{ pagerduty_form.credential.label }}</label>
+              {{ pagerduty_form.credential }}
+              </div>
+              <div class="col-md-6">
+              <label class="form-label">{{ pagerduty_form.service_ids_csv.label }}</label>
+              {{ pagerduty_form.service_ids_csv }}
+              <div class="form-text">{{ pagerduty_form.service_ids_csv.help_text }}</div>
+              </div>
+              </div>
+              
+              <div class="row g-3 mt-1">
+              <div class="col-md-4">
+              <label class="form-label">{{ pagerduty_form.urgency_filter.label }}</label>
+              {{ pagerduty_form.urgency_filter }}
+              </div>
+              <div class="col-md-4">
+              <label class="form-label">{{ pagerduty_form.top_n.label }}</label>
+              {{ pagerduty_form.top_n }}
+              </div>
+              <div class="col-md-4">
+              <label class="form-label">{{ pagerduty_form.verify_ssl.label }}</label><br>
+              {{ pagerduty_form.verify_ssl }}
+              </div>
+              </div>
+              </div>
+              </div>
+            </div>
+          
+            <!-- Statseeker Alarms -->
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="ssHeading">
+              <button class="accordion-button collapsed py-2" type="button"
+                data-bs-toggle="collapse" data-bs-target="#ssCollapse"
+                aria-expanded="false" aria-controls="ssCollapse">
+              <strong>Statseeker Alerts</strong>
+              </button>
+              </h2>
+              <div id="ssCollapse" class="accordion-collapse collapse" aria-labelledby="ssHeading" data-bs-parent="#cfgAccordion">
+                <div class="accordion-body">
+                  <div class="row g-2 align-items-center mb-2">
+                    <div class="col-auto">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="ff-ss"
+                          {% if statseeker_form.instance.enabled %}checked{% endif %}>
+                          <label class="form-check-label" for="ff-ss">Enable</label>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">{{ statseeker_form.min_interval_minutes.label }}</label>
+                      {{ statseeker_form.min_interval_minutes }}
+                    </div>
+                  </div>
+            
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">{{ statseeker_form.credential.label }}</label>
+                      {{ statseeker_form.credential }}
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">{{ statseeker_form.base_url.label }}</label>
+                      {{ statseeker_form.base_url }}
+                    </div>
+                  </div>
+            
+                  <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                      <label class="form-label">{{ statseeker_form.tracked_devices.label }}</label>
+                      {{ statseeker_form.tracked_devices }}
+                      <div class="form-text">Set device <code>priority_interfaces</code> for IF_DOWN/IF_ERRORS.</div>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">{{ statseeker_form.top_n.label }}</label>
+                      {{ statseeker_form.top_n }}
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">{{ statseeker_form.verify_ssl.label }}</label><br>
+                      {{ statseeker_form.verify_ssl }}
+                    </div>
+                  </div>
+            
+                  <div class="row g-3 mt-1">
+                    <div class="col-md-4">
+                      <label class="form-label">{{ statseeker_form.error_pct_threshold.label }}</label>
+                      {{ statseeker_form.error_pct_threshold }}
+                    </div>
+                    <div class="col-md-8 d-flex align-items-end">
+                      <div class="form-check form-check-inline">
+                        {{ statseeker_form.include_device_down }}
+                        <label class="form-check-label">Device down</label>
+                      </div>
+                      <div class="form-check form-check-inline">
+                        {{ statseeker_form.include_if_down }}
+                        <label class="form-check-label">Interface down</label>
+                      </div>
+                      <div class="form-check form-check-inline">
+                        {{ statseeker_form.include_if_errors }}
+                        <label class="form-check-label">High errors</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          
+          </div>
+          {% endif %}
         
 
-        <div class="modal-footer">
-          <button class="btn btn-primary" type="submit">Save</button>
+          <div class="modal-footer">
+            <button class="btn btn-primary" type="submit">Save</button>
+          </div>
+          
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
 </div>
 <!-- End of Customize Modal -->
@@ -349,7 +450,7 @@
         }
       });
 
-      await fetch("{% url 'dashboard_asa_vpn_settings_save' %}", { method: 'POST', body: fdAsa });
+      await fetch("{% url 'asavpn_dashboard_settings_save' %}", { method: 'POST', body: fdAsa });
     }
 
     // === SD-WAN ===
@@ -372,19 +473,15 @@
         }
       });
 
-      await fetch("{% url 'dashboard_sdwan_settings_save' %}", { method: 'POST', body: fdSdwan });
+      await fetch("{% url 'sdwan_dashboard_settings_save' %}", { method: 'POST', body: fdSdwan });
     }
 
 		// == PagerDuty ==
 		const fdPd = new FormData();
 		fdPd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-		
-		// feature toggle + interval
     fdPd.append('enabled_pagerduty', document.getElementById('ff-pd')?.checked ? 'true' : 'false');
-    const intPd = document.getElementById('ff-pd-interval');
-    fdPd.append('pagerduty_interval', intPd && intPd.value ? intPd.value : '');
 		
-    // collect all PagerDuty form fields (prefixed)
+    // collect all prefixed fields inside pdCollapse
     const pdSection = document.getElementById('pdCollapse');
     pdSection.querySelectorAll('[name^="pagerduty-"]').forEach(el => {
       if (el.type === 'checkbox') {
@@ -394,13 +491,34 @@
       }
     });
 		
-		await fetch("{% url 'dashboard_pagerduty_settings_save' %}", { method: 'POST', body: fdPd });
+		await fetch("{% url 'pagerduty_dashboard_settings_save' %}", { method: 'POST', body: fdPd });
+
+		// == Statseeker ==
+		const fdSS = new FormData();
+		fdSS.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+		fdSS.append('enabled_statseeker', document.getElementById('ff-ss')?.checked ? 'true' : 'false');
+		
+		// collect all prefixed fields inside ssCollapse
+		const ssSection = document.getElementById('ssCollapse');
+		ssSection.querySelectorAll('[name^="statseeker-"]').forEach(el => {
+		if (el.type === 'checkbox') {
+			fdSS.append(el.name, el.checked ? 'on' : '');
+		} else if (el.tagName === 'SELECT' && el.multiple) {
+			[...el.selectedOptions].forEach(o => fdSS.append(el.name, o.value));
+		} else {
+			fdSS.append(el.name, el.value ?? '');
+		}
+		});
+		
+		await fetch("{% url 'statseeker_dashboard_settings_save' %}", { method: 'POST', body: fdSS });
 
     {% endif %}
 
     window.location.reload();
   });
+</script>
 
+<script>
   (function(){
     const dataTag = document.getElementById('changelog-data');
     if (!dataTag) return;

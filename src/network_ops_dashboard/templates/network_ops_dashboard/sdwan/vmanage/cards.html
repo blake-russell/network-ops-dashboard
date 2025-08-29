@@ -1,5 +1,6 @@
         {% if sdwan_top_sites %}
-          <table class="table table-borderless mb-0">
+        <div class="table-responsive">
+          <table class="table table-borderless table-sm mb-0">
             <tbody>
               <tr>
                 <td>Site</td>
@@ -17,6 +18,7 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
         {% else %}
           <div class="text-muted">No recent samples.</div>
         {% endif %}

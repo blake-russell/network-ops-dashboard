@@ -63,7 +63,7 @@ class NetworkCredentialForm(forms.ModelForm):
     username_search_field = forms.CharField(label="Credential Name:", max_length=100, required=True)
     username = forms.CharField(label="Username:", max_length=100, required=False)
     password = forms.CharField(label="Password:", max_length=100,widget=forms.PasswordInput(render_value=True),required=False)
-    api_key = forms.CharField(label="API Key:", help_text="Enter API Key or User/Pass Combo.", max_length=300, required=False)
+    api_key = forms.CharField(label="API Key:", help_text="Enter API Key or User/Pass Combo.", max_length=300, widget=forms.PasswordInput(render_value=True), required=False)
 
     def clean(self):
         cleaned_data = super().clean()

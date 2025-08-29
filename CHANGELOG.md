@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.6 - 08-29-2025
+- 🆕 Dashboard: Added Statseeker Alarming Card Integration.
+- ✅ CiscoAdvisory: Fixed bug in collector scripts.
+
 ## v0.2.5 - 08-25-2025
 - 🆕 Dashboard: Added PagerDuty Incident Card Integration.
 
