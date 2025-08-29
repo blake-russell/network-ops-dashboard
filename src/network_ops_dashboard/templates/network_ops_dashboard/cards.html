@@ -3,7 +3,8 @@
       <div class="card-header text-center"><strong>{% for t in all_cards %} {% if t.id == cid %} {{ t.title }} {% endif %} {% endfor %}</strong></div>
       <div class="card-body">
         {% if new_svcacts %}
-        <table class="table table-borderless mb-0">
+        <div class="table-responsive">
+        <table class="table table-borderless table-sm mb-0">
           <strong>Service Account Password Expiry</strong>
         <tbody>
           {% for svc_act in new_svcacts %}
@@ -13,10 +14,11 @@
           </tr>
           {% endfor %}
         </tbody>
-      </table><br>
+      </table></div><br>
         {% endif %}
         {% if new_certalerts %}
-        <table class="table table-borderless mb-0">
+        <div class="table-responsive">
+        <table class="table table-borderless table-sm mb-0">
           <strong>Certificate Expiry</strong>
         <tbody>
           {% for certs in new_certalerts %}
@@ -26,20 +28,28 @@
           </tr>
           {% endfor %}
         </tbody>
-      </table><br>
+      </table></div><br>
         {% endif %}
         {% if new_ciscoadvisory %}
-        <table class="table table-borderless mb-0">
+        <div class="table-responsive">
+        <table class="table table-borderless table-sm mb-0">
           <strong>Cisco Field Advisory</strong>
         <tbody>
           {% for advisory in new_ciscoadvisory %}
           <tr>
             <td><a href="{{ advisory.url }}" target="_new"><b>{{ advisory.title_short }}</a></b></td>
-            <td class="text-right"><small class="text-muted">{{ advisory.impact_rating }}</small></td>
+            <td class="text-right">
+              <span class="badge
+                {% if advisory.impact_rating == 'Critical' %}bg-danger
+                {% elif advisory.impact_rating == 'High' %}bg-warning text-light
+                {% else %}bg-secondary{% endif %}">
+                {{ advisory.impact_rating|capfirst }}
+              </span>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
-      </table><br>
+      </table></div><br>
         {% endif %}
       </div>
     </div>

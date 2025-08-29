@@ -92,12 +92,36 @@ def _merge_ping_states(device_list, r_json):
             if dev_id in idx:
                 idx[dev_id]['ping_state'] = row.get('ping_state')  # 'up'/'down'/etc.
 
-def _get_tracked_interfaces(base, auth, headers, verifySSL, device_id, if_names):
+def _set_oper_polling(base, auth, headers, verifySSL, intf):
+    # Keeping here in case Statseeker enables API configuration of ifOperStatus polling in the future API releases...
+    # intf = {'id': 6837353, 'name': 'Ethernet2/45', 'deviceid': 6836557, 'ifOperStatus': {'poll': 'off'}}
+    payload = {"data":[{"ifOperStatus": {"poll": "on"}}]}
+    query = f'/api/latest/cdt_port/{intf["id"]}'
+    r = requests.put(f"{base}{query}", headers=headers, auth=auth, json=payload, verify=verifySSL, timeout=20)
+    r.raise_for_status()
+    return r.status_code
+
+def _get_tracked_interfaces(base, auth, headers, verifySSL, device_id, if_names, cfg):
     # Example matches your sample: /cdt_port?fields=...&deviceid_filter=IS("6318048")&name_filter=IS("Eth1/43","Eth2/43")
     devices_list = _filter_list(device_id)
     name_list = _filter_list(if_names)
     if not (name_list and devices_list):
         return []
+    # Check ifOperStatus polling 
+    # Disabled for now - unsupported in Statseeker api v2.1 rev17 and earlier
+    # For now you will need to configure interface Operational Status Polling manually in Statseeker GUI
+    '''
+    query1 = f'/api/latest/cdt_port?fields=id,name,deviceid,ifOperStatus&ifOperStatus_formats=poll&deviceid_filter={devices_list}&name_filter={name_list}'
+    r1 = requests.get(f"{base}{query1}", headers=headers, auth=auth, verify=verifySSL, timeout=20)
+    r1.raise_for_status()
+    # Set ifOperStatus polling on if necessary
+    for intf in r1.json().get("data", {}).get("objects", [{}])[0].get("data", []) or []:
+        if cfg.include_if_down:
+            if intf['ifOperStatus']['poll'] == 'off':
+                set_poll_status = _set_oper_polling(base, auth, headers, verifySSL, intf)
+                if set_poll_status != 200: logger.debug(f"Statseeker: failed to set ifOperStatus for intf id: {intf['id']}: ({set_poll_status})")
+    '''
+    # Build interfaces list from tracked interfaces
     query = f'/api/latest/cdt_port?fields=id,name,deviceid,ifAdminStatus,ifOperStatus,RxTxErrorPercent&RxTxErrorPercent_formats=total&deviceid_filter={devices_list}&name_filter={name_list}'
     r = requests.get(f"{base}{query}", headers=headers, auth=auth, verify=verifySSL, timeout=20)
     r.raise_for_status()
@@ -138,7 +162,7 @@ def _merge_device_interfaces(device_list, device_id, rows):
             'RxTxErrorPercent': errors,
             'ifAdminStatus': admin,
             'ifOperStatus':  oper,
-            'is_alerting': (admin == 1 and oper != 1) or errors > 1
+            'is_alerting': (admin == 2 or oper != 1) or errors > 1 # Alert if admin down or oper down or errors greater than 1
         })
 
 @transaction.atomic
@@ -179,12 +203,12 @@ def statseeker_persist_alerts(device_list, inv_by_ip, inv_by_name, include_if_do
         # INTERFACES
         for p in (dev.get("interfaces") or []):
             name = p.get("name") or ""
-            admin_up = _is_admin_up(p.get("ifAdminStatus"))
-            oper_up  = _is_up(p.get("ifOperStatus"))
+            admin_up = _is_admin_up(p.get("ifAdminStatus")) # 1=True, 2=False
+            oper_up  = _is_up(p.get("ifOperStatus")) # 1=True, 2=False
             err_pct  = _as_decimal(p.get("RxTxErrorPercent"))
 
             # IF_DOWN
-            if include_if_down and admin_up and not oper_up:
+            if include_if_down and admin_up and not oper_up: # Does not alarm if admin-down ('and not admin_up or not oper_up' will trip on either)
                 k = (inv.pk if inv else None, "IF_DOWN", name)
                 seen_keys.add(k)
                 c, u = _upsert_alert(inv, "IF_DOWN", name, severity="major",
@@ -273,8 +297,7 @@ def statseeker_sync_alerts():
     auth = (cfg.credential.username, cfg.credential.password)
     verifySSL = cfg.verify_ssl
     token = _SScookie(base, auth, verifySSL)
-    headers = { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
-    # tracked will be an list of objects of the tracked devices. each object has "priority_interfaces" which is comma-seperated.
+    headers = {'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
     tracked = list(cfg.tracked_devices.select_related("site", "platform").all())
     inv_by_ip = {str(inv.ipaddress_mgmt): inv for inv in tracked if inv.ipaddress_mgmt}
     inv_by_name = {inv.name: inv for inv in tracked}
@@ -291,6 +314,7 @@ def statseeker_sync_alerts():
     _merge_ping_states(device_list, ping_state_json)
 
     # tracked interfaces (IFUP/IFDOWN/IFERROR)
+    # Make sure Operational Status Poll and Administrative Status poll is "on" in your Statseeker Managed Devices/Interface configuration.
     # https://statseeker/api/latest/cdt_port?fields=id,name,deviceid,ifAdminStatus,ifOperStatus,RxTxErrorPercent&RxTxErrorPercent_formats=total&deviceid_filter=IS("6318048")&name_filter=IN("Ethernet1/43","Ethernet2/43")
 
     # Place the Interface status and errors in device_list
@@ -312,7 +336,7 @@ def statseeker_sync_alerts():
     
     	# Fetch & merge the tracked ports for this device
         try:
-            rows = _get_tracked_interfaces(base, auth, headers, verifySSL, dev['id'], tracked_names)
+            rows = _get_tracked_interfaces(base, auth, headers, verifySSL, dev['id'], tracked_names, cfg)
             _merge_device_interfaces(device_list, dev['id'], rows)
 
         except Exception as e:

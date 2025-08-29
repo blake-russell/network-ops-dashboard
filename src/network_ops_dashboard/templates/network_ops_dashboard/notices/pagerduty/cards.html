@@ -22,7 +22,7 @@
         <td class="text-end">
           <span class="badge
             {% if r.status == 'triggered' %}bg-danger
-            {% elif r.status == 'acknowledged' %}bg-warning text-dark
+            {% elif r.status == 'acknowledged' %}bg-warning text-light
             {% else %}bg-secondary{% endif %}">
             {{ r.status|capfirst }}
           </span>

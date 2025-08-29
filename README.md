@@ -16,6 +16,7 @@ This project is a Network Operations Dashboard designed to centralize and stream
 ### Operational Dashboard Insights ###
     • Real-time stats on VPN sessions, load distribution, and user counts.
     • Real-time Cisco SD-WAN vManage stats for low-performing sites
+    • Real-time Statseeker Interface/Device Alarms (IFUP/IFDOWN/IFERRORS)
     • Proactive notifications for:
         ○ SSL/TLS certificate expiry
         ○ Service account password expiry
@@ -43,7 +44,7 @@ This project is a Network Operations Dashboard designed to centralize and stream
 
 ## Screenshots ##
 ### Dashboard ###
-<img width="1262" height="797" alt="Image" src="https://github.com/user-attachments/assets/2daaf324-21d3-4d1d-94f4-a00821c908c9" />
+<img width="1670" height="734" alt="Image" src="https://github.com/user-attachments/assets/daeaf9a3-c783-48e3-b46f-573c489dc9e8" />
 
 ### On-Call ###
 <img width="1303" height="850" alt="Image" src="https://github.com/user-attachments/assets/2603118b-118e-46f6-88e7-e08f584111d9" />

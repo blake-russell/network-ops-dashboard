@@ -1,5 +1,6 @@
 {% if rows %}
-  <table class="table table-borderless mb-0">
+<div class="table-responsive">
+  <table class="table table-borderless table-sm mb-0"> 
     <thead>
       <tr>
         <th>Device</th>
@@ -20,7 +21,7 @@
         </td>
         <td>
           {% if a.interface_name %}<code>{{ a.interface_name }}</code>{% endif %}
-          {% if a.metric_value %} &middot; {{ a.metric_value }}% errors{% endif %}
+          {% if a.metric_value %} &middot; {{ a.metric_value|floatformat:0 }}%{% endif %}
           {% if a.note %}<br><small class="text-muted">{{ a.note }}</small>{% endif %}
         </td>
         <td class="text-end"><small class="text-muted">{{ a.last_seen_at|date:"m-d-Y H:i" }}</small></td>
@@ -28,6 +29,7 @@
     {% endfor %}
     </tbody>
   </table>
+</div>
 {% else %}
   <div class="text-muted">No active Statseeker alerts.</div>
 {% endif %}
