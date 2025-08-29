@@ -73,6 +73,7 @@ class FeatureFlags(models.Model):
     sdwan_interval_minutes = models.PositiveIntegerField(default=5)
     sdwan_stats_last_run = models.DateTimeField(null=True, blank=True)
     enable_pd_alarms = models.BooleanField(default=False)
+    enable_statseeker_alarms = models.BooleanField(default=False)
 
     # Add new feature settings or features to enable
 

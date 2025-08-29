@@ -22,4 +22,5 @@ from . import views
 urlpatterns = [
 re_path(r'^card_json/$', views.sdwan_card_partial_json, name='sdwan_card_partial_json'),
 re_path(r'^card_htmx/$', views.sdwan_card_partial_htmx, name='sdwan_card_partial_htmx'),
+re_path(r'^dashboard/save/$', views.sdwan_dashboard_settings_save, name='sdwan_dashboard_settings_save'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

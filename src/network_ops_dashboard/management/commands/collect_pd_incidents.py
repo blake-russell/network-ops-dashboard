@@ -5,7 +5,7 @@ import logging
 
 logger = logging.getLogger('network_ops_dashboard.notices.pagerduty')
 
-def _should_run(key: str, minutes: int) -> bool:
+def _cache_gate(key: str, minutes: int) -> bool:
     now = timezone.now()
     ttl = minutes * 60
 
@@ -27,7 +27,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         from network_ops_dashboard.models import FeatureFlags
         from network_ops_dashboard.notices.pagerduty.models import PagerDutySettings
-        from network_ops_dashboard.notices.pagerduty.scripts.services import pd_sync_open_incidents
+        from network_ops_dashboard.notices.pagerduty.scripts.services import pd_sync_open_incidents as collected_ids
 
         cfg = PagerDutySettings.load()
         flags = FeatureFlags.load()
@@ -39,11 +39,8 @@ class Command(BaseCommand):
             return
 
         cache_key = "pd_sync_open_incidents_last"
-        if not _should_run(cache_key, cfg.min_interval_minutes):
+        if not _cache_gate(cache_key, cfg.min_interval_minutes):
             return 0
 
         logger.info("PagerDuty: collection started.")
-        
-        pd_sync_open_incidents()
-
-        logger.info("PagerDuty: collection completed.")
+        logger.info(f"PagerDuty: collection of {collected_ids()} incidents completed.")

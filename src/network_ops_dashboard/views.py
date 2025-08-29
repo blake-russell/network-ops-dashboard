@@ -21,6 +21,8 @@ from network_ops_dashboard.notices.ciscoadvisory.models import CiscoAdvisory
 from network_ops_dashboard.notices.certexpiry.models import CertExpiry
 from network_ops_dashboard.notices.pagerduty.models import PagerDutySettings, PagerDutyIncident
 from network_ops_dashboard.notices.pagerduty.forms import PagerDutySettingsForm
+from network_ops_dashboard.notices.statseeker.models import StatseekerSettings, StatseekerAlert
+from network_ops_dashboard.notices.statseeker.forms import StatseekerSettingsForm
 from network_ops_dashboard.sdwan.vmanage.models import SdwanSettings
 from network_ops_dashboard.sdwan.vmanage.forms import SDWANSettingsForm
 from network_ops_dashboard.asavpn.forms import AsaVpnSettingsForm
@@ -96,6 +98,7 @@ def dashboard(request):
     sdwan_settings = SdwanSettings.load()
     asa_settings = AsaVpnSettings.load()
     pd_cfg = PagerDutySettings.load()
+    ss_cfg = StatseekerSettings.load()
     
     site_settings = SiteSettings.objects.first()
     timecutoff = timezone.now() - timedelta(days=7)
@@ -104,6 +107,20 @@ def dashboard(request):
     new_certalerts = CertExpiry.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
     new_ciscoadvisory = CiscoAdvisory.objects.filter(Q(created_at__gte=timecutoff) & Q(status="Open"))
     changelog = parse_changelog()
+
+    # Statseeker Alerts
+    if flags.enable_statseeker_alarms:
+        ss_qs = StatseekerAlert.objects.filter(active=True)
+        ss_types = ["DEVICE_DOWN"]
+        if ss_cfg.include_if_down:
+            ss_types.append("IF_DOWN")
+        if ss_cfg.include_if_errors:
+            ss_types.append("IF_ERRORS")
+        ss_rows = (ss_qs.filter(alert_type__in=ss_types)
+          .select_related("device")
+          .order_by("-last_seen_at")[:ss_cfg.top_n])
+    else:
+        ss_rows = []
 
     # PagerDuty Incidents
     if flags.enable_pd_alarms:
@@ -140,6 +157,7 @@ def dashboard(request):
         {"id": "asa_vpn_stats", "title": f"ASA: VPN Stats (Last {flags.asa_vpn_interval_minutes}m)", "required": False, "requires_feature": "enable_asa_vpn_stats"},
         {"id": "enable_sdwan_cards", "title": f"vManage: Site Stats (Highest Average Last {sdwan_settings.last_n}m)", "required": False, "requires_feature": "enable_sdwan_cards"},
         {"id": "pagerduty_incidents", "title": f"Pagerduty Incidents", "required": False, "requires_feature": "enable_pd_alarms"},
+        {"id": "statseeker_alarms", "title": f"Statseeker Alarms", "required": False, "requires_feature": "enable_statseeker_alarms"},
     ]
 
     for c in all_cards:
@@ -203,6 +221,9 @@ def dashboard(request):
         "pagerduty_incidents": pagerduty_incidents,
         "pagerduty_form": PagerDutySettingsForm(instance=pd_cfg, prefix="pagerduty"),
         "pd_cfg": pd_cfg,
+        "statseeker_form": StatseekerSettingsForm(prefix="statseeker", instance=ss_cfg),
+        "ss_cfg": ss_cfg,
+        "statseeker_rows": ss_rows,
     })
 
 @login_required(login_url='/accounts/login/')
@@ -220,6 +241,7 @@ def dashboard_save_prefs(request):
         {"id": "asa_vpn_stats", "required": False, "requires_feature": "enable_asa_vpn_stats"},
         {"id": "enable_sdwan_cards", "required": False, "requires_feature": "enable_sdwan_cards"},
         {"id": "pagerduty_incidents", "title": "Pagerduty Incidents", "required": False, "requires_feature": "enable_pd_alarms"},
+        {"id": "statseeker_alarms", "title": "Statseeker Alarms", "required": False, "requires_feature": "enable_statseeker_alarms"},
     ]
     default_order = [c["id"] for c in all_cards]
     required_ids = {c["id"] for c in all_cards if c.get("required")}
@@ -274,102 +296,3 @@ def dashboard_set_email_time(request): # Used by reports:changes/circuits & noti
     if flags.enable_email_processing:
         ensure_daily_cron(key, hhmm)
     return JsonResponse({"ok": True, "time": hhmm})
-
-@staff_member_required
-@require_POST
-def dashboard_asa_vpn_settings_save(request):
-    flags = FeatureFlags.load()
-
-    enabled = request.POST.get("enable_asavpn_stats") in ("true", "on", "1", "yes")
-    interval_raw = (request.POST.get("asavpn_interval") or "").strip()
-    try:
-        interval = max(1, int(interval_raw)) if interval_raw else flags.asa_vpn_interval_minutes or 5
-    except ValueError:
-        return JsonResponse({"ok": False, "error": "Invalid interval"}, status=400)
-
-    flags.enable_asa_vpn_stats = enabled
-    flags.asa_vpn_interval_minutes = interval
-    flags.updated_by = request.user
-    flags.save(update_fields=["enable_asa_vpn_stats", "asa_vpn_interval_minutes", "updated_by"])
-
-    if enabled:
-        ensure_minutely_cron("asa_vpn_stats")
-    else:
-        #try: remove_cron("asa_vpn_stats")
-        #except Exception: pass
-        pass
-
-    cfg = AsaVpnSettings.load()
-    form = AsaVpnSettingsForm(request.POST, prefix="asa", instance=cfg)
-    if not form.is_valid():
-        return JsonResponse({"ok": False, "errors": form.errors}, status=400)
-    cfg = form.save()
-
-    return JsonResponse({
-        "ok": True,
-        "feature_flags": {
-            "enable_asa_vpn_stats": flags.enable_asa_vpn_stats,
-            "asa_vpn_interval_minutes": flags.asa_vpn_interval_minutes,
-        },
-        "asa_settings": {
-            "device_tag": cfg.device_tag,
-            "top_n": cfg.top_n,
-            "verify_ssl": cfg.verify_ssl,
-        }
-    })
-
-@staff_member_required
-@require_POST
-def dashboard_sdwan_settings_save(request):
-    flags = FeatureFlags.load()
-    settings_obj = SdwanSettings.load()
-    enabled = request.POST.get("enabled_sdwan") in ("true", "on", "1", "yes")
-    interval_raw = (request.POST.get("sdwan_interval") or "").strip()
-    try:
-        interval = max(1, int(interval_raw)) if interval_raw else flags.sdwan_interval_minutes or 5
-    except ValueError:
-        return JsonResponse({"ok": False, "error": "Invalid interval"}, status=400)
-
-    flags.enable_sdwan_cards, flags.sdwan_interval_minutes = enabled, interval
-    flags.save(update_fields=["enable_sdwan_cards", "sdwan_interval_minutes"])
-    form = SDWANSettingsForm(request.POST, prefix="sdwan", instance=settings_obj)
-    if not form.is_valid():
-        return JsonResponse({"ok": False, "errors": form.errors}, status=400)
-
-    form.save().card_enabled = enabled
-    form.save()
-
-    if settings_obj.card_enabled:
-        ensure_minutely_cron("sdwan_vmanage_stats")
-    else:
-        #try: remove_cron("sdwan_vmanage_stats")
-        #except Exception: pass
-        pass
-
-    return JsonResponse({"ok": True})
-
-@staff_member_required
-@require_POST
-def dashboard_pagerduty_settings_save(request):
-    flags = FeatureFlags.load()
-    settings_obj = PagerDutySettings.load()
-    enabled = request.POST.get("enabled_pagerduty") in ("true", "on", "1", "yes")
-
-    flags.enable_pd_alarms = enabled
-    flags.save(update_fields=["enable_pd_alarms"])
-    form = PagerDutySettingsForm(request.POST, prefix="pagerduty", instance=settings_obj)
-
-    if not form.is_valid():
-        return JsonResponse({"ok": False, "errors": form.errors}, status=400)
-
-    form.save().enabled = enabled
-    form.save()
-
-    if settings_obj.enabled:
-        ensure_minutely_cron("pagerduty_incidents")
-    else:
-        #try: remove_cron("pagerduty_incidents")
-        #except Exception: pass
-        pass
-
-    return JsonResponse({"ok": True})

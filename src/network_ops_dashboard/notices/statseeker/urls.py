@@ -1,4 +1,4 @@
-"""pagerduty URL Configuration
+"""statseeker URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/3.2/topics/http/urls/
@@ -22,6 +22,6 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    re_path(r'^card_htmx/$', views.pagerduty_card_partial_htmx, name='pagerduty_card_partial_htmx'),
-    re_path(r'^dashboard/save/$', views.pagerduty_dashboard_settings_save, name='pagerduty_dashboard_settings_save'),
+    re_path(r'^card_htmx/$', views.statseeker_card_partial_htmx, name='statseeker_card_partial_htmx'),
+    re_path(r'^dashboard/save/$', views.statseeker_dashboard_settings_save, name='statseeker_dashboard_settings_save'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
