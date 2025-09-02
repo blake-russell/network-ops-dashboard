@@ -1,8 +1,8 @@
-import logging
 from django.core.management.base import BaseCommand
-from django.utils import timezone
+from network_ops_dashboard.scripts.cachegate import _cache_gate
+import logging
 
-logger = logging.getLogger(f'network_ops_dashboard.{__name__}')
+logger = logging.getLogger(f'{__name__}')
 
 class Command(BaseCommand):
     help = "Collect ASA VPN stats into AsaVpnConnectedUsers"
@@ -16,17 +16,12 @@ class Command(BaseCommand):
             logger.info("ASA VPN stats collection disabled. Exiting.")
             return
 
-        now = timezone.now()
-        last = flags.asa_vpn_last_run
-        interval = max(flags.asa_vpn_interval_minutes, 1)
-
-        if last and (now - last).total_seconds() < interval * 60:
-            return
+        gate_key = "asavpn_sync_stats_last"
+        if not _cache_gate(gate_key, flags.asa_vpn_interval_minutes):
+            return 0
         
         logger.info("ASA VPN stats collection started.")
 
         showVPNconnected()
 
-        flags.asa_vpn_last_run = now
-        flags.save(update_fields=["asa_vpn_last_run"])
         logger.info("ASA VPN stats collection completed.")

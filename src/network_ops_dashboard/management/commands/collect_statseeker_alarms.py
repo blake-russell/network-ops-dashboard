@@ -1,23 +1,8 @@
 from django.core.management.base import BaseCommand
-from django.core.cache import cache
-from django.utils import timezone
+from network_ops_dashboard.scripts.cachegate import _cache_gate
 import logging
 
-logger = logging.getLogger('network_ops_dashboard.notices.statseeker')
-
-def _cache_gate(key: str, minutes: int) -> bool:
-    now = timezone.now()
-
-    added = cache.add(key, now, minutes * 60)
-    if added:
-        return True
-
-    last = cache.get(key)
-    if last and (now - last).total_seconds() >= minutes * 60:
-        cache.set(key, now, minutes * 60)
-        return True
-    
-    return False
+logger = logging.getLogger(f'{__name__}')
 
 class Command(BaseCommand):
     help = "Collect Statseeker Alarms."
