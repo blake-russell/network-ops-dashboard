@@ -1,25 +1,8 @@
 from django.core.management.base import BaseCommand
-from django.core.cache import cache
-from django.utils import timezone
+from network_ops_dashboard.scripts.cachegate import _cache_gate
 import logging
 
-logger = logging.getLogger('network_ops_dashboard.notices.pagerduty')
-
-def _cache_gate(key: str, minutes: int) -> bool:
-    now = timezone.now()
-    ttl = minutes * 60
-
-    lock_key = f"{key}_lock"
-    got_lock = cache.add(lock_key, now.isoformat(), ttl)
-    if not got_lock:
-        return False
-
-    last = cache.get(key)
-    if not last or (now - last).total_seconds() >= ttl:
-        cache.set(key, now, ttl)
-        return True
-
-    return False
+logger = logging.getLogger(f'{__name__}')
 
 class Command(BaseCommand):
     help = "Collect Open PagerDuty Incidents."
