@@ -1,9 +1,9 @@
 from django.core.management.base import BaseCommand
-from django.core.cache import cache
-from django.utils import timezone
+from network_ops_dashboard.scripts.cachegate import _cache_gate
 import logging
+from django.utils import timezone
 
-logger = logging.getLogger('network_ops_dashboard.sdwan.vmanage')
+logger = logging.getLogger(f'{__name__}')
 
 class Command(BaseCommand):
     help = "Collect Cisco SD-WAN path stats for dashboard cards"
@@ -23,16 +23,13 @@ class Command(BaseCommand):
             return
 
         now = timezone.now()
-        last = flags.sdwan_stats_last_run
-        interval = max(flags.sdwan_interval_minutes, 1)
 
-        if last and (now - last).total_seconds() < interval * 60:
-            return
+        gate_key = "sdwan_vmanage_sync_vedge_last"
+        if not _cache_gate(gate_key, flags.sdwan_interval_minutes):
+            return 0
 
         logger.info("SD-WAN: stats collection started.")
         
         VManage.CollectVmanageStats(s, flags, now)
 
-        flags.sdwan_stats_last_run = now
-        flags.save(update_fields=["sdwan_stats_last_run"])
         logger.info("SD-WAN: stats collection completed.")
