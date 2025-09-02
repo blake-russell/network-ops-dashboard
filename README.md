@@ -61,9 +61,9 @@ This project is a Network Operations Dashboard designed to centralize and stream
 ## Installation ##
 ### Prerequisites ###
     • Python 3.8+
-    • Django 4.x
-    • Linux subsystem w/ crontab access
-    • Virtual environment tool (venv or pipenv)
+    • Django 4.x+
+    • Redis 3.2+
+    • Linux host w/ crontab access
 
 ### Setup ###
 ```
@@ -128,8 +128,18 @@ python manage.py runserver
 
 ## Future Enhancements ##
     • Startup Script
-    • Additional automation modules
-    • Additional Dashboard metric cards
+    • Additional automation flows
+        ○ F5 VIP Creation
+    • Additional Dashboard cards
+        ○ Meraki
+        ○ BMC Remedy
+        ○ vManage TLOC Alerts
+        ○ Statseeker BGP/OSPF Alerts
+    • Cisco Product Alert API Integration
+    • Inventory SoT Re-Design
+        ○ Config Pull/Store via NAPALM
+        ○ Add/Discover by IP/IP-Range
+        ○ Single Page Device Edit
 
 ## Contributing ##
 Pull requests are welcome! Please open an issue to discuss significant changes.
