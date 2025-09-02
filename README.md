@@ -70,7 +70,6 @@ This project is a Network Operations Dashboard designed to centralize and stream
 # Create virtual environment
 python3 -m venv venv && cd venv/
 source bin/activate  # macOS/Linux
-Scripts\activate     # Windows
 
 # Clone repository
 git clone https://github.com/blake-russell/network-ops-dashboard.git
@@ -79,13 +78,23 @@ mv network-ops-dashboard/* .
 # Create and modify secrets.py
 mv src/network_ops_dashboard/secrets.py.example src/network_ops_dashboard/secrets.py
 
-# Using something like MiniWebTool's django Secret Key Generator enter in a new SECRET_KEY
+# Generate a SECRET_KEY
+bin/python3 -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+
 # Update the ALLOWED_HOSTS variable
-# Modify the /pathto/ debug and request in logging
+# Modify the /pathto/ in logging as well as SECRET_KEY
 nano src/network_ops_dashboard/secrets.py
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Install System Packages
+yum install redis  # Redhat/CentOS/Fedora/Rocky
+apt-get install redis-server  # Debian/Ubuntu/Mint
+
+# Configure System Packages
+systemctl enable redis
+systemctl start redis
 
 # Database migrations
 python src/manage.py collectstatic
