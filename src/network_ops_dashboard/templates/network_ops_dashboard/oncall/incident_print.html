@@ -64,7 +64,8 @@
         {% if providers_with_emails %}
         <h4><u>Scheduled Maintenance</u></h4>
         {% for provider, emails in providers_with_emails %}
-          <table class="table table-hover" id="my-table">
+          <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0" id="my-table">
             <tr>
               <th colspan="8"><strong>{{ provider.name }}</strong></th> 
             </tr>
@@ -88,33 +89,63 @@
                 <td>{{ circuit.enddatetime }}</td>
               </tr>
             {% endfor %}
-          </table><br>
+          </table>
+          </div><br>
         {% endfor %}
       {% endif %}
 
-    {% if advisories %}
-    <br><h4><u>Field Advisories</u></h4>
-      <table class="table table-hover" id="my-table">
+      {% if advisories %}
+      <h3>Cisco Field Notices</h3>
+      <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0" id="my-table">
         <tr>
           <th>Title</th>
-          <th>Impact Rating Name</th>
+          <th>Impact</th>
           <th>Description</th>
           <th>Date</th>
+          <th>Status</th>
         </tr>
         {% for advisory in advisories %}
-        <tr class="table-light">
-          <td><a href="{{ advisory.url }}" target="_new">{{ advisory.title_short }}</a></td>
-          <td>{{ advisory.impact_rating }}</td> 
-          <td style="word-wrap; break-word; white-space: normal;">{{ advisory.description }}</td>
-          <td>{{ advisory.date }}</td>
-        </tr> 
+          <tr>
+            <td><a href="{{ advisory.url }}">{{ advisory.title_short }}</a></td>
+            <td>
+              <span class="badge
+                        {% if advisory.impact_rating == 'Critical' %}bg-danger
+                        {% elif advisory.impact_rating == 'High' %}bg-warning text-light
+                        {% else %}bg-secondary{% endif %}">
+                        {{ advisory.impact_rating|capfirst }}
+              </span>
+            </td>
+            {% if advisory.status != 'Open' %}
+            <td class="text-truncate" style="white-space: normal; max-width: 550px; ">
+              <small class="text-muted d-block" style="max-width:850px;">{{ advisory.note|truncatechars:300 }}</small>
+            </td>
+            {% else %}
+            <td class="text-truncate" style="white-space: normal; max-width: 550px; ">
+              <small class="text-muted d-block" style="max-width:850px;">{{ advisory.description|truncatechars:300 }}</small>
+            </td>
+            {% endif %}
+            <td>{{ advisory.date }}</td>
+            <td>
+              <span class="badge
+                    {% if advisory.status == 'Open' %} bg-primary
+                    {% elif advisory.status == 'Impacted' %} bg-danger
+                    {% elif advisory.status == 'No Impact' %} bg-success
+                    {% else %}bg-secondary{% endif %}">
+                    {{ advisory.status|capfirst }}
+              </span>
+            </td>
+          </tr>
         {% endfor %}
       </table>
+      </div><br>
+      <div class="spacer"></div>
     {% endif %}
 
     {% if certs %}
     <br><h4><u>Certificate Expirations</u></h4>
-      <table class="table table-hover" id="my-table">
+      <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0" id="my-table">
         <tr>
           <th>Provider</th>
           <th>Certificate Name</th>
@@ -130,11 +161,13 @@
         </tr>
         {% endfor %}
       </table>
+      </div>
     {% endif %}
 
     {% if svc_acts %}
     <br><h4><u>Service Account Expirations</u></h4>
-      <table class="table table-hover" id="my-table">
+      <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0" id="my-table">
         <tr>
           <th>Service Account</th>
           <th>Date</th>
@@ -146,6 +179,7 @@
         </tr>
         {% endfor %}
       </table>
+      </div>
     {% endif %}
       
   </div>

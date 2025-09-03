@@ -2,7 +2,7 @@
 {% load app_tags %}
 {% block content %}
 
-<h3>Cisco Advisory Notifications</h3>
+<h3>Cisco Field Notices</h3>
 
 {% if site_secrets %}
     <a href="{% url 'ciscoadvisory_update' %}" class="btn btn-sm btn-outline-primary">Process New Emails</a>
@@ -17,26 +17,158 @@
     Go to the <a href="/admin" class="alert-link">admin</a> panel and configure.</p>
   </div>
 {% endif %}
-<table class="table table-hover" id="my-table">
+<div class="table-responsive">
+<table class="table table-hover table-sm mb-0" id="my-table">
  <tr>
   <th>Title</th>
-  <th>Impact Rating Name</th>
+  <th style="white-space: normal; max-width: 150px;">Impact Rating Name</th>
   <th>Description</th>
   <th>Date</th>
+  <th>Status</th>
   <th>Action</th>
  </tr>
 
 {% for advisory in advisories %}
   <tr class="table-light">
-    <td><a href="{{ advisory.url }}" target="_new">{{ advisory.title_short }}</a></td>
-    <td>{{ advisory.impact_rating }}</td> 
-    <td style="word-wrap; break-word; white-space: normal;">{{ advisory.description }}</td>
+    <td class="text-truncate" style="white-space: normal; max-width: 200px;">
+      <a href="{{ advisory.url }}" target="_new">{{ advisory.title_short }}</a>
+    </td>
+    <td>
+      <span class="badge
+                {% if advisory.impact_rating == 'Critical' %}bg-danger
+                {% elif advisory.impact_rating == 'High' %}bg-warning text-light
+                {% else %}bg-secondary{% endif %}">
+                {{ advisory.impact_rating|capfirst }}
+      </span>
+    </td>
+    {% if advisory.status != 'Open' %}
+    <td class="text-truncate" style="white-space: normal; max-width: 550px; ">
+      <small class="text-muted d-block" style="max-width:750px;">{{ advisory.note|truncatechars:300 }}</small>
+    </td>
+    {% else %}
+    <td class="text-truncate" style="white-space: normal; max-width: 550px; ">
+      <small class="text-muted d-block" style="max-width:750px;">{{ advisory.description|truncatechars:300 }}</small>
+    </td>
+    {% endif %}
     <td>{{ advisory.date }}</td>
     <td>
-      <a href="{% url 'ciscoadvisory_archive' advisory.pk %}" class="btn btn-sm btn-outline-secondary" onclick="return confirm('Are you sure you want to archive this?')">Archive</a>
+      <span class="badge
+            {% if advisory.status == 'Open' %} bg-primary
+            {% elif advisory.status == 'Impacted' %} bg-danger
+            {% elif advisory.status == 'No Impact' %} bg-success
+            {% else %}bg-secondary{% endif %}">
+            {{ advisory.status|capfirst }}
+      </span>
+    </td>
+    <td>
+      <button
+        type="button"
+        class="btn btn-sm btn-primary edit-advisory"
+        data-bs-toggle="modal"
+        data-bs-target="#advStatusModal"
+        data-url="{% url 'ciscoadvisory_update_status' advisory.pk %}"
+        data-title="{{ advisory.title_short|escapejs }}"
+        data-status="{{ advisory.status }}"
+        data-note="{{ advisory.note|default_if_none:''|escapejs }}"
+      >
+        Set Status
+      </button>
+      {% if advisory.status == 'No Impact' %}
+      <a href="{% url 'ciscoadvisory_archive' advisory.pk %}"
+         class="btn btn-sm btn-outline-secondary"
+         onclick="return confirm('Are you sure you want to archive this?')">
+         Archive
+      </a>
+      {% endif %}
     </td>
   </tr>
 {% endfor %}
 </table>
+</div>
+
+<!-- Cisco Advisory Status Modal -->
+<div class="modal fade" id="advStatusModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form class="modal-content" id="adv-status-form" method="post">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title">Set Advisory Status</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="small text-muted mb-2" id="adv-title"></div>
+
+        <div class="mb-3">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-select" required>
+            <option value="Impacted">Impacted</option>
+            <option value="No Impact">No Impact</option>
+          </select>
+        </div>
+
+        <div class="mb-1">
+          <label class="form-label">Note (required)</label>
+          <textarea name="note" class="form-control" rows="4" required
+                    placeholder="Explain impact / remediation, or why there is no impact."></textarea>
+        </div>
+        <div class="form-text">A note is required.</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const modalEl = document.getElementById('advStatusModal');
+    const form = document.getElementById('adv-status-form');
+    const titleEl = document.getElementById('adv-title');
+
+    document.querySelectorAll('.edit-advisory').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const url = btn.getAttribute('data-url');
+        const title = btn.getAttribute('data-title') || '';
+        const status = btn.getAttribute('data-status') || 'No Impact';
+        const note = btn.getAttribute('data-note') || '';
+
+        form.action = url;
+        titleEl.textContent = title;
+
+        form.querySelector('select[name="status"]').value = status;
+        form.querySelector('textarea[name="note"]').value = note;
+      });
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+          body: formData
+        });
+
+        if (res.ok) {
+          const modal = bootstrap.Modal.getInstance(modalEl);
+          modal.hide();
+          window.location.reload();
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        alert('Save failed. Please check your inputs.' + (data.errors ? '\n' + JSON.stringify(data.errors) : ''));
+      } catch (err) {
+        console.error(err);
+        alert('Network error saving status.');
+      }
+    });
+  })();
+</script>
 
 {% endblock %}

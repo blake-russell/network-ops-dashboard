@@ -4,6 +4,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from datetime import timedelta
 from django.conf import settings
+from django.db.models import Q
 import logging
 from premailer import transform
 from django.core.mail import EmailMultiAlternatives
@@ -54,9 +55,9 @@ class Command(BaseCommand):
 
         # incidents = OnCallIncident.objects.filter(status="Open").order_by('-date_created')
         incidents = incidents = _incidents_for_report(settings_obj)
-        certs     = CertExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_cert_expiry else CertExpiry.objects.none()
-        advisories= CiscoAdvisory.objects.filter(status='Open').order_by('date')     if settings_obj.show_field_advisories else CiscoAdvisory.objects.none()
-        svc_acts  = SvcActExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_svcacct_expiry else SvcActExpiry.objects.none()
+        certs = CertExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_cert_expiry else CertExpiry.objects.none()
+        advisories = CiscoAdvisory.objects.filter(~Q(status='Archived')).order_by('date') if settings_obj.show_field_advisories else CiscoAdvisory.objects.none() 
+        svc_acts = SvcActExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_svcacct_expiry else SvcActExpiry.objects.none()
 
         site_settings = SiteSettings.objects.first()
 

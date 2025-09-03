@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.7 - 09-03-2025
+- ⚙️ On-call: Added ability to auto-archive incidents that are "Closed" daily or weekly at a provided time.
+- 🗃️ Redis: Added Redis support/requirement for cache gated polling events.
+
 ## v0.2.6 - 08-29-2025
 - 🆕 Dashboard: Added Statseeker Alarming Card Integration.
 - ✅ CiscoAdvisory: Fixed bug in collector scripts.
