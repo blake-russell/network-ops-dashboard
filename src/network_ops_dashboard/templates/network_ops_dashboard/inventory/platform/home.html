@@ -4,7 +4,8 @@
 
 <h3>Platforms</h3>
 <a href="{% url 'platform_add' %}" class="btn btn-sm btn-outline-primary">Add Platform</a><br>
-<table class="table table-hover">
+<div class="table-responsive">
+<table class="table table-hover table-sm mb-0" id="my-table">
  <tr>
   <th>Manufacturer</th>
   <th>Name</th>
@@ -27,5 +28,6 @@
   </tr>
 {% endfor %}
 </table>
+</div>
 
 {% endblock %}

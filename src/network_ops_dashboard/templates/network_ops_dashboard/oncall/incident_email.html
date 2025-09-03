@@ -93,20 +93,45 @@
     {% endif %}
 
     {% if advisories %}
-      <h3>Field Advisories</h3>
+      <h3>Cisco Field Notices</h3>
       <table cellpadding="0" cellspacing="0" role="presentation" width="100%">
         <tr>
           <th>Title</th>
           <th>Impact</th>
           <th>Description</th>
           <th>Date</th>
+          <th>Status</th>
         </tr>
         {% for advisory in advisories %}
           <tr>
             <td><a href="{{ advisory.url }}">{{ advisory.title_short }}</a></td>
-            <td>{{ advisory.impact_rating }}</td>
-            <td style="white-space:pre-wrap;">{{ advisory.description }}</td>
+            <td>
+              <span class="badge
+                        {% if advisory.impact_rating == 'Critical' %}bg-danger
+                        {% elif advisory.impact_rating == 'High' %}bg-warning text-light
+                        {% else %}bg-secondary{% endif %}">
+                        {{ advisory.impact_rating|capfirst }}
+              </span>
+            </td>
+            {% if advisory.status != 'Open' %}
+            <td class="text-truncate" style="white-space: normal; max-width: 550px; ">
+              <small class="text-muted d-block" style="max-width:850px;">{{ advisory.note|truncatechars:300 }}</small>
+            </td>
+            {% else %}
+            <td class="text-truncate" style="white-space: normal; max-width: 550px; ">
+              <small class="text-muted d-block" style="max-width:850px;">{{ advisory.description|truncatechars:300 }}</small>
+            </td>
+            {% endif %}
             <td>{{ advisory.date }}</td>
+            <td>
+              <span class="badge
+                    {% if advisory.status == 'Open' %} bg-primary
+                    {% elif advisory.status == 'Impacted' %} bg-danger
+                    {% elif advisory.status == 'No Impact' %} bg-success
+                    {% else %}bg-secondary{% endif %}">
+                    {{ advisory.status|capfirst }}
+              </span>
+            </td>
           </tr>
         {% endfor %}
       </table><br>

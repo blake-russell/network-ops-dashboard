@@ -5,6 +5,7 @@ from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.utils import timezone
 from datetime import timedelta
+from django.db.models import Q
 import logging
 from network_ops_dashboard.decorators import *
 from network_ops_dashboard.models import *
@@ -56,9 +57,9 @@ def oncall(request):
     providers_with_emails = build_providers_with_emails(settings_obj) if settings_obj.show_scheduled_maintenance else []
     incidents = _incidents_for_report(settings_obj)
 
-    certs     = CertExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_cert_expiry else CertExpiry.objects.none()
-    advisories= CiscoAdvisory.objects.filter(status='Open').order_by('date')     if settings_obj.show_field_advisories else CiscoAdvisory.objects.none()
-    svc_acts  = SvcActExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_svcacct_expiry else SvcActExpiry.objects.none()
+    certs = CertExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_cert_expiry else CertExpiry.objects.none()
+    advisories = CiscoAdvisory.objects.filter(~Q(status='Archived')).order_by('date') if settings_obj.show_field_advisories else CiscoAdvisory.objects.none()
+    svc_acts = SvcActExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_svcacct_expiry else SvcActExpiry.objects.none()
 
     return render(request, 'network_ops_dashboard/oncall/home.html', {
         'incidents': incidents,
@@ -83,7 +84,7 @@ def oncall_incident_print(request):
     providers_with_emails = build_providers_with_emails(settings_obj) if settings_obj.show_scheduled_maintenance else []
     incidents = _incidents_for_report(settings_obj)
     certs = CertExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_cert_expiry else CertExpiry.objects.none()
-    advisories = CiscoAdvisory.objects.filter(status='Open').order_by('date')     if settings_obj.show_field_advisories else CiscoAdvisory.objects.none()
+    advisories = CiscoAdvisory.objects.filter(~Q(status='Archived')).order_by('date') if settings_obj.show_field_advisories else CiscoAdvisory.objects.none()
     svc_acts = SvcActExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_svcacct_expiry else SvcActExpiry.objects.none()
 
     return render(request, 'network_ops_dashboard/oncall/incident_print.html', {
@@ -101,7 +102,7 @@ def oncall_incident_email(request):
     providers_with_emails = build_providers_with_emails(settings_obj) if settings_obj.show_scheduled_maintenance else []
     incidents = _incidents_for_report(settings_obj)
     certs = CertExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_cert_expiry else CertExpiry.objects.none()
-    advisories = CiscoAdvisory.objects.filter(status='Open').order_by('date')     if settings_obj.show_field_advisories else CiscoAdvisory.objects.none()
+    advisories = CiscoAdvisory.objects.filter(~Q(status='Archived')).order_by('date') if settings_obj.show_field_advisories else CiscoAdvisory.objects.none()
     svc_acts = SvcActExpiry.objects.filter(status='Open').order_by('expire_date') if settings_obj.show_svcacct_expiry else SvcActExpiry.objects.none()
 
     return render(request, 'network_ops_dashboard/oncall/incident_email.html', {

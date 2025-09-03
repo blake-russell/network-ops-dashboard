@@ -1,9 +1,5 @@
 from __future__ import unicode_literals
-from django.utils.translation import gettext, gettext_lazy as _
-from django_cryptography.fields import encrypt
 from django.db import models
-from django.conf import settings
-from django.utils import timezone
 
 # Create your models here.
  
