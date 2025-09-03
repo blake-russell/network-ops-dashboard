@@ -108,7 +108,8 @@
     let html = '';
     providers.forEach(p => {
       html += `
-        <table class="table table-hover">
+        <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0" id="my-table">
           <tr><th colspan="9"><strong>${esc(p)}</strong></th></tr>
           <tr>
             <th>Name</th>
@@ -145,7 +146,7 @@
           </tr>
         `;
       });
-      html += `</table><br>`;
+      html += `</table></div><br>`;
     });
     resultsEl.innerHTML = html;
   }

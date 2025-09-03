@@ -18,7 +18,8 @@
   </div>
   <a href="{% url 'certexpiry_provider' %}" class="btn btn-sm btn-outline-secondary">Certificate Providers</a><br>
 {% endif %}
-<table class="table table-hover" id="my-table">
+<div class="table-responsive">
+<table class="table table-hover table-sm mb-0" id="my-table">
  <tr>
   <th>Provider</th>
   <th>Certificate Name</th>
@@ -39,6 +40,7 @@
   </tr>
 {% endfor %}
 </table>
+</div>
 
 {% endblock %}
 

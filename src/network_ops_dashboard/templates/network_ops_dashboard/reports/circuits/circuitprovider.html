@@ -5,7 +5,8 @@
 <h3>Circuit Providers</h3>
 <a href="{% url 'circuitsmtc' %}" class="btn btn-sm btn-outline-secondary">Back</a>
 <a href="{% url 'circuitprovider_add' %}" class="btn btn-sm btn-outline-primary">Add Provider</a><br>
-<table class="table table-hover">
+<div class="table-responsive">
+<table class="table table-hover table-sm mb-0" id="my-table">
  <tr>
   <th>Name</th>
   <th>Email Folder</th>
@@ -24,5 +25,6 @@
   </tr>
 {% endfor %}
 </table>
+</div>
 
 {% endblock %}
