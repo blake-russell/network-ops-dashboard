@@ -1,7 +1,8 @@
 # Changelog
 
 ## v0.2.7 - 09-03-2025
-- ⚙️ On-call: Added ability to auto-archive incidents that are "Closed" daily or weekly at a provided time.
+- 🆕 CiscoAdvisory: Added functionality to interact with field notices to maintain impact and remediation.
+- ⚙️ CiscoAdvisory: Field Notices set as "No Impact" will auto-archive at specified On-Call auto-archive timeframe.
 - 🗃️ Redis: Added Redis support/requirement for cache gated polling events.
 
 ## v0.2.6 - 08-29-2025
