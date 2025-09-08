@@ -41,7 +41,7 @@
                 {{ advisory.impact_rating|capfirst }}
       </span>
     </td>
-    {% if advisory.status != 'Open' %}
+    {% if advisory.status == 'Impacted' or advisory.status == 'No Impact' %}
     <td class="text-truncate" style="white-space: normal; max-width: 550px; ">
       <small class="text-muted d-block" style="max-width:750px;">{{ advisory.note|truncatechars:300 }}</small>
     </td>
@@ -53,7 +53,8 @@
     <td>{{ advisory.date }}</td>
     <td>
       <span class="badge
-            {% if advisory.status == 'Open' %} bg-primary
+            {% if advisory.status == 'Open' %} bg-warning
+            {% elif advisory.status == 'Assigned' %} bg-primary
             {% elif advisory.status == 'Impacted' %} bg-danger
             {% elif advisory.status == 'No Impact' %} bg-success
             {% else %}bg-secondary{% endif %}">
@@ -61,6 +62,18 @@
       </span>
     </td>
     <td>
+      {% if advisory.status == 'Open' %}
+      <a href="{% url 'ciscoadvisory_assign' advisory.pk %}"
+         class="btn btn-sm btn-outline-primary">
+         Acknowledge
+      </a>
+      {% elif advisory.status == 'No Impact' %}
+      <a href="{% url 'ciscoadvisory_archive' advisory.pk %}"
+         class="btn btn-sm btn-outline-secondary"
+         onclick="return confirm('Are you sure you want to archive this?')">
+         Archive
+      </a>
+      {% else %}
       <button
         type="button"
         class="btn btn-sm btn-primary edit-advisory"
@@ -73,12 +86,6 @@
       >
         Set Status
       </button>
-      {% if advisory.status == 'No Impact' %}
-      <a href="{% url 'ciscoadvisory_archive' advisory.pk %}"
-         class="btn btn-sm btn-outline-secondary"
-         onclick="return confirm('Are you sure you want to archive this?')">
-         Archive
-      </a>
       {% endif %}
     </td>
   </tr>

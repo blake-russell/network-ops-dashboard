@@ -28,6 +28,14 @@ def ciscoadvisory_update(request):
 	return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 @login_required(login_url='/accounts/login/')
+def ciscoadvisory_assign(request, pk):
+	advisory = get_object_or_404(CiscoAdvisory, pk=pk)
+	advisory.status = 'Assigned'
+	advisory.owner = request.user
+	advisory.save()
+	return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+
+@login_required(login_url='/accounts/login/')
 def ciscoadvisory_archive(request, pk):
 	CiscoAdvisory.objects.filter(pk=pk).update(status='Archived')
 	return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
