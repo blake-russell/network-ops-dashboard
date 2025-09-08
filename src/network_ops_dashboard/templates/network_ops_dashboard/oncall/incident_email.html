@@ -100,6 +100,7 @@
           <th>Impact</th>
           <th>Description</th>
           <th>Date</th>
+          <th>Owner</th>
           <th>Status</th>
         </tr>
         {% for advisory in advisories %}
@@ -123,6 +124,7 @@
             </td>
             {% endif %}
             <td>{{ advisory.date }}</td>
+            <td>{{ advisory.owner.first_name }} {{ advisory.owner.last_name }}</td>
             <td>
               <span class="badge
                     {% if advisory.status == 'Open' %} bg-primary
