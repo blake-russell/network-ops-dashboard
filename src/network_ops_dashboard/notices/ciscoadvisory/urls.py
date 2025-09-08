@@ -24,6 +24,7 @@ from . import views
 urlpatterns = [
     re_path(r'^$', views.ciscoadvisory, name='ciscoadvisory'),
     re_path(r'^update/$', views.ciscoadvisory_update, name='ciscoadvisory_update'),
+    re_path(r'^assign/(?P<pk>[0-9]{1,10})/$', views.ciscoadvisory_assign, name='ciscoadvisory_assign'),
     re_path(r'^archive/(?P<pk>[0-9]{1,10})/$', views.ciscoadvisory_archive, name='ciscoadvisory_archive'),
     re_path(r'status/(?P<pk>[0-9]{1,10})/$', views.ciscoadvisory_update_status, name="ciscoadvisory_update_status"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
