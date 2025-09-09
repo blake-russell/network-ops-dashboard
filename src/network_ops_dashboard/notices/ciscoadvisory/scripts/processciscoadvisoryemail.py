@@ -1,15 +1,12 @@
 import os
-import base64
 import re
 import logging
 from django.utils import timezone
+from django.db import IntegrityError
 from datetime import datetime, date
-from typing import Optional, List, Dict
 from email import policy
 from email.parser import BytesParser
 from bs4 import BeautifulSoup
-from typing import Tuple
-from email.message import Message
 from network_ops_dashboard.models import *
 from network_ops_dashboard.notices.ciscoadvisory.models import *
 
@@ -137,24 +134,26 @@ def save_blocks(blocks):
             date=dt,
             status="Open",
         )
-        obj, made = CiscoAdvisory.objects.get_or_create(
-            title_short=title_short,
-            date=dt,
-            defaults=defaults,
-        )
-        if not made:
-            changed = False
-            for f, v in defaults.items():
-                if v and getattr(obj, f) != v:
-                    setattr(obj, f, v)
-                    changed = True
-            if changed:
-                obj.save()
-        else:
-            created += 1
-            logger.info("ProcessCiscoAdvisoryEmails: Created %s (%s)", title_short, dt)
+        try:
+            obj, made = CiscoAdvisory.objects.get_or_create(
+                title_short=title_short,
+                date=dt,
+                defaults=defaults,
+            )
+            if not made:
+                changed = False
+                for f, v in defaults.items():
+                    if v and getattr(obj, f) != v:
+                        setattr(obj, f, v)
+                        changed = True
+                if changed:
+                    obj.save()
+            else:
+                created += 1
+                logger.info("ProcessCiscoAdvisoryEmails: Created %s (%s)", title_short, dt)
+        except IntegrityError as ie:
+            logger.error("ProcessCiscoAdvisoryEmails: Unique constraint failed for %s (%s)", title_short, ie)
     return created
-
 
 def ProcessCiscoAdvisoryEmails():
     logger.info("ProcessCiscoAdvisoryEmails running.")
@@ -178,7 +177,11 @@ def ProcessCiscoAdvisoryEmails():
             if not blocks:
                 logger.warning("ProcessCiscoAdvisoryEmails: No advisory tables found in %s.", filename)
                 continue
-            n = save_blocks(blocks)
-            logger.info("ProcessCiscoAdvisoryEmails: %s: parsed %d blocks, created %d.", filename, len(blocks), n)
+            try:
+                n = save_blocks(blocks)
+                logger.info("ProcessCiscoAdvisoryEmails: %s: parsed %d blocks, created %d.", filename, len(blocks), n)
+            except IntegrityError as ie:
+                logger.error("ProcessCiscoAdvisoryEmails: Unique constraint failed for %s (%s)", filename, ie)
         except Exception as e:
             logger.exception("ProcessCiscoAdvisoryEmails: Failed processing %s: %s", filename, e)
+        os.remove(path) # Remove File
