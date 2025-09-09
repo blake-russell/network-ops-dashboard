@@ -24,6 +24,7 @@
   <th style="white-space: normal; max-width: 150px;">Impact Rating Name</th>
   <th>Description</th>
   <th>Date</th>
+  <th>Owner</th>
   <th>Status</th>
   <th>Action</th>
  </tr>
@@ -51,6 +52,7 @@
     </td>
     {% endif %}
     <td>{{ advisory.date }}</td>
+    <td>{{ advisory.owner.first_name }} {{ advisory.owner.last_name }}</td>
     <td>
       <span class="badge
             {% if advisory.status == 'Open' %} bg-warning
