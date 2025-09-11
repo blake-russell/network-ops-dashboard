@@ -149,6 +149,21 @@ def process_windstream(wstmtcemails_folder, circuit_id_list):
 def process_cogent(folder_path, circuit_id_list):
     # Parse Cogent email
     excluded_status = ['Cancellation', 'Archived', 'Auto-Archived', 'Auto-Archived-Cktid', 'Completed']
+    # Status Patterns
+    STATUS_PATTERNS = [
+    ("Completed", re.compile(r"\b(maintenance\s+completed|completed\s+maintenance)\b", re.I)),
+    ("Emergency", re.compile(r"\bemergency\b", re.I)),
+    ("Planned",   re.compile(r"\bplanned\b", re.I)),
+    # Fallback if "Planned" isn't present
+    ("Planned",   re.compile(r"\bcircuit\s+provider\s+maintenance\b", re.I)),
+    ]
+    def _classify_subject(subject: str):
+        status = "Unknown"
+        for label, rx in STATUS_PATTERNS:
+            if rx.search(subject or ""):
+                status = label
+                break
+        return {"status": status}
     for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
         if os.path.isfile(file_path) and filename.endswith('.msg'):
@@ -206,7 +221,7 @@ def process_cogent(folder_path, circuit_id_list):
                             impact_str = 'No impact unless rescheduled'
                         else:
                             mtc_id = mtc_or_cancel_subject.split(' ')[0].strip()
-                            status = mtc_or_cancel_subject.split(' ')[1].strip()
+                            status = _classify_subject(mtc_or_cancel_subject)['status']
                             ckt_number1 = mtc_or_cancel_subject.split(' - ')[1].strip()
                             ckt_number = ckt_number1.split(', ')
                             start_time1 = content.split('Start time: ')[1].strip()
