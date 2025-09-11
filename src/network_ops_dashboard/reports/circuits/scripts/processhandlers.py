@@ -232,8 +232,9 @@ def process_cogent(folder_path, circuit_id_list):
                             end_time2 = end_time1.split(' -')[0].strip()
                             # end_time_dt = datetime.strptime(end_time2.replace(' at ', ' '), "%m/%d/%y %H:%M")
                             end_time_str = end_time2.replace(' at ', ', ')
-                            impact1 = content.split('Your Cogent services received at:')[0].strip()
-                            if len(impact1) < 2:
+                            content_impact = content.strip()
+                            impact1 = content_impact.split('Your Cogent services received at:')[0].strip()
+                            if len(impact1) == len(content_impact):
                                 impact1 = content.split('You Cogent services received at:')[0].strip()
                             impact_str = impact1.split('Expected Outage/Downtime: ')[1].strip()
                         ckt_id_list = []
