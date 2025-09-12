@@ -30,7 +30,7 @@ class Command(BaseCommand):
         fn_count = 0
         logger.info("CiscoAdvisory Archiving Started.")
         for fn in ciscoadvisory_qs:
-            inc.status = "Archived"
-            inc.save(update_fields=["status"])
+            fn.status = "Archived"
+            fn.save(update_fields=["status"])
             fn_count += 1
         logger.info(f"CiscoAdvisory archived {fn_count} field notice(s).")
