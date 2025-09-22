@@ -12,6 +12,7 @@ from network_ops_dashboard.notices.svcactexpiry.models import *
 from network_ops_dashboard.notices.pagerduty.models import *
 from network_ops_dashboard.notices.statseeker.models import *
 from network_ops_dashboard.inventory.models import *
+from network_ops_dashboard.inventory.discovery.models import *
 from network_ops_dashboard.apic.models import *
 from network_ops_dashboard.oncall.models import *
 from network_ops_dashboard.sdwan.vmanage.models import *
@@ -19,6 +20,7 @@ from network_ops_dashboard.sdwan.vmanage.models import *
 admin.site.register(Site)
 admin.site.register(Platform)
 admin.site.register(Inventory)
+admin.site.register(InventoryInterface)
 admin.site.register(NetworkCredential)
 admin.site.register(AsaVpnDiscoLog)
 admin.site.register(DeviceTag)
@@ -49,6 +51,8 @@ admin.site.register(PagerDutySettings)
 admin.site.register(PagerDutyIncident)
 admin.site.register(StatseekerSettings)
 admin.site.register(StatseekerAlert)
+admin.site.register(DiscoveryJob)
+admin.site.register(DiscoveredDevice)
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):

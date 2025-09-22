@@ -40,6 +40,9 @@
   <div class="col-12 mt-1">
     <a href="#" id="reset-filters" class="btn btn-sm btn-outline-secondary">Reset</a>
     <a href="{% url 'inventory_add' %}" class="btn btn-sm btn-outline-primary">Add Network Device</a>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#discoverModal">
+      🔎 Discover Devices
+    </button>
   </div>
 </form>
 
@@ -60,6 +63,70 @@
     <tr><td colspan="7" class="text-muted">Loading…</td></tr>
   </tbody>
 </table>
+</div>
+
+
+<!-- Discovery Modal -->
+<div class="modal fade" id="discoverModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form class="modal-content" method="post" action="{% url 'inventory_discovery_start' %}">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title">Discover Devices</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Targets</label>
+          <textarea name="targets" class="form-control" rows="3"
+            placeholder="10.0.0.0/24&#10;host1.example.com&#10;10.0.0.5-10.0.0.25"></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Discovery Method</label>
+          <select name="scan_kind" class="form-select">
+            <!-- <option value="icmp" selected>ICMP ping</option> -->
+            <option value="snmp">SNMP walk</option>
+            <option value="ssh">SSH banner</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">SNMP Community (optional)</label>
+          <input type="text" name="snmp_community" class="form-control">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Credential (optional)</label>
+          {{ discovery_form.credential }}
+        </div>
+
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label">Timeout (s)</label>
+            <input type="number" name="timeout" min="1" value="5" class="form-control">
+          </div>
+          <div class="col-6 d-flex align-items-end">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="verify_ssl" id="verifyssl">
+              <label for="verifyssl" class="form-check-label">Verify SSL</label>
+            </div>
+          </div>
+        </div>
+
+        {% if discovery_form_errors %}
+          <div class="alert alert-danger mt-3">
+            {{ discovery_form_errors }}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary" type="submit">Start Discovery</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <script>

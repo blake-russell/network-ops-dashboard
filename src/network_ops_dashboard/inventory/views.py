@@ -6,6 +6,7 @@ import logging
 from network_ops_dashboard.decorators import *
 from network_ops_dashboard.models import *
 from network_ops_dashboard.inventory.models import Inventory, Site, Platform, DeviceTag
+from network_ops_dashboard.inventory.discovery.forms import DiscoveryForm
 from network_ops_dashboard.inventory.forms import *
 
 
@@ -18,11 +19,13 @@ def inventory_home(request):
     site_choices = Site.objects.order_by('name').values_list('name', flat=True).distinct()
     platform_choices = Platform.objects.order_by('name').values_list('name', flat=True).distinct()
     tag_choices = DeviceTag.objects.order_by('name').values_list('name', flat=True)
+    discovery_form = DiscoveryForm()
 
     return render(request, "network_ops_dashboard/inventory/home.html", {
         "site_choices": site_choices,
         "platform_choices": platform_choices,
         "tag_choices": tag_choices,
+        "discovery_form": discovery_form,
     })
 
 @login_required(login_url='/accounts/login/')

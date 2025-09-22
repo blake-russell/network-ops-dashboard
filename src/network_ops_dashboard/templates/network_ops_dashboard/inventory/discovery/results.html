@@ -1,0 +1,57 @@
+{% extends 'network_ops_dashboard/base.html' %}
+{% block content %}
+<h3>Discovery Results</h3>
+
+<p class="text-muted">
+  Job {{ job.id }} — {{ job.status|title }}<br>
+  {{ job.result_summary }}
+</p>
+
+<div class="table-responsive">
+  <table class="table table-sm">
+
+    <thead>
+      <tr>
+        <th>IP</th>
+        <th>Hostname</th>
+        <th>Vendor</th>
+        <th>Model</th>
+        <th>PID</th>
+        <th>Version</th>
+        <th>Serial Number</th>
+        <th>Interfaces</th>
+        <th>Install</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in devices %}
+        <tr>
+          <td>{{ d.ip }}</td>
+		  <form method="POST" action="{% url 'inventory_discovery_install' d.id %}">
+          {% csrf_token %}
+          <td><input type="text" name="hostname" value="{{ d.hostname }}" placeholder="Hostname" class="form-control form-control-sm" /></td>
+          <td><input type="text" name="vendor" value="{{ d.raw.vendor }}" placeholder="Vendor" class="form-control form-control-sm" /></td>
+          <td><input type="text" name="platform" value="{{ d.raw.model }}" placeholder="Model Name" class="form-control form-control-sm" /></td>
+          <td><input type="text" name="pid" value="{{ d.raw.pid }}" placeholder="PID" class="form-control form-control-sm" /></td>
+          <td><input type="text" name="version" value="{{ d.raw.version }}" placeholder="Version" class="form-control form-control-sm" /></td>
+          <td><input type="text" name="serial" value="{{ d.raw.serial }}" placeholder="Serial Number" class="form-control form-control-sm" /></td>
+          <td>
+            {% if d.raw.interfaces %}
+              <span title="{{ d.raw.interfaces|join:', ' }}">{{ d.raw.interfaces|length }} ports</span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+              <button type="submit" class="btn btn-sm btn-outline-success mt-1">Install</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>    
+    
+  </table>
+</div>
+
+<a href="{% url 'inventory_home' %}" class="btn btn-outline-secondary">Back to Inventory</a>
+{% endblock %}

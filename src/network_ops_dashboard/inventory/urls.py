@@ -16,6 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import re_path
 from django.conf import settings
+from django.conf.urls import include
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from . import views
@@ -38,3 +39,7 @@ urlpatterns = [
     re_path(r'^networkcreds/add/$', views.networkcreds_add, name='networkcreds_add'),
     re_path(r'^networkcreds/edit/(?P<pk>[0-9]{1,10})/$', views.networkcreds_edit, name='networkcreds_edit'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+urlpatterns += [
+    re_path(r'^discovery/', include('network_ops_dashboard.inventory.discovery.urls')),
+]
