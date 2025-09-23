@@ -39,7 +39,7 @@ def inventory_discovery_start(request):
 def inventory_discovery_results(request, job_id):
     job = get_object_or_404(DiscoveryJob, pk=job_id)
     devices = job.devices.order_by("ip")
-    sites = Site.objects.all()
+    sites = Site.objects.order_by("name")
     return render(request, "network_ops_dashboard/inventory/discovery/results.html", {"job": job, "devices": devices, "sites": sites})
 
 @require_POST
@@ -49,9 +49,9 @@ def inventory_discovery_install(request, device_id):
 
     # Get overrides from form
     hostname = request.POST.get("hostname") or d.hostname or d.ip
-    model = request.POST.get("model") or d.raw.get("model", "")
     vendor = d.raw.get("vendor", "")
-    pid = d.platform_guess or ""
+    model = request.POST.get("model") or d.raw.get("model", "")
+    pid = request.POST.get("pid") or d.platform_guess or ""
     version = d.raw.get("version", "")
     serial = d.raw.get("serial", "")
     site_id = request.POST.get("site")
