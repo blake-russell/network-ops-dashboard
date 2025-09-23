@@ -25,17 +25,18 @@ def _snmp_get_sysname(ip, community="public", timeout=2):
             ["snmpget", "-v2c", "-c", community, "-t", str(timeout), "-Ovq", ip, "1.3.6.1.2.1.1.5.0"],
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=timeout+1
         )
-        # 1.3.6.1.2.1.47.1.1.1.1.12.149 = entPhysicalMfgName
-        return result.stdout.strip() if result.returncode == 0 else None
+        # 1.3.6.1.2.1.47.1.1.1.1.12.149 = entPhysicalMfgName (Cisco, Juniper, Arista)
+        return result.stdout.strip().split('.')[0] if result.returncode == 0 else None
     except Exception:
         return None
 
-def _snmp_get_serialnumber(ip, community="public", timeout=2):
+def _snmp_get_serialnumber(ip, community="public", timeout=2, oid="1.3.6.1.2.1.47.1.1.1.1.11.149"):
     try:
         result = subprocess.run(
-            ["snmpget", "-v2c", "-c", community, "-t", str(timeout), "-Ovq", ip, "1.3.6.1.2.1.47.1.1.1.1.11.149"],
+            ["snmpget", "-v2c", "-c", community, "-t", str(timeout), "-Ovq", ip, oid],
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=timeout+1
         )
+        # Also try 11.1, 11.2 along with 11.149 for other vendors that might support one or the other.
         return result.stdout.strip().strip('"') if result.returncode == 0 else None
     except Exception:
         return None
@@ -49,6 +50,13 @@ def _snmp_get_interfaces(ip, community="public", timeout=2):
             text=True,
             timeout=timeout+3
         )
+        '''
+        .1.3.6.1.4.1.9 - OLD-CISCO-CHASSIS-MIB
+        .1.3.6.1.4.1.2636 - JUNIPER-MIB
+        .1.3.6.1.4.1.30065 - Arista
+        .1.3.6.1.4.1.637 - Old ALU
+        .1.3.6.1.4.1.12356 - FORTINET-MIB
+        '''
         if result.returncode != 0:
             return []
         interfaces = []
@@ -126,27 +134,34 @@ def parse_sysdescr(sysdescr):
 
     if "Cisco" in sysdescr:
         vendor = "Cisco"
-        # Extract PID like "N7700" (from NX-OS(tm) n7700)
+        # Try for NX-OS/Nexus
         m = re.search(r'NX-OS\(tm\)\s+([^\s,]+)', sysdescr)
         if m:
+            sn_oid = '1.3.6.1.2.1.47.1.1.1.1.11.149'
             pid = m.group(1).upper()
+            model = f'Nexus {pid}'
 
-        # Try to extract model like "Nexus7700" from known keywords
-        m = re.search(r"(Nexus\d{4,})", sysdescr, re.IGNORECASE) or re.search(r"(Catalyst\d{4,})", sysdescr, re.IGNORECASE)
-        if m:
-            model = m.group(1)
-        else:
-            model = pid
+        # Try for Catalyst
+        m1 = re.search(r"(Catalyst)", sysdescr, re.IGNORECASE)
+        if m1:
+            sn_oid = '1.3.6.1.2.1.47.1.1.1.1.11.1'
+            # Try for Catalyst 9K
+            m11 = re.search(r"(CAT9K)", sysdescr, re.IGNORECASE)
+            if m11:
+                model = f'{m1.group(1)} {m11.group(1)}'
+                pid = m11.group(1)
 
+        # Try for IOS Version
         m = re.search(r'Version\s+([^\s,]+)', sysdescr)
         if m:
             version = m.group(1)
 
     return {
         "vendor": vendor,
-        "platform": pid or model,
+        "platform": pid,
         "model": model,
         "version": version,
+        "sn_oid": sn_oid,
     }
 
 def parse_interfaces(raw_list):
@@ -161,7 +176,7 @@ def parse_interfaces(raw_list):
 
 def reverse_dns(ip):
     try:
-        return socket.gethostbyaddr(ip)[0]
+        return socket.gethostbyaddr(ip)[0].split('.')[0]
     except Exception:
         return None
 
@@ -207,15 +222,16 @@ def run_discovery(job: DiscoveryJob):
             sysdescr = _snmp_get_sysdescr(ip, snmp_comm, timeout)
             if sysdescr:
                 discovered_via = "snmp"
-                interfaces_raw = _snmp_get_interfaces(ip, snmp_comm, timeout)
-                serial = _snmp_get_serialnumber(ip, snmp_comm, timeout)
+                vendor_info = parse_sysdescr(sysdescr or "")
+                serial = _snmp_get_serialnumber(ip, snmp_comm, timeout, vendor_info['sn_oid'])
                 hostname = _snmp_get_sysname(ip, snmp_comm, timeout) or reverse_dns(ip)
+                interfaces_raw = _snmp_get_interfaces(ip, snmp_comm, timeout)
+                interfaces = parse_interfaces(interfaces_raw or [])
                 raw["sysdescr"] = sysdescr
                 raw["interfaces"] = interfaces_raw
                 raw["hostname"] = hostname
                 raw["serial"] = serial
-                vendor_info = parse_sysdescr(sysdescr or "")
-                interfaces = parse_interfaces(interfaces_raw or [])
+                
 
         if scan_kind == "ssh" and alive:
             creds = job.get_credential_object()
@@ -230,7 +246,7 @@ def run_discovery(job: DiscoveryJob):
             job=job,
             ip=ip,
             hostname=hostname,
-            platform_guess=vendor_info["platform"] or vendor_info["model"],
+            platform_guess=vendor_info["platform"],
             discovered_via=discovered_via,
             last_seen=timezone.now(),
             raw={
@@ -239,8 +255,8 @@ def run_discovery(job: DiscoveryJob):
                 "interfaces": interfaces,
                 "hostname": hostname,
                 "vendor": vendor_info["vendor"],
-                "model": vendor_info["platform"] or vendor_info["model"],
-                "pid": vendor_info["model"],
+                "model": vendor_info["model"],
+                "pid": vendor_info["platform"],
                 "version": vendor_info["version"],
                 "serial": serial,
             }

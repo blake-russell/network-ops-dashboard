@@ -13,6 +13,7 @@
     <thead>
       <tr>
         <th>IP</th>
+        <th>Site</th>
         <th>Hostname</th>
         <th>Vendor</th>
         <th>Model</th>
@@ -29,6 +30,16 @@
           <td>{{ d.ip }}</td>
 		  <form method="POST" action="{% url 'inventory_discovery_install' d.id %}">
           {% csrf_token %}
+          <td>
+            <select name="site" class="form-control mb-2" required>
+              <option value="" disabled selected>Select Site</option>
+                {% for site in sites %}
+                  <option value="{{ site.id }}" {% if site.id == selected_site_id %}selected{% endif %}>
+                    {{ site.name }}
+                  </option>
+                {% endfor %}
+            </select>
+          </td>
           <td><input type="text" name="hostname" value="{{ d.hostname }}" placeholder="Hostname" class="form-control form-control-sm" /></td>
           <td><input type="text" name="vendor" value="{{ d.raw.vendor }}" placeholder="Vendor" class="form-control form-control-sm" /></td>
           <td><input type="text" name="platform" value="{{ d.raw.model }}" placeholder="Model Name" class="form-control form-control-sm" /></td>
