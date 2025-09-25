@@ -35,3 +35,10 @@ def showVPNconnected():
                 continue
         except Exception as e:
             logger.exception(f"showVPNconnect error @ outer try as: {e}")
+            AsaStatEntry_qs = AsaVpnConnectedUsers.objects.filter(name=str(TargetDevice))
+            if AsaStatEntry_qs.exists():
+                AsaStatEntry = AsaStatEntry_qs.first()
+                AsaStatEntry.connected = 'Could not read/connect.'
+                AsaStatEntry.load = 'Could not read/connect.'
+                AsaStatEntry.save()
+            continue
