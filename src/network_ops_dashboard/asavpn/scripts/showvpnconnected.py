@@ -22,7 +22,11 @@ def showVPNconnected():
                         output2 = output1.split(':')[0].strip() # Connected User
                         output3 = r.text.split('Device Load                  :')[-1].strip()
                         output4 = output3.split('\n')[0].strip() # Load
-                        #save entry to db
+                        # sanitize
+                        if output2 and output4 == 'No sessions to display.':
+                            output2 = '0'
+                            output4 = '0%'
+                        # save entry to db
                         AsaStatEntry_qs = AsaVpnConnectedUsers.objects.filter(name=str(TargetDevice))
                         if AsaStatEntry_qs.exists():
                             AsaStatEntry = AsaStatEntry_qs.first()
@@ -35,3 +39,10 @@ def showVPNconnected():
                 continue
         except Exception as e:
             logger.exception(f"showVPNconnect error @ outer try as: {e}")
+            AsaStatEntry_qs = AsaVpnConnectedUsers.objects.filter(name=str(TargetDevice))
+            if AsaStatEntry_qs.exists():
+                AsaStatEntry = AsaStatEntry_qs.first()
+                AsaStatEntry.connected = 'Could not read/connect.'
+                AsaStatEntry.load = 'Could not read/connect.'
+                AsaStatEntry.save()
+            continue
