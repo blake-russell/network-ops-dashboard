@@ -2,9 +2,13 @@ import ipaddress, subprocess
 import paramiko
 import re
 import socket
+import logging
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from network_ops_dashboard.inventory.models import Inventory
+from network_ops_dashboard.inventory.models import Inventory, NetworkCredential
 from network_ops_dashboard.inventory.discovery.models import DiscoveryJob, DiscoveredDevice
+
+logger = logging.getLogger('network_ops_dashboard.discovery')
 
 def _snmp_get_sysdescr(ip, community="public", timeout=2):
     try:
@@ -16,7 +20,8 @@ def _snmp_get_sysdescr(ip, community="public", timeout=2):
             timeout=timeout+1
         )
         return result.stdout.strip() if result.returncode == 0 else None
-    except Exception:
+    except Exception as e:
+        logger.exception(f"_snmp_get_sysdescr - {e}")
         return None
 
 def _snmp_get_sysname(ip, community="public", timeout=2):
@@ -27,7 +32,8 @@ def _snmp_get_sysname(ip, community="public", timeout=2):
         )
         # 1.3.6.1.2.1.47.1.1.1.1.12.149 = entPhysicalMfgName (Cisco, Juniper, Arista)
         return result.stdout.strip().split('.')[0] if result.returncode == 0 else None
-    except Exception:
+    except Exception as e:
+        logger.exception(f"_snmp_get_sysname - {e}")
         return None
 
 def _snmp_get_serialnumber(ip, community="public", timeout=2, oid="1.3.6.1.2.1.47.1.1.1.1.11.149"):
@@ -38,7 +44,8 @@ def _snmp_get_serialnumber(ip, community="public", timeout=2, oid="1.3.6.1.2.1.4
         )
         # Also try 11.1, 11.2 along with 11.149 for other vendors that might support one or the other.
         return result.stdout.strip().strip('"') if result.returncode == 0 else None
-    except Exception:
+    except Exception as e:
+        logger.exception(f"_snmp_get_serialnumber - {e}")
         return None
     
 def _snmp_get_interfaces(ip, community="public", timeout=2):
@@ -64,25 +71,9 @@ def _snmp_get_interfaces(ip, community="public", timeout=2):
             _, val = line.split(" = ", 1)
             interfaces.append(val.strip())
         return interfaces
-    except Exception:
-        return []
-    
-def _ssh_probe(ip, username, password, timeout=5):
-    try:
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(ip, username=username, password=password, timeout=timeout)
-        stdin, stdout, stderr = client.exec_command("show version")
-        version_output = stdout.read().decode()
-        stdin, stdout, stderr = client.exec_command("show hostname")
-        hostname = stdout.read().decode().strip()
-        client.close()
-        return {
-            "hostname": hostname,
-            "version_output": version_output,
-        }
     except Exception as e:
-        return None
+        logger.exception(f"_snmp_get_interfaces - {e}")
+        return []
     
 def _ip_list_from_subnet_or_range(block: str):
     block = (block or "").strip()
@@ -123,7 +114,8 @@ def _alive_ping(ip, timeout_s=1):
             ["ping","-c","1","-W",str(timeout_s), ip],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         ).returncode == 0
-    except Exception:
+    except Exception as e:
+        logger.exception(f"_alive_ping - {e}")
         return False
 
 def parse_sysdescr(sysdescr):
@@ -177,8 +169,133 @@ def parse_interfaces(raw_list):
 def reverse_dns(ip):
     try:
         return socket.gethostbyaddr(ip)[0].split('.')[0]
-    except Exception:
+    except Exception as e:
+        logger.exception(f"reverse_dns - {e}")
         return None
+    
+def ssh_exec(ip, username, password, cmd, timeout=5):
+    try:
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(ip, username=username, password=password, timeout=timeout, look_for_keys=False)
+        stdin, stdout, stderr = client.exec_command(cmd)
+        output = stdout.read().decode().strip()
+        client.close()
+        return output
+    except Exception as e:
+        logger.exception(f"ssh_exec - {e}")
+        return None
+    
+def detect_platform(output):
+    output = output.lower()
+    if "nx-os" in output:
+        return {"platform": "cisco_nxos", "vendor": "Cisco"}
+    if "cisco ios software" in output:
+        return {"platform": "cisco_ios", "vendor": "Cisco"}
+    if "cisco adaptive security appliance" in output:
+        return {"platform": "cisco_asa", "vendor": "Cisco"}
+    if "arista" in output:
+        return {"platform": "arista_eos", "vendor": "Arista"}
+    if "junos" in output:
+        return {"platform": "juniper_junos", "vendor": "Juniper"}
+    if "huawei" in output:
+        return {"platform": "huawei_vrp", "vendor": "Huawei"}
+    if "vyos" in output:
+        return {"platform": "vyos", "vendor": "VyOS"}
+    return "unknown"
+
+def run_platform_probe(ip, username, password, platform):
+    if platform == "cisco_ios":
+        ver = ssh_exec(ip, username, password, "show version")
+        return {"show_version": ver}
+    if platform == "cisco_nxos":
+        inv = ssh_exec(ip, username, password, "show inventory")
+        ver = ssh_exec(ip, username, password, "show version")
+        intf = ssh_exec(ip, username, password, "show interface status")
+        parse_inv = parse_nxos_inventory(inv)
+        parse_ver = parse_nxos_version(ver)
+        parse_intf = parse_nxos_interface_names(intf)
+        return {"show_inventory": inv,
+                "show_ver": ver,
+                "show_int": intf,
+                "model": parse_inv["model"], 
+                "pid": parse_inv["pid"], 
+                "serial": parse_inv["serial"],
+                "version": parse_ver["version"],
+                "hostname": parse_ver["hostname"],
+                "interfaces": parse_intf
+                }
+    if platform == "juniper_junos":
+        chs = ssh_exec(ip, username, password, "show chassis hardware")
+        return {"chassis": chs}
+    if platform == "arista_eos":
+        ver = ssh_exec(ip, username, password, "show version")
+        inv = ssh_exec(ip, username, password, "show inventory")
+        return {"version": ver, "inventory": inv}
+    return {}
+
+def parse_nxos_inventory(inventory_output):
+    chassis_info = {}
+
+    # Split into inventory blocks (separated by blank lines)
+    blocks = inventory_output.strip().split('\n\n')
+
+    for block in blocks:
+        if 'NAME: "Chassis"' in block:
+            lines = block.splitlines()
+            for l in lines:
+                if "DESCR:" in l:
+                    # Match embedded DESCR: field
+                    m = re.search(r'DESCR:\s+"([^"]+)"', l)
+                    if m:
+                        model_raw = m.group(1)
+                        # Remove "chassis" from end
+                        chassis_info["model"] = re.sub(r'\s*chassis\s*$', '', model_raw, flags=re.IGNORECASE).strip()
+                elif l.strip().startswith("PID:"):
+                    # Extract PID and SN
+                    m = re.search(r'PID:\s*([\w\-]+).*SN:\s*([\w\-]+)', l)
+                    if m:
+                        chassis_info["pid"] = m.group(1)
+                        chassis_info["serial"] = m.group(2)
+            break
+    return chassis_info
+
+def parse_nxos_version(output):
+    version = ""
+    hostname = ""
+    lines = output.splitlines()
+    for line in lines:
+        line = line.strip()
+        # Get hostname
+        if line.lower().startswith("device name:"):
+            hostname = line.split(":", 1)[-1].strip()
+        # Get system version
+        if line.lower().startswith("system:") and "version" in line.lower():
+            m = re.search(r'version\s+([^\s,]+)', line, re.IGNORECASE)
+            if m:
+                version = m.group(1)
+    return {"version": version, "hostname": hostname}
+
+def parse_nxos_interface_names(output):
+    interfaces = []
+    lines = output.splitlines()
+    started = False
+
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        # Skip headers
+        if line.startswith("Port"):
+            started = True
+            continue
+        if line.startswith("---") or not started:
+            continue
+        iface = line.split()[0]
+        interfaces.append(iface)
+
+    return interfaces
+
 
 def run_discovery(job: DiscoveryJob):
     """
@@ -193,6 +310,11 @@ def run_discovery(job: DiscoveryJob):
     targets_str = params.get("targets", "")
     scan_kind   = params.get("scan_kind", "icmp")
     snmp_comm   = params.get("snmp_community") or ""
+    credential = params.get("credential") or ""
+    if credential:
+        credobj = get_object_or_404(NetworkCredential, pk=credential)
+        ssh_user   = credobj.username
+        ssh_pass   = credobj.password
     timeout     = int(params.get("timeout") or 5)
     ips = _ip_list_from_subnet_or_range(targets_str)
     if not ips:
@@ -211,53 +333,65 @@ def run_discovery(job: DiscoveryJob):
             job.ignored_count += 1
             continue
         alive = _alive_ping(ip, timeout_s=timeout)
-        discovered_via = "ping" if alive else "none"
+        discovered_via_ = "ping" if alive else "none"
         hostname = ""
-        platform_guess = ""
+        vendor = ""
+        platform = ""
+        model = ""
         serial = ""
+        version = ""
         interfaces = []
         raw = {"ping": alive}
 
         if scan_kind == "snmp" and alive and snmp_comm:
             sysdescr = _snmp_get_sysdescr(ip, snmp_comm, timeout)
             if sysdescr:
-                discovered_via = "snmp"
+                discovered_via_ = "snmp"
                 vendor_info = parse_sysdescr(sysdescr or "")
+                vendor = vendor_info["vendor"]
+                model = vendor_info["model"]
+                version = vendor_info["version"]
                 serial = _snmp_get_serialnumber(ip, snmp_comm, timeout, vendor_info['sn_oid'])
+                platform = vendor_info["platform"]
                 hostname = _snmp_get_sysname(ip, snmp_comm, timeout) or reverse_dns(ip)
                 interfaces_raw = _snmp_get_interfaces(ip, snmp_comm, timeout)
                 interfaces = parse_interfaces(interfaces_raw or [])
-                raw["sysdescr"] = sysdescr
-                raw["interfaces"] = interfaces_raw
-                raw["hostname"] = hostname
-                raw["serial"] = serial
+                discovery_dump = sysdescr
                 
 
         if scan_kind == "ssh" and alive:
-            creds = job.get_credential_object()
-            result = _ssh_probe(ip, creds.username, creds.password)
-            if result:
-                hostname = result["hostname"]
-                platform_guess = result["version_output"]
-                discovered_via = "ssh"
-                raw["ssh_version"] = result["version_output"]
+            ssh_banner = ssh_exec(ip, ssh_user, ssh_pass, "show version")
+            platform_guess = detect_platform(ssh_banner)
+            platform_os = platform_guess['platform']
+            vendor = platform_guess['vendor']
+            components = run_platform_probe(ip, ssh_user, ssh_pass, platform_os)
+            discovered_via_ = "ssh"
+            hostname = components["hostname"] or ""
+            model = components["model"] or ""
+            platform = components["pid"] or ""
+            serial = components["serial"] or ""
+            version = components["version"] or ""
+            interfaces = components["interfaces"]
+            discovery_dump = {
+                "show_inventory": components.get("show_inventory", ""),
+                "show_version": components.get("show_ver", "")
+                }
 
         DiscoveredDevice.objects.create(
             job=job,
             ip=ip,
             hostname=hostname,
-            platform_guess=vendor_info["platform"],
-            discovered_via=discovered_via,
+            platform_guess=platform,
+            discovered_via=discovered_via_,
             last_seen=timezone.now(),
             raw={
-                "ping": alive,
-                "sysdescr": sysdescr,
+                "discovery_dump": discovery_dump,
                 "interfaces": interfaces,
                 "hostname": hostname,
-                "vendor": vendor_info["vendor"],
-                "model": vendor_info["model"],
-                "pid": vendor_info["platform"],
-                "version": vendor_info["version"],
+                "vendor": vendor,
+                "model": model,
+                "pid": platform,
+                "version": version,
                 "serial": serial,
             }
         )
