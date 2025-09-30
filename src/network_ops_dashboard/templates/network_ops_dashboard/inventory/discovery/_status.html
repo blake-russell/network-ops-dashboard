@@ -1,0 +1,81 @@
+<p class="text-muted">
+    Job {{ job.id }} — {{ job.status|title }}<br>
+    {{ job.result_summary }}<br>
+    Processed {{ job.processed_count }} of {{ job.total_count }} targets
+  </p>
+  
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>IP</th>
+          <th>Site</th>
+          <th>Hostname</th>
+          <th>Vendor</th>
+          <th>Model</th>
+          <th>PID</th>
+          <th>Version</th>
+          <th>Serial Number</th>
+          <th>Interfaces</th>
+          <th>Install</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in devices %}
+          <tr>
+            <td>{{ d.ip }}</td>
+            <form method="POST" action="{% url 'inventory_discovery_install' d.id %}">
+              {% csrf_token %}
+              <td>
+                <select name="site" class="form-control mb-2" required>
+                  <option value="" disabled selected>Select Site</option>
+                  {% for site in sites %}
+                    <option value="{{ site.id }}" {% if site.id == selected_site_id %}selected{% endif %}>
+                      {{ site.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td>
+                <input type="text" name="hostname" value="{{ d.hostname }}" placeholder="Hostname"
+                       class="form-control form-control-sm" />
+              </td>
+              <td>
+                {% if d.raw.error %}
+                <span class="badge bg-danger" title="{{ d.raw.traceback|truncatechars:200 }}">
+                    Error
+                </span>
+                {% else %}
+                    {{ d.raw.vendor }}
+                {% endif %}
+              </td>
+              <td>
+                <input type="text" name="platform" value="{{ d.raw.model }}" placeholder="Model Name"
+                       class="form-control form-control-sm" />
+              </td>
+              <td>
+                <input type="text" name="pid" value="{{ d.raw.pid }}" placeholder="PID"
+                       class="form-control form-control-sm" />
+              </td>
+              <td>{{ d.raw.version }}</td>
+              <td>{{ d.raw.serial }}</td>
+              <td>
+                {% if d.raw.interfaces %}
+                  <span title="{{ d.raw.interfaces|join:', ' }}">{{ d.raw.interfaces|length }} ports</span>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                <button type="submit" class="btn btn-sm btn-outline-success mt-1">Install</button>
+              </td>
+            </form>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="10" class="text-muted text-center">No results yet...</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>

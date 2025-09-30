@@ -23,6 +23,8 @@ class DiscoveryJob(models.Model):
     finished_at = models.DateTimeField(null=True, blank=True)
     result_summary = models.TextField(blank=True, default="")
     result_count = models.PositiveIntegerField(default=0)
+    error_count = models.PositiveIntegerField(default=0)
+    total_count = models.PositiveIntegerField(default=0)
     log = models.TextField(blank=True, default="")
     processed_count = models.PositiveIntegerField(default=0)
     ignored_count = models.PositiveIntegerField(default=0)
