@@ -350,60 +350,66 @@ def run_discovery(job: DiscoveryJob):
             discovery_dump = {}
             raw = {"ping": alive}
 
-            if scan_kind == "snmp" and alive and snmp_comm:
-                sysdescr = _snmp_get_sysdescr(ip, snmp_comm, timeout)
-                if sysdescr:
-                    discovered_via_ = "snmp"
-                    vendor_info = parse_sysdescr(sysdescr or "")
-                    vendor = vendor_info.get("vendor", "")
-                    model = vendor_info.get("model", "")
-                    version = vendor_info.get("version", "")
-                    serial = _snmp_get_serialnumber(ip, snmp_comm, timeout, vendor_info.get('sn_oid', ""))
-                    platform = vendor_info.get("platform", "")
-                    hostname = _snmp_get_sysname(ip, snmp_comm, timeout) or reverse_dns(ip)
-                    interfaces_raw = _snmp_get_interfaces(ip, snmp_comm, timeout)
-                    interfaces = parse_interfaces(interfaces_raw or [])
-                    discovery_dump = sysdescr
+            if alive:
+                if scan_kind == "snmp" and alive and snmp_comm:
+                    sysdescr = _snmp_get_sysdescr(ip, snmp_comm, timeout)
+                    if sysdescr:
+                        discovered_via_ = "snmp"
+                        vendor_info = parse_sysdescr(sysdescr or "")
+                        vendor = vendor_info.get("vendor", "")
+                        model = vendor_info.get("model", "")
+                        version = vendor_info.get("version", "")
+                        serial = _snmp_get_serialnumber(ip, snmp_comm, timeout, vendor_info.get('sn_oid', ""))
+                        platform = vendor_info.get("platform", "")
+                        hostname = _snmp_get_sysname(ip, snmp_comm, timeout) or reverse_dns(ip)
+                        interfaces_raw = _snmp_get_interfaces(ip, snmp_comm, timeout)
+                        interfaces = parse_interfaces(interfaces_raw or [])
+                        discovery_dump = sysdescr
                 
-            if scan_kind == "ssh" and alive:
-                ssh_banner = ssh_exec(ip, ssh_user, ssh_pass, "show version")
-                platform_guess = detect_platform(ssh_banner)
-                platform_os = platform_guess.get("platform", "")
-                vendor = platform_guess.get("vendor", "")
-                components = run_platform_probe(ip, ssh_user, ssh_pass, platform_os)
-                discovered_via_ = "ssh"
-                hostname = components.get("hostname", "")
-                model = components.get("model",  "")
-                platform = components.get("pid",  "")
-                serial = components.get("serial", "")
-                version = components.get("version", "")
-                interfaces = components.get("interfaces", "")
-                discovery_dump = {
-                    "show_inventory": components.get("show_inventory", ""),
-                    "show_version": components.get("show_ver", "")
-                    }
+                if scan_kind == "ssh" and alive:
+                    ssh_banner = ssh_exec(ip, ssh_user, ssh_pass, "show version")
+                    platform_guess = detect_platform(ssh_banner)
+                    platform_os = platform_guess.get("platform", "")
+                    vendor = platform_guess.get("vendor", "")
+                    components = run_platform_probe(ip, ssh_user, ssh_pass, platform_os)
+                    discovered_via_ = "ssh"
+                    hostname = components.get("hostname", "")
+                    model = components.get("model",  "")
+                    platform = components.get("pid",  "")
+                    serial = components.get("serial", "")
+                    version = components.get("version", "")
+                    interfaces = components.get("interfaces", "")
+                    discovery_dump = {
+                        "show_inventory": components.get("show_inventory", ""),
+                        "show_version": components.get("show_ver", "")
+                        }
 
-            DiscoveredDevice.objects.create(
-                job=job,
-                ip=ip,
-                hostname=hostname,
-                platform_guess=platform,
-                discovered_via=discovered_via_,
-                last_seen=timezone.now(),
-                raw={
-                    "discovery_dump": discovery_dump or "",
-                    "interfaces": interfaces,
-                    "hostname": hostname,
-                    "vendor": vendor,
-                    "model": model,
-                    "pid": platform,
-                    "version": version,
-                    "serial": serial,
-                }
-            )
-            created_count += 1
-            job.processed_count += 1
-            job.save(update_fields=["processed_count"])
+                DiscoveredDevice.objects.create(
+                    job=job,
+                    ip=ip,
+                    hostname=hostname,
+                    platform_guess=platform,
+                    discovered_via=discovered_via_,
+                    last_seen=timezone.now(),
+                    raw={
+                        "discovery_dump": discovery_dump or "",
+                        "interfaces": interfaces,
+                        "hostname": hostname,
+                        "vendor": vendor,
+                        "model": model,
+                        "pid": platform,
+                        "version": version,
+                        "serial": serial,
+                    }
+                )
+                created_count += 1
+                job.processed_count += 1
+                job.save(update_fields=["processed_count"])
+
+            else:
+                # Device not alive
+                job.processed_count += 1
+                job.save(update_fields=["processed_count"])   
 
         except Exception as e:
             # Exception but still save DiscoveredDevice
