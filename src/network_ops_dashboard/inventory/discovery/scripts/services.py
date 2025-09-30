@@ -3,6 +3,7 @@ import paramiko
 import re
 import socket
 import logging
+import traceback
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from network_ops_dashboard.inventory.models import Inventory, NetworkCredential
@@ -327,79 +328,121 @@ def run_discovery(job: DiscoveryJob):
         Inventory.objects.exclude(ipaddress_mgmt__isnull=True)
         .values_list("ipaddress_mgmt", flat=True)
     )
+    total_count = len(ips)
+    job.total_count = total_count
+    job.save(update_fields=["total_count"])
     created_count = 0
+    error_count = 0
     for ip in ips:
-        if ip in existing:
-            job.ignored_count += 1
-            continue
-        alive = _alive_ping(ip, timeout_s=timeout)
-        discovered_via_ = "ping" if alive else "none"
-        hostname = ""
-        vendor = ""
-        platform = ""
-        model = ""
-        serial = ""
-        version = ""
-        interfaces = []
-        raw = {"ping": alive}
+        try:
+            if ip in existing:
+                job.ignored_count += 1
+                continue
+            alive = _alive_ping(ip, timeout_s=timeout)
+            discovered_via_ = "ping" if alive else "none"
+            hostname = ""
+            vendor = ""
+            platform = ""
+            model = ""
+            serial = ""
+            version = ""
+            interfaces = []
+            discovery_dump = {}
+            raw = {"ping": alive}
 
-        if scan_kind == "snmp" and alive and snmp_comm:
-            sysdescr = _snmp_get_sysdescr(ip, snmp_comm, timeout)
-            if sysdescr:
-                discovered_via_ = "snmp"
-                vendor_info = parse_sysdescr(sysdescr or "")
-                vendor = vendor_info["vendor"]
-                model = vendor_info["model"]
-                version = vendor_info["version"]
-                serial = _snmp_get_serialnumber(ip, snmp_comm, timeout, vendor_info['sn_oid'])
-                platform = vendor_info["platform"]
-                hostname = _snmp_get_sysname(ip, snmp_comm, timeout) or reverse_dns(ip)
-                interfaces_raw = _snmp_get_interfaces(ip, snmp_comm, timeout)
-                interfaces = parse_interfaces(interfaces_raw or [])
-                discovery_dump = sysdescr
+            if alive:
+                if scan_kind == "snmp" and alive and snmp_comm:
+                    sysdescr = _snmp_get_sysdescr(ip, snmp_comm, timeout)
+                    if sysdescr:
+                        discovered_via_ = "snmp"
+                        vendor_info = parse_sysdescr(sysdescr or "")
+                        vendor = vendor_info.get("vendor", "")
+                        model = vendor_info.get("model", "")
+                        version = vendor_info.get("version", "")
+                        serial = _snmp_get_serialnumber(ip, snmp_comm, timeout, vendor_info.get('sn_oid', ""))
+                        platform = vendor_info.get("platform", "")
+                        hostname = _snmp_get_sysname(ip, snmp_comm, timeout) or reverse_dns(ip)
+                        interfaces_raw = _snmp_get_interfaces(ip, snmp_comm, timeout)
+                        interfaces = parse_interfaces(interfaces_raw or [])
+                        discovery_dump = sysdescr
                 
+                if scan_kind == "ssh" and alive:
+                    ssh_banner = ssh_exec(ip, ssh_user, ssh_pass, "show version")
+                    platform_guess = detect_platform(ssh_banner)
+                    platform_os = platform_guess.get("platform", "")
+                    vendor = platform_guess.get("vendor", "")
+                    components = run_platform_probe(ip, ssh_user, ssh_pass, platform_os)
+                    discovered_via_ = "ssh"
+                    hostname = components.get("hostname", "")
+                    model = components.get("model",  "")
+                    platform = components.get("pid",  "")
+                    serial = components.get("serial", "")
+                    version = components.get("version", "")
+                    interfaces = components.get("interfaces", "")
+                    discovery_dump = {
+                        "show_inventory": components.get("show_inventory", ""),
+                        "show_version": components.get("show_ver", "")
+                        }
 
-        if scan_kind == "ssh" and alive:
-            ssh_banner = ssh_exec(ip, ssh_user, ssh_pass, "show version")
-            platform_guess = detect_platform(ssh_banner)
-            platform_os = platform_guess['platform']
-            vendor = platform_guess['vendor']
-            components = run_platform_probe(ip, ssh_user, ssh_pass, platform_os)
-            discovered_via_ = "ssh"
-            hostname = components["hostname"] or ""
-            model = components["model"] or ""
-            platform = components["pid"] or ""
-            serial = components["serial"] or ""
-            version = components["version"] or ""
-            interfaces = components["interfaces"]
-            discovery_dump = {
-                "show_inventory": components.get("show_inventory", ""),
-                "show_version": components.get("show_ver", "")
-                }
+                DiscoveredDevice.objects.create(
+                    job=job,
+                    ip=ip,
+                    hostname=hostname,
+                    platform_guess=platform,
+                    discovered_via=discovered_via_,
+                    last_seen=timezone.now(),
+                    raw={
+                        "discovery_dump": discovery_dump or "",
+                        "interfaces": interfaces,
+                        "hostname": hostname,
+                        "vendor": vendor,
+                        "model": model,
+                        "pid": platform,
+                        "version": version,
+                        "serial": serial,
+                    }
+                )
+                created_count += 1
+                job.processed_count += 1
+                job.save(update_fields=["processed_count"])
 
-        DiscoveredDevice.objects.create(
-            job=job,
-            ip=ip,
-            hostname=hostname,
-            platform_guess=platform,
-            discovered_via=discovered_via_,
-            last_seen=timezone.now(),
-            raw={
-                "discovery_dump": discovery_dump,
-                "interfaces": interfaces,
-                "hostname": hostname,
-                "vendor": vendor,
-                "model": model,
-                "pid": platform,
-                "version": version,
-                "serial": serial,
-            }
-        )
-        created_count += 1
-        job.processed_count += 1
+            else:
+                # Device not alive
+                job.processed_count += 1
+                job.save(update_fields=["processed_count"])   
+
+        except Exception as e:
+            # Exception but still save DiscoveredDevice
+            DiscoveredDevice.objects.create(
+                job=job,
+                ip=ip,
+                hostname=hostname,
+                platform_guess=platform,
+                discovered_via=discovered_via_,
+                last_seen=timezone.now(),
+                raw={
+                    "discovery_dump": discovery_dump or "",
+                    "interfaces": interfaces,
+                    "hostname": hostname,
+                    "vendor": vendor,
+                    "model": model,
+                    "pid": platform,
+                    "version": version,
+                    "serial": serial,
+                    "error": str(e),
+                    "traceback": traceback.format_exc(),
+                },
+            )
+            error_count += 1
+            job.processed_count += 1
+            job.save(update_fields=["processed_count"])
 
     job.completed = True
     job.result_count = created_count
-    job.result_summary = f"Discovered {created_count} target(s); ignored {job.ignored_count} already in Inventory."
-    job.save(update_fields=["completed","processed_count","ignored_count","result_count","result_summary"])
-    return created_count, job.result_summary
+    job.error_count = error_count
+    if error_count > 0:
+        job.result_summary = f"Discovered {created_count} target(s); encountered {job.error_count} target error(s); ignored {job.ignored_count} already in Inventory."
+    else:
+        job.result_summary = f"Discovered {created_count} target(s); ignored {job.ignored_count} already in Inventory."
+    job.save(update_fields=["completed","processed_count","error_count","ignored_count","result_count","result_summary"])
+    return job.processed_count, job.result_count, job.error_count, job.ignored_count, job.result_summary

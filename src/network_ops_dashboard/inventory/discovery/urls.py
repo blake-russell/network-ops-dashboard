@@ -21,5 +21,6 @@ from . import views
 urlpatterns = [
     re_path(r'^start/$', views.inventory_discovery_start, name='inventory_discovery_start'),
     re_path(r'^results/(?P<job_id>[0-9a-f-]{36})/$', views.inventory_discovery_results, name='inventory_discovery_results'),
+    re_path(r'^status/(?P<job_id>[0-9a-f-]{36})/$', views.inventory_discovery_status, name='inventory_discovery_status'),
     re_path(r'^install/<(?P<device_id>[0-9]{1,10})/$', views.inventory_discovery_install, name='inventory_discovery_install'),
 ]

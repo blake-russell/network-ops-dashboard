@@ -6,16 +6,15 @@ from network_ops_dashboard.inventory.discovery.scripts.services import run_disco
 from network_ops_dashboard.inventory.discovery.forms import DiscoveryForm
 from network_ops_dashboard.inventory.models import Inventory, InventoryInterface, Platform, Site
 from network_ops_dashboard.inventory.discovery.models import DiscoveryJob, DiscoveredDevice
+from network_ops_dashboard.inventory.discovery.tasks import start_discovery_in_thread
 
 @login_required
 @require_POST
-def inventory_discovery_start(request):
-    
+def inventory_discovery_start(request):  
     form = DiscoveryForm(request.POST)
     if not form.is_valid():
-        # Render the inventory page with errors (or return JSON for the modal)
         return render(request, "inventory/home.html", {"discovery_form_errors": form.errors}, status=400)
-    
+
     data = form.cleaned_data.copy()
     cred = data.get('credential')
     if cred is not None:
@@ -26,12 +25,8 @@ def inventory_discovery_start(request):
         params=data,
         status=DiscoveryJob.Status.PENDING,
     )
-    try:
-        job.mark_running()
-        count, summary = run_discovery(job)
-        job.mark_done(count=count, summary=summary)
-    except Exception as e:
-        job.mark_error(str(e))
+    # Spin up background thread
+    start_discovery_in_thread(job.id)
 
     return redirect("inventory_discovery_results", job_id=str(job.id))
 
@@ -84,3 +79,11 @@ def inventory_discovery_install(request, device_id):
     d.save()
 
     return redirect("inventory_home")
+
+@login_required
+def inventory_discovery_status(request, job_id):
+    job = get_object_or_404(DiscoveryJob, pk=job_id)
+    devices = job.devices.order_by("ip")
+    sites = Site.objects.all()
+
+    return render(request, "network_ops_dashboard/inventory/discovery/_status.html", {"job": job, "devices": devices, "sites": sites})
