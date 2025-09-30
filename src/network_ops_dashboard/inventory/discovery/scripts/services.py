@@ -347,6 +347,7 @@ def run_discovery(job: DiscoveryJob):
             serial = ""
             version = ""
             interfaces = []
+            discovery_dump = {}
             raw = {"ping": alive}
 
             if scan_kind == "snmp" and alive and snmp_comm:
