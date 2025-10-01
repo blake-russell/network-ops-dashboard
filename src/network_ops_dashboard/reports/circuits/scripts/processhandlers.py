@@ -62,7 +62,7 @@ def process_windstream(wstmtcemails_folder, circuit_id_list):
             try:
                 with open(file_path, 'r', encoding="ISO-8859-1") as email:
                     # split the email
-                    logger.info(f"ProcessCircuitMtcEmails: Processing Windstream Emails {filename}.")
+                    logger.info(f"process_windstream(): Processing Windstream Emails {filename}.")
                     content1 = email.read()
                     # content2 = content1.split('.png> \n\n\n')[-1] # VBScript Forwarding format
                     content2 = content1.split('.png]\n\n')[-1] # PowerAutomate Forwarding format
@@ -104,11 +104,11 @@ def process_windstream(wstmtcemails_folder, circuit_id_list):
                                 wmt_entry.save()
                                 for raw, circuit_obj in matches:
                                     try:
-                                        logger.info(f"ProcessCircuitMtcEmails: Windstream#{wmt2} adding circuit {circuit_obj}.")
+                                        logger.info(f"process_windstream(): Windstream#{wmt2} adding circuit {circuit_obj}.")
                                         wmt_entry.circuits.add(circuit_obj)
                                     except Exception as e:
-                                        logger.exception(f"ProcessCircuitMtcEmails: Error trying add {circuit_obj} to Windstream#{wmt2}: {e}")
-                                logger.info(f"ProcessCircuitMtcEmails: Windstream#{wmt2} updated to {status2}.")
+                                        logger.exception(f"process_windstream(): Error trying add {circuit_obj} to Windstream#{wmt2}: {e}")
+                                logger.info(f"process_windstream(): Windstream#{wmt2} updated to {status2}.")
                         else:
                             # if entry with wmt# does not exist then create a new object entry
                             wmt_entry = CircuitMtcEmail.objects.create(
@@ -120,11 +120,11 @@ def process_windstream(wstmtcemails_folder, circuit_id_list):
                             )
                             for raw, circuit_obj in matches:
                                 try:
-                                    logger.info(f"ProcessCircuitMtcEmails: Windstream#{wmt2} adding circuit {circuit_obj}.")
+                                    logger.info(f"process_windstream(): Windstream#{wmt2} adding circuit {circuit_obj}.")
                                     wmt_entry.circuits.add(circuit_obj)
                                 except Exception as e:
-                                    logger.exception(f"ProcessCircuitMtcEmails: Error trying add {circuit_obj} to new Windstream#{wmt2}: {e}")
-                            logger.info(f"ProcessCircuitMtcEmails: New Windstream#{wmt2} created.")
+                                    logger.exception(f"process_windstream(): Error trying add {circuit_obj} to new Windstream#{wmt2}: {e}")
+                            logger.info(f"process_windstream(): New Windstream#{wmt2} created.")
                     else:
                         try:
                             # figure out if the WMT has been updated with valid circuit ID removed then auto-archive it
@@ -136,13 +136,13 @@ def process_windstream(wstmtcemails_folder, circuit_id_list):
                                 if wmt_entry.status not in excluded_status:
                                     wmt_entry.status = 'Auto-Archived-Cktid'
                                     wmt_entry.save()
-                                    logger.info(f"ProcessCircuitMtcEmails: Windstream#{wmt2} updated to Auto-Archived-Cktid (No valid circuit id found).")
+                                    logger.info(f"process_windstream(): Windstream#{wmt2} updated to Auto-Archived-Cktid (No valid circuit id found).")
                         except Exception as e:
-                            logger.exception(f"ProcessCircuitMtcEmails: Error trying Windstream#{wmt2}: {e}")
+                            logger.exception(f"process_windstream(): Error trying Windstream#{wmt2}: {e}")
                             continue
                 os.remove(file_path)
             except Exception as e:
-                logger.exception(f"ProcessCircuitMtcEmails: Error reading {filename}: {e}")
+                logger.exception(f"process_windstream(): Error reading {filename}: {e}")
                 continue
     return None
 
@@ -154,6 +154,7 @@ def process_cogent(folder_path, circuit_id_list):
     ("Completed", re.compile(r"\b(maintenance\s+completed|completed\s+maintenance)\b", re.I)),
     ("Emergency", re.compile(r"\bemergency\b", re.I)),
     ("Planned",   re.compile(r"\bplanned\b", re.I)),
+    ("Cancelled", re.compile(r"\bcancellation\b", re.I)),
     # Fallback if "Planned" isn't present
     ("Planned",   re.compile(r"\bcircuit\s+provider\s+maintenance\b", re.I)),
     ]
@@ -182,19 +183,19 @@ def process_cogent(folder_path, circuit_id_list):
                                     decoded_bytes = base64.b64decode(payload)
                                     decoded_content = decoded_bytes.decode(part.get_content_charset() or 'utf-8', errors='replace')
                                 except Exception as e:
-                                    logger.exception(f"ProcessCircuitMtcEmails: Failed to decode email {filename}: {e}")
+                                    logger.exception(f"process_cogent(): Failed to decode email {filename}: {e}")
                                     raise
                             elif content_transfer_encoding == "quoted-printable":
                                 from quopri import decodestring
                                 decoded_content = decodestring(payload).decode(part.get_content_charset() or 'utf-8', errors='replace')
                             else:
                                 decoded_content = payload
-                                logger.info(f"ProcessCircuitMtcEmails: text/plain Cogent email passed: {filename}")
+                                logger.info(f"process_cogent(): text/plain Cogent email passed: {filename}")
                         else:
                             decoded_content = payload
-                            logger.info(f"ProcessCircuitMtcEmails: Encoded non text/plain Cogent email passed: {filename}")
+                            logger.info(f"process_cogent(): Encoded non text/plain Cogent email passed: {filename}")
                     # split the email
-                    logger.info(f"ProcessCircuitMtcEmails: Processing Cogent Emails {filename}.")
+                    logger.info(f"process_cogent(): Processing Cogent Emails {filename}.")
                     content0 = decoded_content.replace('\\n', '').replace('=', '')
                     content1 = content0.split('Subject: [EXTERNAL]:')[1]
                     content = content1.split('We appreciate your patience ')[0]
@@ -207,21 +208,33 @@ def process_cogent(folder_path, circuit_id_list):
                             mtc_or_cancel_subject = subject.split('Importance')[0].strip()
                         except ValueError:
                             mtc_or_cancel_subject = subject.split(' ')[0].strip()
-                        if mtc_or_cancel_subject.split(' ')[0] == "CANCELLATION":
+                        status = _classify_subject(mtc_or_cancel_subject)['status']
+                        if status == 'Cancelled':
                             mtc_id = mtc_or_cancel_subject.split(' ')[1].strip()
-                            status = 'CANCELLATION'
                             ckt_number1 = mtc_or_cancel_subject.split(' - ')[1].strip()
                             ckt_number = ckt_number1.split(', ')
+                            ''' Not in use currently...
                             start_time1 = content.split('will not take place on ')[1].strip()
                             start_time2 = start_time1.split(' -')[0].strip()
                             # start_time_dt = datetime.strptime(start_time2.replace(' at ', ' '), "%m/%d/%y %H:%M")
                             start_time_str = start_time2.replace(' at ', ', ')
                             # end_time_dt = start_time_dt
                             end_time_str = start_time_str
-                            impact_str = 'No impact unless rescheduled'
+                            '''
+                        if status == 'Completed':
+                            mtc_id = mtc_or_cancel_subject.split(' ')[0].strip()
+                            ckt_number1 = mtc_or_cancel_subject.split(' - ')[1].strip()
+                            ckt_number = ckt_number1.split(', ')
+                            ''' Not in use currently...
+                            start_time1 = content.split('scheduled for ')[1].strip()
+                            start_time2 = start_time1.split(' -')[0].strip()
+                            # start_time_dt = datetime.strptime(start_time2.replace(' at ', ' '), "%m/%d/%y %H:%M")
+                            start_time_str = start_time2.replace(' at ', ', ')
+                            # end_time_dt = start_time_dt
+                            end_time_str = start_time_str
+                            '''
                         else:
                             mtc_id = mtc_or_cancel_subject.split(' ')[0].strip()
-                            status = _classify_subject(mtc_or_cancel_subject)['status']
                             ckt_number1 = mtc_or_cancel_subject.split(' - ')[1].strip()
                             ckt_number = ckt_number1.split(', ')
                             start_time1 = content.split('Start time: ')[1].strip()
@@ -247,18 +260,18 @@ def process_cogent(folder_path, circuit_id_list):
                             if mtc_entry.status not in excluded_status:
                                 #  only make updates if mtc_id# has not been cancelled, completed, or archived
                                 mtc_entry.status = status
-                                if status != 'CANCELLATION':
+                                if status != 'Cancelled' or 'Completed':
                                     mtc_entry.impact = impact_str
                                     mtc_entry.startdatetime = start_time_str
                                     mtc_entry.enddatetime = end_time_str
                                 mtc_entry.save()
                                 for raw, circuit_obj in matches:
                                     try:
-                                        logger.info(f"ProcessCircuitMtcEmails: Cogent#{mtc_id} adding circuit {circuit_obj}.")
+                                        logger.info(f"process_cogent(): Cogent#{mtc_id} adding circuit {circuit_obj}.")
                                         mtc_entry.circuits.add(circuit_obj)
                                     except Exception as e:
-                                        logger.exception(f"ProcessCircuitMtcEmails: Error trying add {circuit_obj} to Cogent#{mtc_id}: {e}")
-                                logger.info(f"ProcessCircuitMtcEmails: Cogent#{mtc_id} updated to {status}.")
+                                        logger.exception(f"process_cogent(): Error trying add {circuit_obj} to Cogent#{mtc_id}: {e}")
+                                logger.info(f"process_cogent(): Cogent#{mtc_id} updated to {status}.")
                         else:
                             # if entry with mtc_id# does not exist then create a new object entry
                             mtc_entry = CircuitMtcEmail.objects.create(
@@ -270,11 +283,11 @@ def process_cogent(folder_path, circuit_id_list):
                             )
                             for raw, circuit_obj in matches:
                                 try:
-                                    logger.info(f"ProcessCircuitMtcEmails: Cogent#{mtc_id} adding circuit {circuit_obj}.")
+                                    logger.info(f"process_cogent(): Cogent#{mtc_id} adding circuit {circuit_obj}.")
                                     mtc_entry.circuits.add(circuit_obj)
                                 except Exception as e:
-                                    logger.exception(f"ProcessCircuitMtcEmails: Error trying add {circuit_obj} to new Cogent#{mtc_id}: {e}")
-                            logger.info(f"ProcessCircuitMtcEmails: New Cogent#{mtc_id} created.")
+                                    logger.exception(f"process_cogent(): Error trying add {circuit_obj} to new Cogent#{mtc_id}: {e}")
+                            logger.info(f"process_cogent(): New Cogent#{mtc_id} created.")
                     else:
                         try:
                             # figure out if the mtc_id has been updated with valid circuit ID removed then auto-archive it
@@ -285,13 +298,13 @@ def process_cogent(folder_path, circuit_id_list):
                                 if mtc_entry.status not in excluded_status:
                                     mtc_entry.status = 'Auto-Archived-Cktid'
                                     mtc_entry.save()
-                                    logger.info(f"ProcessCircuitMtcEmails: Cogent#{mtc_id} updated to Auto-Archived-Cktid (No valid circuit id found).")
+                                    logger.info(f"process_cogent(): Cogent#{mtc_id} updated to Auto-Archived-Cktid (No valid circuit id found).")
                         except Exception as e:
-                            logger.exception(f"ProcessCircuitMtcEmails: Error trying Cogent#{mtc_id}: {e}")
+                            logger.exception(f"process_cogent(): Error trying Cogent#{mtc_id}: {e}")
                             continue
                 os.remove(file_path)
             except Exception as e:
-                logger.exception(f"ProcessCircuitMtcEmails: Error reading {filename}: {e}")
+                logger.exception(f"process_cogent(): Error reading {filename}: {e}")
                 continue
     return None
 
