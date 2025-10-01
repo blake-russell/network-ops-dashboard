@@ -100,6 +100,7 @@
         <div class="mb-3">
           <label class="form-label">SSH Credential</label>
           {{ discovery_form.credential }}
+          <br>
         </div>
 
         <div class="row g-2">
@@ -128,6 +129,43 @@
     </form>
   </div>
 </div>
+
+<!-- automatically open modal if there are post/form errors -->
+{% if discovery_form_errors %}
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var modal = new bootstrap.Modal(document.getElementById("discoverModal"));
+    modal.show();
+  });
+</script>
+{% endif %}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const methodSelect = document.querySelector("select[name='scan_kind']");
+    const snmpField = document.querySelector("input[name='snmp_community']");
+    const sshField = document.querySelector("select[name='credential'], input[name='credential']");
+  
+    function toggleFields() {
+      if (methodSelect.value === "snmp") {
+        snmpField.removeAttribute("disabled");
+        sshField.setAttribute("disabled", "disabled");
+        sshField.value = "";
+      } else if (methodSelect.value === "ssh") {
+        sshField.removeAttribute("disabled");
+        snmpField.setAttribute("disabled", "disabled");
+        snmpField.value = "";
+      } else {
+        // default: both enabled (if adding additional discovery methods later)
+        snmpField.removeAttribute("disabled");
+        sshField.removeAttribute("disabled");
+      }
+    }
+  
+    methodSelect.addEventListener("change", toggleFields);
+    toggleFields();
+  });
+  </script>
 
 <script>
 (function(){

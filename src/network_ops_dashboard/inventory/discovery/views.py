@@ -13,7 +13,7 @@ from network_ops_dashboard.inventory.discovery.tasks import start_discovery_in_t
 def inventory_discovery_start(request):  
     form = DiscoveryForm(request.POST)
     if not form.is_valid():
-        return render(request, "inventory/home.html", {"discovery_form_errors": form.errors}, status=400)
+        return render(request, "network_ops_dashboard/inventory/home.html", {"discovery_form": form, "discovery_form_errors": form.errors}, status=400)
 
     data = form.cleaned_data.copy()
     cred = data.get('credential')
