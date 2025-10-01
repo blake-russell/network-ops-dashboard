@@ -10,18 +10,29 @@ class DiscoveryForm(forms.Form):
         })
     )
     scan_kind = forms.ChoiceField(
-        choices=[("icmp","ICMP ping"),("snmp","SNMP walk"),("ssh","SSH banner")],
-        initial="icmp",
+        choices=[("snmp","SNMP"),("ssh","SSH")],
+        initial="snmp",
         label="Discovery Method"
     )
     snmp_community = forms.CharField(
-        label="SNMP Community (optional)",
+        label="SNMP Community",
         required=False
     )
     credential = forms.ModelChoiceField(
-        label="SSH/HTTP Credential (optional)",
+        label="SSH Credential",
         queryset=NetworkCredential.objects.all(),
         required=False
     )
     timeout = forms.IntegerField(label="Timeout (s)", min_value=1, initial=5)
     verify_ssl = forms.BooleanField(label="Verify SSL (if HTTPS used)", required=False)
+
+    def clean(self):
+        cleaned = super().clean()
+        kind = cleaned.get("scan_kind")
+
+        if kind == "snmp" and not cleaned.get("snmp_community"):
+            raise forms.ValidationError("SNMP discovery requires a community string.")
+        if kind == "ssh" and not cleaned.get("credential"):
+            raise forms.ValidationError("SSH discovery requires a credential.")
+
+        return cleaned
