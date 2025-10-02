@@ -260,7 +260,6 @@ def process_cogent(folder_path, circuit_id_list):
                             if mtc_entry.status not in excluded_status:
                                 #  only make updates if mtc_id# has not been cancelled, completed, or archived
                                 mtc_entry.status = status
-                                logger.info(f"process_cogent(): Cogent#{mtc_id} status is {status}.")
                                 if status not in ('Cancelled', 'Completed'):
                                     mtc_entry.impact = impact_str
                                     mtc_entry.startdatetime = start_time_str
