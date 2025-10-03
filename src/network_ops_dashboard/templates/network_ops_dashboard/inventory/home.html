@@ -39,7 +39,13 @@
   </div>
   <div class="col-12 mt-1">
     <a href="#" id="reset-filters" class="btn btn-sm btn-outline-secondary">Reset</a>
-    <a href="{% url 'inventory_add' %}" class="btn btn-sm btn-outline-primary">Add Network Device</a>
+    <button class="btn btn-sm btn-outline-primary"
+      hx-get="{% url 'inventory_add_modal' %}"
+      hx-target="#inventoryModal .modal-content"
+      data-bs-toggle="modal"
+      data-bs-target="#inventoryModal">
+        Add Network Device
+  </button>
     <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#discoverModal">
       🔎 Discover Devices
     </button>
@@ -56,11 +62,10 @@
       <th>Serial#</th>
       <th>IP Address (MGMT)</th>
       <th>Device Tags</th>
-      <th>Actions</th>
     </tr>
   </thead>
   <tbody id="inv-tbody">
-    <tr><td colspan="7" class="text-muted">Loading…</td></tr>
+    <tr><td colspan="6" class="text-muted">Loading…</td></tr>
   </tbody>
 </table>
 </div>
@@ -130,6 +135,15 @@
   </div>
 </div>
 
+<!-- Device Modal -->
+<div class="modal fade" id="inventoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <!-- HTMX loads edit form here -->
+    </div>
+  </div>
+</div>
+
 <!-- automatically open modal if there are post/form errors -->
 {% if discovery_form_errors %}
 <script>
@@ -139,6 +153,14 @@
   });
 </script>
 {% endif %}
+
+<!-- on device delete -->
+<script>
+  document.body.addEventListener("deviceDeleted", function () {
+    bootstrap.Modal.getInstance(document.getElementById("inventoryModal")).hide();
+    fetchRows();
+  });
+</script>
 
 <script>
   document.addEventListener("DOMContentLoaded", function() {
@@ -195,36 +217,48 @@
   }
 
   async function fetchRows() {
-    tbody.innerHTML = `<tr><td colspan="7" class="text-muted">Loading…</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="text-muted">Loading…</td></tr>`;
     const qs = buildQuery();
     const url = `{% url 'inventory_data' %}` + (qs ? `?${qs}` : '');
-    const res = await fetch(url, {headers: {'X-Requested-With':'XMLHttpRequest'}});
+    const res = await fetch(url, {
+      headers: {'X-Requested-With':'XMLHttpRequest'},
+      cache: "no-store"
+    });
     const data = await res.json();
     renderRows(data.rows || []);
   }
+  window.fetchRows = fetchRows;
 
   function renderRows(rows) {
-    if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="text-muted">No results.</td></tr>`;
-      return;
-    }
-    const html = rows.map(r => `
-      <tr class="table-light">
-        <td>${escapeHtml(r.name)}</td>
-        <td>${escapeHtml(r.site)}</td>
-        <td>${escapeHtml(r.platform)}</td>
-        <td>${escapeHtml(r.serial_number)}</td>
-        <td>${escapeHtml(r.ipaddress_mgmt)}</td>
-        <td>${(r.tags || []).map(t => escapeHtml(t)).join('<br>')}</td>
-        <td><a href="${buildEditUrl(r.pk)}" class="btn btn-sm btn-outline-secondary">Edit</a></td>
-      </tr>
-    `).join('');
-    tbody.innerHTML = html;
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-muted">No results.</td></tr>`;
+    return;
   }
+  const html = rows.map(r => `
+    <tr class="table-light">
+      <td>
+        <a href="#"
+           hx-get="${buildEditUrl(r.pk)}"
+           hx-target="#inventoryModal .modal-content"
+           data-bs-toggle="modal"
+           data-bs-target="#inventoryModal">
+           ${escapeHtml(r.name)}
+        </a>
+      </td>
+      <td>${escapeHtml(r.site)}</td>
+      <td>${escapeHtml(r.platform)}</td>
+      <td>${escapeHtml(r.serial_number)}</td>
+      <td>${escapeHtml(r.ipaddress_mgmt)}</td>
+      <td>${(r.tags || []).map(t => escapeHtml(t)).join('<br>')}</td>
+    </tr>
+  `).join('');
+  tbody.innerHTML = html;
+  htmx.process(tbody);
+}
 
-  function buildEditUrl(pk) {
-    return "{% url 'inventory_edit' 0 %}".replace("0", String(pk));
-  }
+function buildEditUrl(pk) {
+  return "{% url 'inventory_edit_modal' 0 %}".replace("0", String(pk));
+}
 
   function escapeHtml(s) {
     return (s ?? '').toString()

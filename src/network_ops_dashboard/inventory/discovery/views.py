@@ -8,8 +8,8 @@ from network_ops_dashboard.inventory.models import Inventory, InventoryInterface
 from network_ops_dashboard.inventory.discovery.models import DiscoveryJob, DiscoveredDevice
 from network_ops_dashboard.inventory.discovery.tasks import start_discovery_in_thread
 
-@login_required
 @require_POST
+@login_required(login_url='/accounts/login/')
 def inventory_discovery_start(request):  
     form = DiscoveryForm(request.POST)
     if not form.is_valid():
@@ -30,7 +30,7 @@ def inventory_discovery_start(request):
 
     return redirect("inventory_discovery_results", job_id=str(job.id))
 
-@login_required
+@login_required(login_url='/accounts/login/')
 def inventory_discovery_results(request, job_id):
     job = get_object_or_404(DiscoveryJob, pk=job_id)
     devices = job.devices.order_by("ip")
@@ -38,7 +38,7 @@ def inventory_discovery_results(request, job_id):
     return render(request, "network_ops_dashboard/inventory/discovery/results.html", {"job": job, "devices": devices, "sites": sites})
 
 @require_POST
-@login_required
+@login_required(login_url='/accounts/login/')
 def inventory_discovery_install(request, device_id):
     d = get_object_or_404(DiscoveredDevice, pk=device_id)
 
@@ -80,10 +80,9 @@ def inventory_discovery_install(request, device_id):
 
     return redirect("inventory_home")
 
-@login_required
+@login_required(login_url='/accounts/login/')
 def inventory_discovery_status(request, job_id):
     job = get_object_or_404(DiscoveryJob, pk=job_id)
     devices = job.devices.order_by("ip")
     sites = Site.objects.all()
-
     return render(request, "network_ops_dashboard/inventory/discovery/_status.html", {"job": job, "devices": devices, "sites": sites})
