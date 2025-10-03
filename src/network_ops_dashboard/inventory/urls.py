@@ -24,8 +24,9 @@ from . import views
 urlpatterns = [
     re_path(r'^$', views.inventory_home, name='inventory_home'),
     re_path(r'^data/$', views.inventory_data, name='inventory_data'),
-    re_path(r'^add/$', views.inventory_add, name='inventory_add'),
-    re_path(r'^edit/(?P<pk>[0-9]{1,10})/$', views.inventory_edit, name='inventory_edit'),
+    re_path(r'^add/$', views.inventory_add_modal, name='inventory_add_modal'),
+    re_path(r'^edit/(?P<pk>[0-9]{1,10})/$', views.inventory_edit_modal, name='inventory_edit_modal'),
+    re_path(r'^delete/(?P<pk>[0-9]{1,10})/$', views.inventory_delete_modal, name='inventory_delete_modal'),
     re_path(r'^platform/$', views.platform_home, name='platform_home'),
     re_path(r'^platform/add/$', views.platform_add, name='platform_add'),
     re_path(r'^platform/edit/(?P<pk>[0-9]{1,10})/$', views.platform_edit, name='platform_edit'),

@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.views.decorators.cache import never_cache
+from django.http import JsonResponse, HttpResponse
 from django.db.models import Q
 import logging
 from network_ops_dashboard.decorators import *
@@ -29,29 +30,79 @@ def inventory_home(request):
     })
 
 @login_required(login_url='/accounts/login/')
-def inventory_edit(request, pk):
-    inv = get_object_or_404(Inventory, pk=pk)
-    if request.method == 'POST':
-        form = InventoryForm(request.POST, instance=inv)
+def inventory_edit_modal(request, pk):
+    device = get_object_or_404(Inventory, pk=pk)
+    if request.method == "POST":
+        form = InventoryForm(request.POST, instance=device)
         if form.is_valid():
-            invform = form.save(commit=True)
-            invform.save()
-            return redirect('inventory_home')
+            form.save()
+            return HttpResponse('<script>window.location.reload()</script>')
     else:
-        form = InventoryForm(instance=inv)
-    return render(request, 'network_ops_dashboard/inventory/edit.html', {'form': form})
+        form = InventoryForm(instance=device)
+    return render(request, "network_ops_dashboard/inventory/_inventory_form.html", {"form": form, "device": device})
 
 @login_required(login_url='/accounts/login/')
-def inventory_add(request):
-    if request.method == 'POST':
+def inventory_add_modal(request):
+    if request.method == "POST":
         form = InventoryForm(request.POST)
         if form.is_valid():
-            invadd = form.save(commit=True)
-            invadd.save()
-            return redirect('inventory_home')
+            form.save()
+            return HttpResponse('<script>window.location.reload()</script>')
     else:
         form = InventoryForm()
-    return render(request, 'network_ops_dashboard/inventory/add.html', {'form': form})
+    return render(request, "network_ops_dashboard/inventory/_inventory_form.html", {"form": form, "device": None})
+
+@login_required(login_url='/accounts/login/')
+def inventory_delete_modal(request, pk):
+    device = get_object_or_404(Inventory, pk=pk)
+    if request.method == "POST" and request.POST.get("_method") == "DELETE":
+        device.delete()
+        response = HttpResponse()
+        response['HX-Trigger'] = 'deviceDeleted'
+        return response
+    return HttpResponse("Unsupported method", status=405)
+
+@login_required(login_url='/accounts/login/')
+@never_cache
+def inventory_data(request):
+    site = request.GET.get('site', '').strip()
+    platform = request.GET.get('platform', '').strip()
+    tag = request.GET.get('tag', '').strip()
+    q = request.GET.get('q', '').strip()
+
+    qs = (Inventory.objects
+          .select_related('site', 'platform')
+          .prefetch_related('device_tag')
+          .all())  # always start fresh from DB
+
+    if site:
+        qs = qs.filter(site__name__icontains=site)
+    if platform:
+        qs = qs.filter(platform__name__icontains=platform)
+    if tag:
+        qs = qs.filter(device_tag__name__iexact=tag)
+    if q:
+        qs = qs.filter(
+            Q(name__icontains=q) |
+            Q(serial_number__icontains=q) |
+            Q(ipaddress_mgmt__icontains=q)
+        ).distinct()
+
+    rows = [{
+        "pk": d.pk,
+        "name": d.name,
+        "site": d.site.name if d.site else "",
+        "platform": d.platform.name if d.platform else "",
+        "serial_number": d.serial_number or "",
+        "ipaddress_mgmt": d.ipaddress_mgmt or "",
+        "tags": [t.name for t in d.device_tag.all()],
+    } for d in qs]
+
+    response = JsonResponse({"rows": rows})
+    # extra safety: explicit no-cache headers
+    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+    return response
 
 @login_required(login_url='/accounts/login/')
 def platform_home(request):
@@ -169,45 +220,6 @@ def devicetag_add(request):
     else:
         form = DeviceTagForm()
     return render(request, 'network_ops_dashboard/inventory/devicetag/add.html', {'form': form})
-
-@login_required(login_url='/accounts/login/')
-def inventory_data(request):
-    site = request.GET.get('site', '').strip()
-    platform = request.GET.get('platform', '').strip()
-    tag = request.GET.get('tag', '').strip()
-    q = request.GET.get('q', '').strip()
-
-    qs = (Inventory.objects
-          .select_related('site', 'platform')
-          .prefetch_related('device_tag')
-          .all())
-    
-    if site:
-        qs = qs.filter(site__name__icontains=site)
-    if platform:
-        qs = qs.filter(platform__name__icontains=platform)
-    if tag:
-        qs = qs.filter(device_tag__name__iexact=tag)
-    if q:
-        qs = qs.filter(
-            Q(name__icontains=q) |
-            Q(serial_number__icontains=q) |
-            Q(ipaddress_mgmt__icontains=q)
-        ).distinct()
-
-    rows = []
-
-    for d in qs:
-        rows.append({
-            "pk": d.pk,
-            "name": d.name,
-            "site": d.site.name if d.site else "",
-            "platform": d.platform.name if d.platform else "",
-            "serial_number": d.serial_number or "",
-            "ipaddress_mgmt": d.ipaddress_mgmt or "",
-            "tags": [t.name for t in d.device_tag.all()],
-        })
-    return JsonResponse({"rows": rows})
 
 @login_required(login_url='/accounts/login/')
 def site_data(request):
