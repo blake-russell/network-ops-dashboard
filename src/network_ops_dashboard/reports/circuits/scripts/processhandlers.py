@@ -148,7 +148,7 @@ def process_windstream(wstmtcemails_folder, circuit_id_list):
 
 def process_cogent(folder_path, circuit_id_list):
     # Parse Cogent email
-    excluded_status = ['Cancellation', 'Archived', 'Auto-Archived', 'Auto-Archived-Cktid', 'Completed']
+    excluded_status = ['Cancelled', 'Archived', 'Auto-Archived', 'Auto-Archived-Cktid', 'Completed']
     # Status Patterns
     STATUS_PATTERNS = [
     ("Completed", re.compile(r"\b(maintenance\s+completed|completed\s+maintenance)\b", re.I)),
@@ -260,7 +260,7 @@ def process_cogent(folder_path, circuit_id_list):
                             if mtc_entry.status not in excluded_status:
                                 #  only make updates if mtc_id# has not been cancelled, completed, or archived
                                 mtc_entry.status = status
-                                if status != 'Cancelled' or 'Completed':
+                                if status not in ('Cancelled', 'Completed'):
                                     mtc_entry.impact = impact_str
                                     mtc_entry.startdatetime = start_time_str
                                     mtc_entry.enddatetime = end_time_str
