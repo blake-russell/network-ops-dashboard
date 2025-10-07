@@ -6,7 +6,7 @@ from django.db.models import Q
 import logging
 from network_ops_dashboard.decorators import *
 from network_ops_dashboard.models import *
-from network_ops_dashboard.inventory.models import Inventory, Site, Platform, DeviceTag
+from network_ops_dashboard.inventory.models import Inventory, InventoryInterface, Site, Platform, DeviceTag
 from network_ops_dashboard.inventory.discovery.forms import DiscoveryForm
 from network_ops_dashboard.inventory.forms import *
 
@@ -103,6 +103,31 @@ def inventory_data(request):
     response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     response["Pragma"] = "no-cache"
     return response
+
+@login_required(login_url='/accounts/login/')
+def inventory_priority_interfaces(request, pk):
+    inventory = get_object_or_404(Inventory, pk=pk)
+
+    if request.method == "POST":
+        selected = request.POST.getlist("priority_interfaces")
+
+        # Clear old priorities
+        InventoryInterface.objects.filter(device=inventory).update(is_priority=False)
+
+        for iface_name in selected:
+            iface, _ = InventoryInterface.objects.get_or_create(
+                device=inventory,
+                name=iface_name.strip()
+            )
+            iface.is_priority = True
+            iface.save()
+
+        return JsonResponse({"success": True})
+
+    return render(request, "network_ops_dashboard/inventory/_priority_interfaces_modal.html", {
+        "inventory": inventory,
+        "interfaces": inventory.interfaces.all(),
+    })
 
 @login_required(login_url='/accounts/login/')
 def platform_home(request):

@@ -171,7 +171,8 @@ class Inventory(models.Model):
     discovery_source = models.CharField(max_length=64, blank=True, default="")
     sw_version = models.CharField(max_length=128, blank=True, default="")
     # Priority/Tracked Interfaces
-    priority_interfaces = models.CharField(max_length=750, blank=True)
+    priority_interfaces = models.JSONField(default=list, blank=True, null=True)
+    # stores ["Ethernet1/1", "Ethernet2/43", "mgmt0"]
     def get_priority_interfaces(self):
         return [k.strip() for k in (self.priority_interfaces or "").split(",") if k.strip()]
     def set_priority_interfaces(self, items):
@@ -197,3 +198,10 @@ class InventoryInterface(models.Model):
     device = models.ForeignKey(Inventory, related_name="interfaces", on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
     is_priority = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ("device", "name")
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.device.name} – {self.name}"

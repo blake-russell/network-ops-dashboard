@@ -27,6 +27,7 @@ urlpatterns = [
     re_path(r'^add/$', views.inventory_add_modal, name='inventory_add_modal'),
     re_path(r'^edit/(?P<pk>[0-9]{1,10})/$', views.inventory_edit_modal, name='inventory_edit_modal'),
     re_path(r'^delete/(?P<pk>[0-9]{1,10})/$', views.inventory_delete_modal, name='inventory_delete_modal'),
+    re_path(r'^priority-interfaces/(?P<pk>[0-9]{1,10})/$', views.inventory_priority_interfaces, name='inventory_priority_interfaces'),
     re_path(r'^platform/$', views.platform_home, name='platform_home'),
     re_path(r'^platform/add/$', views.platform_add, name='platform_add'),
     re_path(r'^platform/edit/(?P<pk>[0-9]{1,10})/$', views.platform_edit, name='platform_edit'),
