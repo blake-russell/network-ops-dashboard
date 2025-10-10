@@ -8,24 +8,40 @@ from network_ops_dashboard.inventory.models import *
 class InventoryForm(forms.ModelForm):
     class Meta:
         model = Inventory
-        fields = ('name', 'name_lookup', 'site', 'platform', 'serial_number', \
-            'ipaddress_mgmt', 'ipaddress_rest', 'ipaddress_gmni', 'port_rest', 'port_netc', \
+        fields = ('status', 'name', 'name_lookup', 'site', 'platform', 'serial_number', \
+            'ipaddress_mgmt', 'ipaddress_rest', 'ipaddress_gnmi', 'port_rest', 'port_netc', \
             'port_gnmi', 'device_tag', 'creds_ssh', 'creds_rest')
-    name = forms.CharField(label="Device Name:", help_text="<br>Enter name that is resolved from mgmt IP excluding<br>the domain/subdomain.", required=True)
-    name_lookup = forms.CharField(label="Name Lookup:", help_text="<br>ie: devicename.companyname.com", required=False)
+    DEVICE_STATUS_CHOICES = (
+    ("ACTIVE", "Active"),
+    ("STAGING", "Staging"),
+    ("MAINT", "Maintenance"),
+    ("RETIRED", "Retired"),
+    )
+    status = forms.ChoiceField(label="Status:", choices=DEVICE_STATUS_CHOICES, required=True)
+    name = forms.CharField(label="Hostname:", help_text="<br>Hostname of device", required=True)
+    name_lookup = forms.CharField(label="FQDN:", help_text="<br>ie: devicename.companyname.com", required=False)
     site = forms.ModelChoiceField(label="Site:", queryset=Site.objects.all(), required=False)
     platform = forms.ModelChoiceField(label="Platform:", queryset=Platform.objects.all(), required=False)
     serial_number = forms.CharField(label="Serial Number:", required=False)
     ipaddress_mgmt = forms.GenericIPAddressField(label="IP Address (MGMT):", initial='0.0.0.0')
     ipaddress_rest = forms.GenericIPAddressField(label="IP Address (REST):", initial='0.0.0.0')
-    ipaddress_gmni = forms.GenericIPAddressField(label="IP Address (gNMI):", initial='0.0.0.0')
+    ipaddress_gnmi = forms.GenericIPAddressField(label="IP Address (gNMI):", initial='0.0.0.0')
     port_rest = forms.CharField(label="Port (REST):", initial='443')
     port_netc = forms.CharField(label="Port (NETCONF):", initial='830')
     port_gnmi = forms.CharField(label="Port (gNMI):", initial='9339')
     device_tag = forms.ModelMultipleChoiceField(label="Device Tags:", queryset=DeviceTag.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'form-select'}), required=False)
-    # priority_interfaces = forms.CharField(label="Priority Interfaces:", help_text="<br>ie: GigabitEthernet2/1/1, TenGigabitEthernet1/1/1, etc", required=False)
     creds_ssh = forms.ModelChoiceField(label="SSH Credential:", queryset=NetworkCredential.objects.all(), required=False)
     creds_rest = forms.ModelChoiceField(label="REST Credential:", queryset=NetworkCredential.objects.all(), required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Handle instances with missing or blank IP fields
+        instance = kwargs.get("instance")
+        if instance:
+            for field_name in ("ipaddress_rest", "ipaddress_gnmi"):
+                value = getattr(instance, field_name, None)
+                if not value:
+                    self.initial[field_name] = "0.0.0.0"
 
 class PlatformForm(forms.ModelForm):
     class Meta:

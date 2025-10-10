@@ -4,7 +4,7 @@
 
 <div id="discovery-status"
      hx-get="{% url 'inventory_discovery_status' job.id %}"
-     hx-trigger="load, every 3s"
+     hx-trigger="load"
      hx-target="#discovery-status"
      hx-swap="innerHTML">
   <p class="text-muted">Discovery running... please wait.</p>
@@ -12,5 +12,34 @@
 
 <a href="{% url 'inventory_home' %}" class="btn btn-outline-secondary mt-3">Back to Inventory</a>
 
-<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<script>
+  document.addEventListener("htmx:afterSwap", function(evt) {
+    if (evt.detail.target.id !== "discovery-status") return;
+  
+    for (const [key, value] of Object.entries(localStorage)) {
+      if (key.startsWith("discovery-")) {
+        const el = document.getElementById(key.replace("discovery-", ""));
+        if (el) el.value = value;
+      }
+    }
+  });
+  
+  // Save user input as they type or select
+  document.addEventListener("input", function(evt) {
+    const el = evt.target;
+    if (el.id && (el.id.startsWith("site-") || el.id.startsWith("hostname-") ||
+                  el.id.startsWith("model-") || el.id.startsWith("pid-"))) {
+      localStorage.setItem("discovery-" + el.id, el.value);
+    }
+  });
+  </script>
+
+<script>
+  window.addEventListener("beforeunload", function() {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith("discovery-")) localStorage.removeItem(key);
+    }
+  });
+  </script>
+
 {% endblock %}
