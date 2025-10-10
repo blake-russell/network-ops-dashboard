@@ -3,6 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Q
+from django.urls import reverse
+from django.contrib import messages
 import logging
 from network_ops_dashboard.decorators import *
 from network_ops_dashboard.models import *
@@ -29,17 +31,96 @@ def inventory_home(request):
         "discovery_form": discovery_form,
     })
 
-@login_required(login_url='/accounts/login/')
+@login_required
 def inventory_edit_modal(request, pk):
     device = get_object_or_404(Inventory, pk=pk)
+
     if request.method == "POST":
         form = InventoryForm(request.POST, instance=device)
         if form.is_valid():
             form.save()
-            return HttpResponse('<script>window.location.reload()</script>')
+
+        # --- Update Priority Interfaces ---
+        selected_ids = request.POST.getlist("priority_interfaces")
+        device.interfaces.update(is_priority=False)
+        if selected_ids:
+            device.interfaces.filter(id__in=selected_ids).update(is_priority=True)
+
+        # --- Add New Interfaces ---
+        prefix = request.POST.get("prefix")
+        rack = request.POST.get("rack")
+        slot = request.POST.get("slot")
+        port_start = request.POST.get("port_start")
+        port_end = request.POST.get("port_end") or port_start
+
+        if prefix:
+            if port_start:  # Range / numbered interfaces
+                try:
+                    start = int(port_start)
+                    end = int(port_end)
+                except ValueError:
+                    start, end = None, None
+
+                if start is not None and end is not None:
+                    for port in range(start, end + 1):
+                        slot_bits = []
+                        if rack:
+                            slot_bits.append(str(rack))
+                        if slot:
+                            slot_bits.append(str(slot))
+                        slot_bits.append(str(port))
+                        slot_str = "/".join(slot_bits)
+
+                        iface_name = f"{prefix}{slot_str}"
+
+                        InventoryInterface.objects.get_or_create(
+                            device=device,
+                            name=iface_name,
+                            defaults={
+                                "rack": int(rack) if rack else None,
+                                "slot": int(slot) if slot else None,
+                                "port": port,
+                            },
+                        )
+            else:
+                # Singleton free-text interface (Mgmt0, Port-Channel1.2405, Vlan10…)
+                InventoryInterface.objects.get_or_create(
+                    device=device,
+                    name=prefix.strip(),
+                    defaults={
+                        "rack": int(rack) if rack else None,
+                        "slot": int(slot) if slot else None,
+                    },
+                )
+
+        if request.POST.get("action") == "add_interface":
+            # Stay in modal > re-render with updated interface list
+            interfaces = device.interfaces.all().order_by("rack", "slot", "port", "name")
+            return render(
+                request,
+                "network_ops_dashboard/inventory/_interfaces_list.html",
+                {"device": device, "interfaces": interfaces, "form": form},
+            )
+        else:
+            # Save clicked > close modal + refresh page
+            resp = HttpResponse()
+            resp["HX-Redirect"] = reverse("inventory_home")
+            return resp
+
     else:
         form = InventoryForm(instance=device)
-    return render(request, "network_ops_dashboard/inventory/_inventory_form.html", {"form": form, "device": device})
+
+    interfaces = device.interfaces.all().order_by("rack", "slot", "port", "name")
+    return render(
+        request,
+        "network_ops_dashboard/inventory/_inventory_form.html",
+        {
+            "device": device,
+            "form": form,
+            "interfaces": interfaces,
+        },
+    )
+
 
 @login_required(login_url='/accounts/login/')
 def inventory_add_modal(request):
@@ -104,30 +185,28 @@ def inventory_data(request):
     response["Pragma"] = "no-cache"
     return response
 
-@login_required(login_url='/accounts/login/')
-def inventory_priority_interfaces(request, pk):
-    inventory = get_object_or_404(Inventory, pk=pk)
+@login_required
+def inventory_add_interface(request, pk):
+    device = get_object_or_404(Inventory, pk=pk)
 
     if request.method == "POST":
-        selected = request.POST.getlist("priority_interfaces")
+        prefix = request.POST.get("prefix")
+        slot = request.POST.get("slot") or None
+        port_start = int(request.POST.get("port_start"))
+        port_end = request.POST.get("port_end")
+        port_end = int(port_end) if port_end else port_start
 
-        # Clear old priorities
-        InventoryInterface.objects.filter(device=inventory).update(is_priority=False)
-
-        for iface_name in selected:
-            iface, _ = InventoryInterface.objects.get_or_create(
-                device=inventory,
-                name=iface_name.strip()
+        for port in range(port_start, port_end + 1):
+            InventoryInterface.objects.get_or_create(
+                device=device,
+                prefix=prefix,
+                slot=slot,
+                port=port,
+                defaults={"name": f"{prefix}{slot}/{port}" if slot else f"{prefix}{port}"}
             )
-            iface.is_priority = True
-            iface.save()
 
-        return JsonResponse({"success": True})
-
-    return render(request, "network_ops_dashboard/inventory/_priority_interfaces_modal.html", {
-        "inventory": inventory,
-        "interfaces": inventory.interfaces.all(),
-    })
+        messages.success(request, f"Added interfaces {prefix}{slot}/{port_start}-{port_end}")
+        return redirect("inventory_edit_modal", pk=device.id)
 
 @login_required(login_url='/accounts/login/')
 def platform_home(request):

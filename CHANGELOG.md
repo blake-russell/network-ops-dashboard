@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.3.0 - 10-10-2025
+- 🖥️ Inventory: Re-design into single modal/page for CRUD process.
+- 🆕 Inventory Tracked Interface: Added ability to add interfaces in order to "track" for particular scripts and cards such as Statseeker
+
+## v0.2.9 - 10-3-2025
+- 🆕 Inventory Discovery: Added SNMP/SSH device discovery functionality.
+- 🗃️ DiscoveryJob Tasks: Added capability for job queuing discovery tasks.
+
+## v0.2.8 - 09-26-2025
+- 🆕 CiscoAdvisory: Added user assignment and status workflow.
+- ✅ On-call: Fix parsehandler bugs for Cogent email processing.
+- ✅ ASAVPN: Fixed unreachable stats.
+
 ## v0.2.7 - 09-03-2025
 - 🆕 CiscoAdvisory: Added functionality to interact with field notices to maintain impact and remediation.
 - ⚙️ CiscoAdvisory: Field Notices set as "No Impact" will auto-archive at specified On-Call auto-archive timeframe.

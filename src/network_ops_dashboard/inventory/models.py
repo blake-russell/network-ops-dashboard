@@ -195,13 +195,31 @@ class Inventory(models.Model):
         return str(self.name)
     
 class InventoryInterface(models.Model):
-    device = models.ForeignKey(Inventory, related_name="interfaces", on_delete=models.CASCADE)
-    name = models.CharField(max_length=128)
+    device = models.ForeignKey(
+        Inventory,
+        related_name="interfaces",
+        on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=64)
+    prefix = models.CharField(max_length=32, null=True, blank=True)
+    rack = models.PositiveSmallIntegerField(null=True, blank=True)
+    slot = models.PositiveSmallIntegerField(null=True, blank=True)
+    subslot = models.PositiveSmallIntegerField(null=True, blank=True)
+    port = models.PositiveSmallIntegerField(null=True, blank=True)
     is_priority = models.BooleanField(default=False)
 
+    def display_name(self):
+        if self.prefix:
+            nums = [n for n in [self.rack, self.slot, self.subslot, self.port] if n is not None]
+            suffix = "/".join(str(n) for n in nums)
+            return f"{self.prefix}{suffix}" if suffix else self.prefix
+        return self.name
+    
     class Meta:
-        unique_together = ("device", "name")
-        ordering = ["name"]
+        ordering = ["rack", "slot", "subslot", "port", "name"]
+        constraints = [
+            models.UniqueConstraint(fields=["device", "name"], name="uniq_device_interface")
+        ]
 
     def __str__(self):
-        return f"{self.device.name} – {self.name}"
+        return f"{self.device.name} {self.name}"
