@@ -20,7 +20,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir --timeout=60 -r requirements.txt
 
 # Copy App
 COPY . .
