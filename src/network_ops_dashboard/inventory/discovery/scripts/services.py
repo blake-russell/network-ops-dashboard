@@ -167,6 +167,66 @@ def parse_interfaces(raw_list):
             interfaces.append(entry.strip())
     return interfaces
 
+def parse_interface_name(name):
+    """
+    Parse interface names into (prefix, rack, slot, subslot, port).
+    Supports Cisco (IOS, NX-OS, IOS-XR) and Juniper (ge-, xe-, et-, ae-)
+    Examples:
+        Cisco:
+            Ethernet2/43               -> slot=2, port=43
+            GigabitEthernet1/2/3       -> slot=1, subslot=2, port=3
+            TenGigEthernet0/1/2/3      -> rack=0, slot=1, subslot=2, port=3
+            HundredGigE0/0/0/1         -> rack=0, slot=0, subslot=0, port=1
+            Port-Channel1.2405         -> single logical interface
+        Juniper:
+            ge-0/0/1                   -> rack=0, slot=0, subslot=0, port=1
+            xe-1/2/0                   -> rack=1, slot=2, subslot=0, port=0
+            et-0/0/2                   -> rack=0, slot=0, subslot=2, port=2
+            ae1                        -> prefix=ae, port=1
+    """
+    # Normalize whitespace and strip subinterfaces
+    name = name.strip()
+    base_name = name.split(".")[0]
+
+    # Juniper-style (starts with ge-, xe-, et-, ae-, etc.)
+    juniper_pattern = r"^([a-z]{2,3})-(\d+)(?:/(\d+))?(?:/(\d+))?(?:/(\d+))?$"
+    junos = re.match(juniper_pattern, base_name, re.IGNORECASE)
+    if junos:
+        prefix = junos.group(1)
+        nums = [int(n) for n in junos.groups()[1:] if n is not None]
+        # Pad right side with None so we can unpack 4 positions
+        while len(nums) < 4:
+            nums.append(None)
+        rack, slot, subslot, port = nums[:4]
+        return prefix, rack, slot, subslot, port
+
+    # Cisco-style (letters followed by numeric segments)
+    cisco_pattern = r"^([A-Za-z\-]+)([\d/\.]*)$"
+    m = re.match(cisco_pattern, base_name)
+    if not m:
+        # Non-matching — treat entire thing as logical name
+        return name, None, None, None, None
+
+    prefix, rest = m.groups()
+    # Get all numeric parts (ignore trailing dot segments)
+    nums = [int(n) for n in rest.split("/") if n.isdigit()]
+
+    rack = slot = subslot = port = None
+    if len(nums) == 1:
+        # e.g. Mgmt0, Vlan100
+        port = nums[0]
+    elif len(nums) == 2:
+        # e.g. Ethernet2/43
+        slot, port = nums
+    elif len(nums) == 3:
+        # e.g. GigabitEthernet1/2/3
+        slot, subslot, port = nums
+    elif len(nums) >= 4:
+        # e.g. TenGigEthernet0/1/2/3, HundredGigE0/0/0/1
+        rack, slot, subslot, port = nums[:4]
+
+    return prefix, rack, slot, subslot, port
+
 def reverse_dns(ip):
     try:
         return socket.gethostbyaddr(ip)[0].split('.')[0]

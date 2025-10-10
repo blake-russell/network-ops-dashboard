@@ -7,6 +7,7 @@ from network_ops_dashboard.inventory.discovery.forms import DiscoveryForm
 from network_ops_dashboard.inventory.models import Inventory, InventoryInterface, Platform, Site
 from network_ops_dashboard.inventory.discovery.models import DiscoveryJob, DiscoveredDevice
 from network_ops_dashboard.inventory.discovery.tasks import start_discovery_in_thread
+from network_ops_dashboard.inventory.discovery.scripts.services import parse_interface_name
 
 @require_POST
 @login_required(login_url='/accounts/login/')
@@ -73,7 +74,16 @@ def inventory_discovery_install(request, device_id):
     )
 
     for iface in d.raw.get("interfaces", []):
-        InventoryInterface.objects.create(device=new_dev, name=iface)
+        prefix, rack, slot, subslot, port = parse_interface_name(iface)
+        InventoryInterface.objects.create(
+            device=new_dev,
+            name=iface,
+            prefix=prefix,
+            rack=rack,
+            slot=slot,
+            subslot=subslot,
+            port=port,
+        )
 
     d.added_to_inventory = True
     d.save()

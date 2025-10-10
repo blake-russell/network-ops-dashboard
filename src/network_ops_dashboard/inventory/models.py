@@ -152,8 +152,8 @@ class Inventory(models.Model):
     serial_number = models.CharField(max_length=50, blank=True, default="")
     # Management
     ipaddress_mgmt = models.GenericIPAddressField(protocol='IPv4', null=True, blank=True)
-    ipaddress_rest = models.GenericIPAddressField(protocol='IPv4', null=True, blank=True)
-    ipaddress_gnmi = models.GenericIPAddressField(protocol='IPv4', null=True, blank=True)
+    ipaddress_rest = models.GenericIPAddressField(protocol='IPv4', null=True, blank=True, default='0.0.0.0')
+    ipaddress_gnmi = models.GenericIPAddressField(protocol='IPv4', null=True, blank=True, default='0.0.0.0')
     port_rest = models.IntegerField(default=443, validators=[MinValueValidator(1), MaxValueValidator(65535)])
     port_netc = models.IntegerField(default=830, validators=[MinValueValidator(1), MaxValueValidator(65535)])
     port_gnmi = models.IntegerField(default=9339, validators=[MinValueValidator(1), MaxValueValidator(65535)])
