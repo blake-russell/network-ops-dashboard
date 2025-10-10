@@ -10,7 +10,7 @@ class InventoryForm(forms.ModelForm):
         model = Inventory
         fields = ('name', 'name_lookup', 'site', 'platform', 'serial_number', \
             'ipaddress_mgmt', 'ipaddress_rest', 'ipaddress_gmni', 'port_rest', 'port_netc', \
-            'port_gnmi', 'device_tag', 'priority_interfaces', 'creds_ssh', 'creds_rest')
+            'port_gnmi', 'device_tag', 'creds_ssh', 'creds_rest')
     name = forms.CharField(label="Device Name:", help_text="<br>Enter name that is resolved from mgmt IP excluding<br>the domain/subdomain.", required=True)
     name_lookup = forms.CharField(label="Name Lookup:", help_text="<br>ie: devicename.companyname.com", required=False)
     site = forms.ModelChoiceField(label="Site:", queryset=Site.objects.all(), required=False)
@@ -23,7 +23,7 @@ class InventoryForm(forms.ModelForm):
     port_netc = forms.CharField(label="Port (NETCONF):", initial='830')
     port_gnmi = forms.CharField(label="Port (gNMI):", initial='9339')
     device_tag = forms.ModelMultipleChoiceField(label="Device Tags:", queryset=DeviceTag.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'form-select'}), required=False)
-    priority_interfaces = forms.CharField(label="Priority Interfaces:", help_text="<br>ie: GigabitEthernet2/1/1, TenGigabitEthernet1/1/1, etc", required=False)
+    # priority_interfaces = forms.CharField(label="Priority Interfaces:", help_text="<br>ie: GigabitEthernet2/1/1, TenGigabitEthernet1/1/1, etc", required=False)
     creds_ssh = forms.ModelChoiceField(label="SSH Credential:", queryset=NetworkCredential.objects.all(), required=False)
     creds_rest = forms.ModelChoiceField(label="REST Credential:", queryset=NetworkCredential.objects.all(), required=False)
 

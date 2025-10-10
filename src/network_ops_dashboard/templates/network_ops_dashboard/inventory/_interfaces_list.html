@@ -1,0 +1,51 @@
+<div id="interfaces-list">
+    <div class="accordion" id="interfacesAccordion">
+      {% regroup interfaces by slot as slot_list %}
+      {% for slot in slot_list %}
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}">
+              Slot {{ slot.grouper|default:"N/A" }}
+            </button>
+          </h2>
+          <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              {% for iface in slot.list %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="priority_interfaces" value="{{ iface.id }}" id="iface{{ iface.id }}" {% if iface.is_priority %}checked{% endif %}>
+                  <label class="form-check-label" for="iface{{ iface.id }}">{{ iface.display_name }}</label>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  
+    <!-- Inline Add Form -->
+    <div class="mt-3">
+      <div class="row g-2">
+        <div class="col"><input type="text" name="prefix" class="form-control" placeholder="Prefix/Name"></div>
+        <div class="col"><input type="text" name="rack" class="form-control" placeholder="Rack#"></div>
+        <div class="col"><input type="text" name="slot" class="form-control" placeholder="Slot#"></div>
+        <div class="col"><input type="text" name="port_start" class="form-control" placeholder="Port Start"></div>
+        <div class="col"><input type="text" name="port_end" class="form-control" placeholder="Port End"></div>
+        <div class="col-auto">
+          <button type="submit"
+                  name="action"
+                  value="add_interface"
+                  class="btn btn-sm btn-primary"
+                  hx-post="{% url 'inventory_edit_modal' device.pk %}"
+                  hx-target="#interfaces-list"
+                  hx-swap="outerHTML">
+            Add
+          </button>
+        </div>
+        <div class="form-text mt-1">
+            <p class="mb-0 text-muted small">* To configure a range enter Prefix name ("Ethernet", "GigabitEthernet", etc) plus rack/slot and start/end ports.</p>
+            <p class="mb-0 text-muted small">* For singletons just enter full name into Interface Name (eg "Port-Channel220", "Vlan220", "Mgmt0").</p>
+            <p class="mb-0 text-muted small">* Rack# is mainly for IOS-XR chassis like CRS/ASR9K.</p>
+          </div>
+      </div>
+    </div>
+  </div>
