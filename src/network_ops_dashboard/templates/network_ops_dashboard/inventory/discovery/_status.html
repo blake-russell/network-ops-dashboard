@@ -26,6 +26,8 @@
   Processed {{ job.processed_count }} of {{ job.total_count }} targets
 </p>
 
+<div class="fade show" id="discovery-table-container">
+
 <div class="table-responsive">
   <table class="table table-sm align-middle">
     <thead>
@@ -69,29 +71,41 @@
               <span class="text-muted">—</span>
             {% endif %}
           </td>
-          <td>
-            <form method="POST" action="{% url 'inventory_discovery_install' d.id %}">
+					<td>
+            {% if d.added_to_inventory %}
+              <span class="text-success fw-bold">Installed ✅</span>
+            {% else %}
+              <form method="POST"
+                hx-post="{% url 'inventory_discovery_install' d.id %}"
+                hx-target="#discovery-status"
+                hx-swap="innerHTML">
               {% csrf_token %}
               <input type="hidden" name="site" id="form-site-{{ d.id }}">
               <input type="hidden" name="hostname" id="form-hostname-{{ d.id }}">
               <input type="hidden" name="model" id="form-model-{{ d.id }}">
               <input type="hidden" name="pid" id="form-pid-{{ d.id }}">
               <button type="submit"
-                      class="btn btn-sm btn-outline-success"
-                      onclick="
-                        document.getElementById('form-site-{{ d.id }}').value =
-                          document.getElementById('site-{{ d.id }}').value;
-                        document.getElementById('form-hostname-{{ d.id }}').value =
-                          document.getElementById('hostname-{{ d.id }}').value;
-                        document.getElementById('form-model-{{ d.id }}').value =
-                          document.getElementById('model-{{ d.id }}').value;
-                        document.getElementById('form-pid-{{ d.id }}').value =
-                          document.getElementById('pid-{{ d.id }}').value;
-                      ">
+                  class="btn btn-sm btn-outline-success mt-1"
+                  onclick="
+                    const siteVal = document.getElementById('site-{{ d.id }}').value;
+                    if (!siteVal) {
+                    alert('⚠️ Please select a site before installing.');
+                    event.preventDefault();
+                    return;
+                    }
+                    document.getElementById('form-site-{{ d.id }}').value = siteVal;
+                    document.getElementById('form-hostname-{{ d.id }}').value =
+                    document.getElementById('hostname-{{ d.id }}').value;
+                    document.getElementById('form-model-{{ d.id }}').value =
+                    document.getElementById('model-{{ d.id }}').value;
+                    document.getElementById('form-pid-{{ d.id }}').value =
+                    document.getElementById('pid-{{ d.id }}').value;
+                  ">
                 Install
               </button>
-            </form>
-          </td>
+              </form>
+            {% endif %}
+            </td>
         </tr>
       {% empty %}
         <tr>

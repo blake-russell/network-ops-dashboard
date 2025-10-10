@@ -1,7 +1,9 @@
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
+from django.template.loader import render_to_string
 from django.utils import timezone
+from django.http import HttpResponse
 from network_ops_dashboard.inventory.discovery.scripts.services import run_discovery
 from network_ops_dashboard.inventory.discovery.forms import DiscoveryForm
 from network_ops_dashboard.inventory.models import Inventory, InventoryInterface, Platform, Site
@@ -43,7 +45,6 @@ def inventory_discovery_results(request, job_id):
 def inventory_discovery_install(request, device_id):
     d = get_object_or_404(DiscoveredDevice, pk=device_id)
 
-    # Get overrides from form
     hostname = request.POST.get("hostname") or d.hostname or d.ip
     vendor = d.raw.get("vendor", "")
     model = request.POST.get("model") or d.raw.get("model", "")
@@ -52,15 +53,16 @@ def inventory_discovery_install(request, device_id):
     serial = d.raw.get("serial", "")
     site_id = request.POST.get("site")
     site_obj = get_object_or_404(Site, pk=site_id)
+    if not site_id or not site_id.isdigit():
+        return HttpResponse("Please select a site before installing.", status=400)
+    site_obj = get_object_or_404(Site, pk=int(site_id))
 
-    # Find or create Platform entry
     platform_obj, _ = Platform.objects.get_or_create(
         manufacturer=vendor,
         PID=pid,
         name=model,
     )
 
-    # Create Inventory device
     new_dev = Inventory.objects.create(
         name=hostname,
         name_lookup=hostname,
@@ -85,8 +87,22 @@ def inventory_discovery_install(request, device_id):
             port=port,
         )
 
+    # Mark this discovered device as installed
     d.added_to_inventory = True
     d.save()
+
+    # HTMX request > re-render the _status partial
+    if request.headers.get("HX-Request"):
+        # Grab the job again so we get updated devices
+        job = d.job
+        devices = job.devices.all().order_by("ip")
+        sites = Site.objects.all()
+        html = render_to_string(
+            "network_ops_dashboard/inventory/discovery/_status.html",
+            {"job": job, "devices": devices, "sites": sites},
+            request=request,
+        )
+        return HttpResponse(html)
 
     return redirect("inventory_home")
 
