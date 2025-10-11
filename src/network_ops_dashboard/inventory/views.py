@@ -33,6 +33,9 @@ def inventory_home(request):
 
 @login_required
 def inventory_edit_modal(request, pk):
+    if not pk:
+        return redirect("inventory_home")
+    
     device = get_object_or_404(Inventory, pk=pk)
 
     if request.method == "POST":
@@ -121,7 +124,6 @@ def inventory_edit_modal(request, pk):
         },
     )
 
-
 @login_required(login_url='/accounts/login/')
 def inventory_add_modal(request):
     if request.method == "POST":
@@ -131,7 +133,9 @@ def inventory_add_modal(request):
             return HttpResponse('<script>window.location.reload()</script>')
     else:
         form = InventoryForm()
-    return render(request, "network_ops_dashboard/inventory/_inventory_form.html", {"form": form, "device": None})
+    context = {"form": form}
+    context["device"] = None
+    return render(request, "network_ops_dashboard/inventory/_inventory_form.html", context)
 
 @login_required(login_url='/accounts/login/')
 def inventory_delete_modal(request, pk):

@@ -48,6 +48,8 @@ def changes(request):
     groups = (CompanyChanges.objects
               .exclude(group__isnull=True).exclude(group__exact="")
               .order_by('group').values_list('group', flat=True).distinct())
+    
+    sites = Site.objects.all().order_by('name')
 
     return render(
         request,
@@ -59,6 +61,7 @@ def changes(request):
             'locations': locations,
             'teams': teams,
             'groups': groups,
+            'sites': sites,
         }
     )
 
@@ -70,9 +73,6 @@ def changes_update(request):
 @staff_member_required
 @require_POST
 def save_changes_settings(request):
-    import json
-    from network_ops_dashboard.inventory.models import Site
-
     s, _ = CompanyChangesSettings.objects.get_or_create(pk=1)
 
     s.changes_folder = request.POST.get("changes_folder", s.changes_folder or "")

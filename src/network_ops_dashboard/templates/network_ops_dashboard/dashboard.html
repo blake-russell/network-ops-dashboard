@@ -352,12 +352,13 @@
                       {{ statseeker_form.base_url }}
                     </div>
                   </div>
-            
                   <div class="row g-3 mt-1">
                     <div class="col-md-6">
                       <label class="form-label">{{ statseeker_form.tracked_devices.label }}</label>
                       {{ statseeker_form.tracked_devices }}
-                      <div class="form-text">Set device <code>priority_interfaces</code> for IF_DOWN/IF_ERRORS.</div>
+                      <div class="form-text text-muted small">
+                        Select device(s) whose tracked interfaces will be monitored for link status and errors.
+                      </div>
                     </div>
                     <div class="col-md-3">
                       <label class="form-label">{{ statseeker_form.top_n.label }}</label>
@@ -368,7 +369,6 @@
                       {{ statseeker_form.verify_ssl }}
                     </div>
                   </div>
-            
                   <div class="row g-3 mt-1">
                     <div class="col-md-4">
                       <label class="form-label">{{ statseeker_form.error_pct_threshold.label }}</label>

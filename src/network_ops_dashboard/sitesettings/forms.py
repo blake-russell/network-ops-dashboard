@@ -10,8 +10,8 @@ class SiteSettingsForm(forms.ModelForm):
         fields = ('company', 'teamname', 'websites', 'publicscripts', 'companylogo')
     company = forms.CharField(label="Company Name:", required=True)
     teamname = forms.CharField(label="Team Name:", required=True)
-    websites = forms.ModelMultipleChoiceField(label="Home Site Websites:", help_text="Websites show up on main public page.", queryset=SiteSettingsWebsite.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'form-select'}), required=False)
-    publicscripts = forms.ModelMultipleChoiceField(label="Public Script Page Websites:", help_text="Websites show up public scripts page.", queryset=SiteSettingsWebsite.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'form-select'}), required=False)
+    websites = forms.ModelMultipleChoiceField(label="Home Site Websites:", help_text="Websites show up on main public page.", queryset=SiteSettingsWebsite.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'form-select', "data-placeholder": "Select Websites"}), required=False)
+    publicscripts = forms.ModelMultipleChoiceField(label="Public Script Page Websites:", help_text="Websites show up public scripts page.", queryset=SiteSettingsWebsite.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'form-select', "data-placeholder": "Select Websites"}), required=False)
     companylogo = forms.ImageField()
 
 class SiteSettingsWebsiteForm(forms.ModelForm):

@@ -122,7 +122,7 @@
 
           <div class="col-12" id="sitesMultiWrap" {% if not settings_obj.use_sites_for_locations %}style="display:none"{% endif %}>
             <label class="form-label">Limit to specific Sites (optional)</label>
-            <select name="sites_to_filter" class="form-select" multiple size="8">
+            <select name="sites_to_filter" class="form-select" multiple size="8" data-placeholder="Select Sites">
               {% for site in sites %}
                 <option value="{{ site.pk }}"
                   {% if site in settings_obj.sites_to_filter.all %}selected{% endif %}>
@@ -131,7 +131,7 @@
               {% endfor %}
             </select>
             <div class="form-text">
-              Hold Ctrl/Cmd to select multiple. If none selected, all Sites are considered valid.
+              If none selected, all Sites are considered valid.
             </div>
           </div>
 
