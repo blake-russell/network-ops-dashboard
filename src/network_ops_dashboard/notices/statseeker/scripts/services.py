@@ -9,12 +9,20 @@ from network_ops_dashboard.inventory.models import Inventory
 logger = logging.getLogger('network_ops_dashboard.notices.statseeker')
 
 def _tracked_interfaces(inv: Inventory):
-    # Inventory.priority_interfaces is a comma-separated string.
+    """
+    Return a list of interface names that are marked as priority
+    for a given Inventory object.
+    """
     try:
-        return inv.get_priority_interfaces()
-    except Exception:
-        # fallback if needed
-        s = (inv.priority_interfaces or "").strip()
+        # use the related_name defined in InventoryInterface.device FK
+        return list(
+            inv.interfaces.filter(is_priority=True)
+            .order_by("rack", "slot", "subslot", "port", "name")
+            .values_list("name", flat=True)
+        )
+    except Exception as e:
+        # fallback for legacy data or schema mismatch
+        s = getattr(inv, "priority_interfaces", "") or ""
         return [p.strip() for p in s.split(",") if p.strip()]
 
 def _SScookie(base, auth, verifySSL):

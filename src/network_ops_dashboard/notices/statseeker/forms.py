@@ -30,7 +30,7 @@ class StatseekerSettingsForm(forms.ModelForm):
             "credential": forms.Select(attrs={"class": "form-select"}),
             "base_url": forms.TextInput(attrs={"class": "form-control", "placeholder": "https://..."}),
             "verify_ssl": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "tracked_devices": forms.SelectMultiple(attrs={"class": "form-select", "size": 8}),
+            "tracked_devices": forms.SelectMultiple(attrs={"class": "form-select", "data-placeholder": "Select Devices", "size": 8}),
             "top_n": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
             "min_interval_minutes": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
             "error_pct_threshold": forms.NumberInput(attrs={"class": "form-control", "min": 0, "step": "0.1"}),
@@ -45,7 +45,7 @@ class StatseekerSettingsForm(forms.ModelForm):
             self.fields["credential"].queryset = NetworkCredential.objects.order_by("name")
         except Exception:
             pass
-        # If you’d like to pre-filter available devices, do it here:
+        
         self.fields["tracked_devices"].queryset = Inventory.objects.all().order_by("name")
-        self.fields["tracked_devices"].help_text = "Choose devices to watch. Their priority_interfaces field determines which interfaces to evaluate for IF_DOWN/IF_ERRORS."
+        self.fields["tracked_devices"].help_text = "Choose devices to watch. Their tracked interfaces determines which to evaluate for IF_DOWN/IF_ERRORS."
 

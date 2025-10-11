@@ -170,13 +170,6 @@ class Inventory(models.Model):
     last_backup_at = models.DateTimeField(null=True, blank=True)
     discovery_source = models.CharField(max_length=64, blank=True, default="")
     sw_version = models.CharField(max_length=128, blank=True, default="")
-    # Priority/Tracked Interfaces
-    priority_interfaces = models.JSONField(default=list, blank=True, null=True)
-    # stores ["Ethernet1/1", "Ethernet2/43", "mgmt0"]
-    def get_priority_interfaces(self):
-        return [k.strip() for k in (self.priority_interfaces or "").split(",") if k.strip()]
-    def set_priority_interfaces(self, items):
-        self.priority_interfaces = ",".join([str(i).strip() for i in (items or [])])
     # Flex Field
     extra = models.JSONField(blank=True, default=dict)
 

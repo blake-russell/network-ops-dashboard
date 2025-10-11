@@ -29,7 +29,7 @@ class InventoryForm(forms.ModelForm):
     port_rest = forms.CharField(label="Port (REST):", initial='443')
     port_netc = forms.CharField(label="Port (NETCONF):", initial='830')
     port_gnmi = forms.CharField(label="Port (gNMI):", initial='9339')
-    device_tag = forms.ModelMultipleChoiceField(label="Device Tags:", queryset=DeviceTag.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'form-select'}), required=False)
+    device_tag = forms.ModelMultipleChoiceField(label="Device Tags:", queryset=DeviceTag.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'form-select', "data-placeholder": "Select DeviceTags"}), required=False)
     creds_ssh = forms.ModelChoiceField(label="SSH Credential:", queryset=NetworkCredential.objects.all(), required=False)
     creds_rest = forms.ModelChoiceField(label="REST Credential:", queryset=NetworkCredential.objects.all(), required=False)
 
