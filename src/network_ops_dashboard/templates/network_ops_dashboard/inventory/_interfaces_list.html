@@ -35,7 +35,11 @@
                   name="action"
                   value="add_interface"
                   class="btn btn-sm btn-primary"
-                  hx-post="{% url 'inventory_edit_modal' device.pk %}"
+                  {% if device and device.pk %}
+                    hx-post="{% url 'inventory_edit_modal' device.pk %}"
+                  {% else %}
+                    hx-post="{% url 'inventory_add_modal' %}"
+                  {% endif %}
                   hx-target="#interfaces-list"
                   hx-swap="outerHTML">
             Add
