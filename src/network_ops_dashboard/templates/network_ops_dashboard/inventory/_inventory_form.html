@@ -6,7 +6,7 @@
 </div>
 
 <form method="post"
-      hx-post="{% if device %}{% url 'inventory_edit_modal' device.pk %}{% else %}{% url 'inventory_add_modal' %}{% endif %}"
+      hx-post="{% if device and device.pk %}{% url 'inventory_edit_modal' device.pk %}{% else %}{% url 'inventory_add_modal' %}{% endif %}"
       hx-target="#inventoryModal .modal-content"
       hx-swap="outerHTML">
   {% csrf_token %}

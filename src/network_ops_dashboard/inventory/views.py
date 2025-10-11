@@ -130,11 +130,18 @@ def inventory_add_modal(request):
         form = InventoryForm(request.POST)
         if form.is_valid():
             form.save()
-            return HttpResponse('<script>window.location.reload()</script>')
-    else:
-        form = InventoryForm()
-    context = {"form": form}
-    context["device"] = None
+            # Reload the full inventory page
+            resp = HttpResponse()
+            resp["HX-Redirect"] = reverse("inventory_home")
+            return resp
+        else:
+            # Re-render form with errors inside modal
+            context = {"form": form, "device": None}
+            return render(request, "network_ops_dashboard/inventory/_inventory_form.html", context)
+
+    # blank form
+    form = InventoryForm()
+    context = {"form": form, "device": None}
     return render(request, "network_ops_dashboard/inventory/_inventory_form.html", context)
 
 @login_required(login_url='/accounts/login/')

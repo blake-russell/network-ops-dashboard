@@ -11,13 +11,7 @@ class InventoryForm(forms.ModelForm):
         fields = ('status', 'name', 'name_lookup', 'site', 'platform', 'serial_number', \
             'ipaddress_mgmt', 'ipaddress_rest', 'ipaddress_gnmi', 'port_rest', 'port_netc', \
             'port_gnmi', 'device_tag', 'creds_ssh', 'creds_rest')
-    DEVICE_STATUS_CHOICES = (
-    ("ACTIVE", "Active"),
-    ("STAGING", "Staging"),
-    ("MAINT", "Maintenance"),
-    ("RETIRED", "Retired"),
-    )
-    status = forms.ChoiceField(label="Status:", choices=DEVICE_STATUS_CHOICES, required=True)
+    status = forms.ChoiceField(label="Status:", choices=Inventory.Status.choices, required=True)
     name = forms.CharField(label="Hostname:", help_text="<br>Hostname of device", required=True)
     name_lookup = forms.CharField(label="FQDN:", help_text="<br>ie: devicename.companyname.com", required=False)
     site = forms.ModelChoiceField(label="Site:", queryset=Site.objects.all(), required=False)
