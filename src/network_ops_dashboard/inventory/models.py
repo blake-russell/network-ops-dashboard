@@ -170,6 +170,10 @@ class Inventory(models.Model):
     last_backup_at = models.DateTimeField(null=True, blank=True)
     discovery_source = models.CharField(max_length=64, blank=True, default="")
     sw_version = models.CharField(max_length=128, blank=True, default="")
+    # Configuration
+    config_running = models.TextField(blank=True, null=True)
+    config_startup = models.TextField(blank=True, null=True)
+    last_config_pull = models.DateTimeField(blank=True, null=True)
     # Flex Field
     extra = models.JSONField(blank=True, default=dict)
 
