@@ -24,16 +24,16 @@ jobs:
         pip install flake8
         flake8 src/ || echo "Linting completed with warnings."
 
-    - name: Build Docker image (Python 3.8 Slim)
+    - name: Build Docker image (Python 3.9 Slim)
       run: |
-        docker build -t python38-django -f Dockerfile.ci .
+        docker build -t python39-django -f Dockerfile.ci .
 
     - name: Create empty secrets.py in container
       run: |
         docker run --rm \
           -v $PWD/src:/django/venv/src \
           -w /django/venv/src/network_ops_dashboard \
-          python38-django \
+          python39-django \
           /bin/sh -c "touch secrets.py"
 
     - name: Populate secrets.py
@@ -41,7 +41,7 @@ jobs:
         docker run --rm \
           -v $PWD/src:/django/venv/src \
           -w /django/venv/src/network_ops_dashboard \
-          python38-django \
+          python39-django \
           /bin/sh -c "echo \"SECRET_KEY='testkey'\nDEBUG=False\nCRON_USER='www-data'\nALLOWED_HOSTS=['localhost']\nLOGGING={}\" > secrets.py"
 
     - name: Run container and execute Pytest
@@ -51,5 +51,5 @@ jobs:
           -e PYTHONPATH=/django/venv/src \
           -v $PWD/src:/django/venv/src \
           -w /django/venv/src \
-          python38-django \
+          python39-django \
           pytest
