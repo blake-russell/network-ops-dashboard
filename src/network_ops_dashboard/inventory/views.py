@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 from django.http import JsonResponse, HttpResponse
+from django.views.decorators.http import require_POST
+from django.template.loader import render_to_string
 from django.db.models import Q
 from django.urls import reverse
 from django.contrib import messages
@@ -11,6 +13,7 @@ from network_ops_dashboard.models import *
 from network_ops_dashboard.inventory.models import Inventory, InventoryInterface, Site, Platform, DeviceTag
 from network_ops_dashboard.inventory.discovery.forms import DiscoveryForm
 from network_ops_dashboard.inventory.forms import *
+from network_ops_dashboard.inventory.scripts.services import pull_device_config
 
 
 logger = logging.getLogger('network_ops_dashboard.inventory')
@@ -218,6 +221,24 @@ def inventory_add_interface(request, pk):
 
         messages.success(request, f"Added interfaces {prefix}{slot}/{port_start}-{port_end}")
         return redirect("inventory_edit_modal", pk=device.id)
+    
+@require_POST
+@login_required(login_url='/accounts/login/')
+def inventory_fetch_config(request, pk):
+    device = Inventory.objects.get(pk=pk)
+    try:
+        pull_device_config(device)
+        # Re-Render Modal
+        form = InventoryForm(instance=device)
+        interfaces = device.interfaces.all().order_by("rack", "slot", "port", "name")
+        html= render_to_string(
+            "network_ops_dashboard/inventory/_inventory_form.html",
+            {"device": device, "form": form, "interfaces": interfaces},
+            request=request,
+        )
+        return HttpResponse(html)
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
 @login_required(login_url='/accounts/login/')
 def platform_home(request):
