@@ -59,7 +59,7 @@ pyeapi==1.0.4
 pyflakes==3.2.0
 Pygments==2.19.2
 PyNaCl==1.5.0
-pyparsing==3.2.5
+pyparsing>=3.1.4
 pyserial==3.5
 pysmi==1.5.0
 pysnmpcrypto==0.0.4
