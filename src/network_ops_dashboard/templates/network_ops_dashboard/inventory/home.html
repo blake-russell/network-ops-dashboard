@@ -46,7 +46,14 @@
       data-bs-toggle="modal"
       data-bs-target="#inventoryModal">
         Add Network Device
-  </button>
+    </button>
+    <button class="btn btn-sm btn-outline-primary"
+      hx-get="{% url 'config_backup_modal' %}"
+      hx-target="#configBackupModal .modal-content"
+      data-bs-toggle="modal"
+      data-bs-target="#configBackupModal">
+        Config Backup
+    </button>
     <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#discoverModal">
       🔎 Discover Devices
     </button>
@@ -145,6 +152,15 @@
   </div>
 </div>
 
+<!-- Backup Modal -->
+<div class="modal fade" id="configBackupModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <!-- HTMX loads edit form here -->
+    </div>
+  </div>
+</div>
+
 <!-- Base Modal Container -->
 <div id="modalContainer"></div>
 
@@ -163,6 +179,16 @@
   document.body.addEventListener("deviceDeleted", function () {
     bootstrap.Modal.getInstance(document.getElementById("inventoryModal")).hide();
     fetchRows();
+  });
+</script>
+
+<!-- after config backup save -->
+<script>
+  window.addEventListener("configBackupSaved", () => {
+    const modalEl = document.getElementById("configBackupModal");
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+    setTimeout(() => location.reload(), 400);
   });
 </script>
 
