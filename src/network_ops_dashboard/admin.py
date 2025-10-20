@@ -53,6 +53,7 @@ admin.site.register(StatseekerSettings)
 admin.site.register(StatseekerAlert)
 admin.site.register(DiscoveryJob)
 admin.site.register(DiscoveredDevice)
+admin.site.register(ConfigBackupSchedule)
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):

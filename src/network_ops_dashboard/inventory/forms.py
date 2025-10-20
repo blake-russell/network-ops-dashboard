@@ -89,3 +89,12 @@ class NetworkCredentialForm(forms.ModelForm):
                 self.add_error("password", "Password is required if no API key is provided.")
 
         return cleaned_data
+
+class ConfigBackupScheduleForm(forms.ModelForm):
+    class Meta:
+        model = ConfigBackupSchedule
+        fields = ["enabled", "frequency", "day_of_week", "time_of_day", "email_alerts", "alert_email", "devices"]
+        widgets = {
+            "time_of_day": forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
+            "devices": forms.SelectMultiple(attrs={"class": "form-select", "size": 8}),
+        }

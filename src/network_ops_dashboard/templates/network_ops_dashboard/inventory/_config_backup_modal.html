@@ -1,0 +1,110 @@
+<div class="modal-header">
+  <h5 class="modal-title">Configuration Backup Settings</h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<form method="post"
+      hx-post="{% url 'config_backup_save' %}"
+      hx-target="#configBackupModal .modal-content"
+      hx-swap="outerHTML">
+  {% csrf_token %}
+  <div class="modal-body">
+
+    <div class="form-check form-switch mb-3">
+      <input class="form-check-input" type="checkbox" name="enabled" id="id_enabled"
+             {% if cfg.enabled %}checked{% endif %}>
+      <label class="form-check-label" for="id_enabled">Enable Config Backups</label>
+    </div>
+
+    <div class="row g-2">
+      <div class="col-md-6">
+        <label class="form-label">Frequency</label>
+        <select name="frequency" class="form-select" id="id_frequency">
+          <option value="daily" {% if cfg.frequency == 'daily' %}selected{% endif %}>Daily</option>
+          <option value="weekly" {% if cfg.frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+        </select>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Time of Day</label>
+        <input type="time" name="time_of_day" class="form-control"
+               value="{{ cfg.time_of_day|time:'H:i' }}">
+      </div>
+    </div>
+
+    <div class="mt-3">
+      <label class="form-label">Day of Week (for weekly)</label>
+      <select name="day_of_week" class="form-select">
+        {% for value, label in form.fields.day_of_week.choices %}
+          <option value="{{ value }}" {% if form.instance.day_of_week == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <hr>
+
+    <div class="mb-3">
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" name="email_alerts" id="id_email_alerts"
+               {% if cfg.email_alerts %}checked{% endif %}>
+        <label class="form-check-label" for="id_email_alerts">Email Alerts</label>
+      </div>
+      <input type="email" class="form-control mt-2" name="alert_email"
+             value="{{ cfg.alert_email|default_if_none:'' }}" placeholder="Email address for alerts">
+    </div>
+
+    <hr>
+
+    <!-- Multi-select for devices -->
+    <label class="form-label">Devices to Include</label>
+    <select name="devices" multiple class="form-select" size="8">
+      {% for device in devices %}
+        <option value="{{ device.pk }}" {% if device in cfg.devices.all %}selected{% endif %}>
+          {{ device.name }}
+        </option>
+      {% endfor %}
+    </select>
+
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+    <button type="submit" class="btn btn-primary">Save</button>
+  </div>
+</form>
+
+<script>
+  document.body.addEventListener("htmx:afterSwap", (evt) => {
+    // Only re-run when the config modal was swapped
+    if (evt.detail.target.id === "configBackupModal" || evt.detail.target.closest("#configBackupModal")) {
+      const chk = document.querySelector('#configBackupModal input[name="email_alerts"]');
+      const emailField = document.querySelector('#configBackupModal input[name="alert_email"]');
+      const freqSelect = document.querySelector('#configBackupModal select[name="frequency"]');
+      const daySelect = document.querySelector('#configBackupModal select[name="day_of_week"]');
+  
+      function toggleEmailField() {
+        if (!chk || !emailField) return;
+        if (chk.checked) {
+          emailField.disabled = false;
+          emailField.placeholder = "admin@example.com";
+        } else {
+          emailField.value = "";
+          emailField.disabled = true;
+          emailField.placeholder = "(disabled)";
+        }
+      }
+  
+      function toggleDaySelect() {
+        if (!freqSelect || !daySelect) return;
+        const isWeekly = freqSelect.value === "weekly";
+        daySelect.disabled = !isWeekly;
+        if (!isWeekly) daySelect.value = "";
+      }
+  
+      toggleEmailField();
+      toggleDaySelect();
+      if (chk) chk.addEventListener("change", toggleEmailField);
+      if (freqSelect) freqSelect.addEventListener("change", toggleDaySelect);
+    }
+  });
+  </script>

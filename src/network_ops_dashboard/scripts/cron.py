@@ -13,6 +13,7 @@ COLLECTORS = {
     "sdwan_vmanage_stats": "collect_sdwan_stats",
     "pagerduty_incidents": "collect_pd_incidents",
     "statseeker_alarms": "collect_statseeker_alarms",
+    "config_backup": "collect_device_configs",
 }
 
 def _job_comment(key: str) -> str:

@@ -220,3 +220,50 @@ class InventoryInterface(models.Model):
 
     def __str__(self):
         return f"{self.device.name} {self.name}"
+    
+class ConfigBackupSchedule(models.Model):
+    FREQUENCY_CHOICES = [
+        ("daily", "Daily"),
+        ("weekly", "Weekly"),
+    ]
+    DAYS_OF_WEEK = [
+        (1, "Monday"),
+        (2, "Tuesday"),
+        (3, "Wednesday"),
+        (4, "Thursday"),
+        (5, "Friday"),
+        (6, "Saturday"),
+        (0, "Sunday"),
+    ]
+
+    enabled = models.BooleanField(default=False)
+    frequency = models.CharField(max_length=10, choices=FREQUENCY_CHOICES, default="weekly")
+    day_of_week = models.IntegerField(choices=DAYS_OF_WEEK, default=0)
+    time_of_day = models.TimeField(default=timezone.now)
+    email_alerts = models.BooleanField(default=False)
+    alert_email = models.EmailField(blank=True, null=True)
+
+    # which devices to include
+    devices = models.ManyToManyField(Inventory, related_name="config_backup_targets", blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return "Global Config Backup Schedule"
+
+    @property
+    def cron_key(self):
+        return "config_backup"
+
+    def ensure_cron_job(self):
+        """Create or update the single cron job."""
+        from network_ops_dashboard.scripts.cron import ensure_daily_cron, ensure_weekly_cron
+
+        if not self.enabled:
+            return
+
+        hhmm = self.time_of_day.strftime("%H:%M")
+        if self.frequency == "daily":
+            ensure_daily_cron(self.cron_key, hhmm)
+        else:
+            ensure_weekly_cron(self.cron_key, hhmm, self.day_of_week)

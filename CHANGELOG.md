@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.1 - 10-20-2025
+- 🆕 Inventory Config Backups: Added ability to fetch device configuration via NAPALM drivers.
+- 🆕 Inventory Config Backups: Added ability automatically backup configurations on a daily/weekly basis.
+
 ## v0.3.0 - 10-10-2025
 - 🖥️ Inventory: Re-design into single modal/page for CRUD process.
 - 🆕 Inventory Tracked Interface: Added ability to add interfaces in order to "track" for particular scripts and cards such as Statseeker

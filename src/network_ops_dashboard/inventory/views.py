@@ -241,6 +241,37 @@ def inventory_fetch_config(request, pk):
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
 @login_required(login_url='/accounts/login/')
+def config_backup_modal(request):
+    from network_ops_dashboard.inventory.models import ConfigBackupSchedule, Inventory
+    from network_ops_dashboard.inventory.forms import ConfigBackupScheduleForm
+
+    cfg, _ = ConfigBackupSchedule.objects.get_or_create(pk=1)
+    form = ConfigBackupScheduleForm(instance=cfg)
+    devices = Inventory.objects.all().order_by("name")
+
+    return render(request, "network_ops_dashboard/inventory/_config_backup_modal.html", {"form": form, "cfg": cfg, "devices": devices})
+
+@require_POST
+@login_required(login_url='/accounts/login/')
+def config_backup_save(request):
+    from network_ops_dashboard.inventory.models import ConfigBackupSchedule
+    from network_ops_dashboard.inventory.forms import ConfigBackupScheduleForm
+
+    cfg, _ = ConfigBackupSchedule.objects.get_or_create(pk=1)
+    form = ConfigBackupScheduleForm(request.POST, instance=cfg)
+
+    if form.is_valid():
+        cfg = form.save()
+        cfg.ensure_cron_job()
+        response = HttpResponse(
+            "<script>window.dispatchEvent(new Event('configBackupSaved'));</script>"
+        )
+        response["HX-Trigger"] = "configBackupSaved"
+        return response
+
+    return render(request, "network_ops_dashboard/inventory/_config_backup_modal.html", {"form": form, "cfg": cfg, "devices": cfg.devices.all()})
+
+@login_required(login_url='/accounts/login/')
 def platform_home(request):
     platform_all = Platform.objects.all().order_by('name')
     detaillist = []
